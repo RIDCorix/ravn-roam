@@ -3,8 +3,14 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { publicEnv, serverEnv } from "@/lib/env";
+import { publicEnv } from "@/lib/env";
 
+// Anon-key, cookie-bound Supabase client for Server Components and Route
+// Handlers. Honors RLS — same access surface as a browser session.
+//
+// Server-side privileged Postgres work goes through DATABASE_URL with the
+// per-PoC `<slug>_poc_user` role, NOT through the shared service_role key.
+// See agent-rules/06-shared-supabase.md.
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   return createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
@@ -20,21 +26,6 @@ export async function createSupabaseServerClient() {
         } catch {
           // Called from a Server Component — Next.js will refresh cookies on the next request.
         }
-      },
-    },
-  });
-}
-
-export async function createSupabaseAdminClient() {
-  const cookieStore = await cookies();
-  const { supabaseServiceRoleKey } = serverEnv();
-  return createServerClient(publicEnv.supabaseUrl, supabaseServiceRoleKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll() {
-        // Admin client never persists session cookies.
       },
     },
   });

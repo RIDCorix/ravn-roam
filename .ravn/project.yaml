@@ -15,3 +15,17 @@ linear:
   workspace: "ravn-roam"           # Linear workspace URL key
   team_key: "ROA"
   team_id: null                    # filled once `linear-sync-team-workflow.py --apply` runs (currently blocked on sops firewall — see TEC-29 thread)
+
+infra:
+  vercel:
+    scope: "ridcorixs-projects"    # firewall-cleared, no `transbiz` substring (ROA-13)
+    project_name: "roam-web"
+    project_id: "prj_0dreWsHEmlttOlBuxo19zZhZ8P96"
+    org_id: "team_vy0ucdoFE2lw5ozI3SYTKCZ7"
+    git_connected: true            # auto-preview deploys on every branch/PR push
+    production_branch: "main"
+  supabase:
+    project: "ravn-shared"         # per agent-rules/06-shared-supabase.md
+    schema: "roam_poc"
+    role: "roam_poc_user"          # password row at supabase.shared.poc_roles.roam_poc.password in hub TEC-22
+    # Schema + role still need to be provisioned against the shared DB; see docs/INFRA.md §2.
