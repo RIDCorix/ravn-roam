@@ -123,7 +123,12 @@ export function Hero({
           paddingTop: 12,
         }}
       >
-        <WorldMap dict={mapDict} />
+        <div className="r-map-scroll">
+          <div className="r-map-inner">
+            <WorldMap dict={mapDict} />
+          </div>
+        </div>
+        <div aria-hidden className="r-map-fade" />
       </div>
     </section>
   );

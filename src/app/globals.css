@@ -120,6 +120,51 @@ body {
 }
 
 /* ============================================================
+   World map — desktop: fill the full-bleed wrapper.
+   Mobile: keep the SVG at its native width so pins stay tappable,
+   let the user pan horizontally. A right-edge fade hints at the
+   overflow without being intrusive.
+   ============================================================ */
+.r-map-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.r-map-scroll::-webkit-scrollbar {
+  display: none;
+}
+.r-map-inner {
+  width: 100%;
+}
+.r-map-fade {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .r-map-inner {
+    min-width: 860px;
+  }
+  .r-map-fade {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 12px;
+    bottom: 0;
+    width: 56px;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      rgba(247, 247, 245, 0) 0%,
+      rgba(247, 247, 245, 0.9) 80%,
+      var(--bg) 100%
+    );
+  }
+}
+
+/* ============================================================
    Responsive overrides — narrow viewports collapse the desktop
    3- and 4-col grids and stack the section-head + CTA pairs.
    ============================================================ */
