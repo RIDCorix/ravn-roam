@@ -1,10 +1,11 @@
 # Infra setup
 
 End-to-end checklist for getting the Roam marketing site running on
-**Vercel** (web hosting + previews), **Supabase** (shared Postgres),
-and **Railway** (TBD service). Items marked _dashboard_ must be done by
-a human with the right account access — they cannot be driven from this
-repo.
+**Vercel** (web hosting + previews) and **Supabase** (shared Postgres).
+Items marked _dashboard_ must be done by a human with the right account
+access — they cannot be driven from this repo.
+
+Railway is deferred — see [§4](#4--railway-deferred).
 
 > Next.js 16 specifics referenced below come from the bundled docs in
 > `node_modules/next/dist/docs/01-app/02-guides/`.
@@ -84,25 +85,13 @@ values; `.env.local` is gitignored.
 
 ---
 
-## 4. Railway — to scope
+## 4. Railway — deferred
 
-This repo is currently a static-ish Next.js marketing site that is fine
-to host on Vercel alone. Before we add Railway config (Dockerfile,
-`railway.json`, environment, custom start command), we need to confirm:
-
-- **What service runs on Railway?** Candidate options:
-  - (a) An eSIM activation / order-management API backend (separate
-    repo).
-  - (b) A scheduled worker that talks to Supabase (sync, billing, etc.).
-  - (c) A staging mirror of this Next.js site as a fallback host.
-- **Does it need to share Supabase credentials?** If yes, the
-  `SUPABASE_SERVICE_ROLE_KEY` must be added to the Railway service env,
-  and we should consider rotating to a dedicated Supabase role with
-  least-privilege grants.
-
-Once we know which of (a–c) Railway is for, the follow-up will add the
-right artifact (Dockerfile or `railway.json`) and document the deploy
-flow.
+Skipped for now (ROA-13, 2026-05-13). The marketing site does not need
+Railway; Vercel + Supabase cover hosting, previews, and the shared
+database. When a backend service or worker appears that needs Railway,
+revisit this section to add the deploy artifact (Dockerfile or
+`railway.json`), env wiring, and any Supabase role rotation.
 
 ---
 
