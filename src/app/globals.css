@@ -1,0 +1,242 @@
+@import "tailwindcss";
+
+:root {
+  /* ---- COLOR — NEUTRALS ---- */
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-elevated: #fcfcfd;
+  --surface-sunken: #f2f2ef;
+  --divider: rgba(0, 0, 0, 0.06);
+  --divider-strong: rgba(0, 0, 0, 0.1);
+
+  --fg: #111111;
+  --fg-secondary: #666666;
+  --fg-muted: #999999;
+  --fg-subtle: #b8b8b8;
+  --fg-inverse: #ffffff;
+
+  /* ---- COLOR — ACCENT (teal) ---- */
+  --accent: #0fb8b4;
+  --accent-hover: #1fc9c5;
+  --accent-light: #5dd9d5;
+  --accent-soft: #dcf4f3;
+  --accent-softer: #ebfaf9;
+  --accent-ring: rgba(15, 184, 180, 0.32);
+  --accent-glow: rgba(15, 184, 180, 0.24);
+
+  /* ---- COLOR — SEMANTIC ---- */
+  --success: #10a37f;
+  --success-soft: #e7f6f1;
+  --warning: #d9994e;
+  --warning-soft: #fbf1e4;
+  --error: #e5484d;
+  --error-soft: #fcebec;
+  --info: #5b7cfa;
+  --info-soft: #ecf0fe;
+
+  /* ---- COLOR — DARK / CTA ---- */
+  --cta: #111111;
+  --cta-hover: #1f1f1f;
+  --cta-fg: #ffffff;
+
+  /* ---- TYPE ---- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo,
+    monospace;
+
+  /* ---- SHADOWS (ambient, blue-shifted) ---- */
+  --shadow-xs: 0 1px 2px rgba(17, 17, 32, 0.04);
+  --shadow-sm: 0 2px 8px rgba(17, 17, 32, 0.04),
+    0 1px 2px rgba(17, 17, 32, 0.04);
+  --shadow-md: 0 8px 24px rgba(17, 17, 32, 0.06),
+    0 2px 6px rgba(17, 17, 32, 0.04);
+  --shadow-lg: 0 16px 48px rgba(17, 17, 32, 0.08),
+    0 4px 12px rgba(17, 17, 32, 0.05);
+  --shadow-xl: 0 32px 80px rgba(17, 17, 32, 0.12),
+    0 8px 24px rgba(17, 17, 32, 0.06);
+  --shadow-2xl: 0 48px 120px rgba(17, 17, 32, 0.16),
+    0 16px 40px rgba(17, 17, 32, 0.08);
+  --shadow-glow-accent: 0 12px 40px rgba(15, 184, 180, 0.24),
+    0 0 0 1px rgba(15, 184, 180, 0.08);
+
+  /* ---- MOTION ---- */
+  --ease-out-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --dur-micro: 140ms;
+  --dur-fast: 180ms;
+  --dur-base: 260ms;
+  --dur-slow: 420ms;
+  --dur-page: 560ms;
+
+  /* ---- GLASS ---- */
+  --blur-glass: blur(20px) saturate(140%);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-divider: var(--divider);
+  --color-divider-strong: var(--divider-strong);
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-softer: var(--accent-softer);
+  --color-error: var(--error);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ============================================================
+   World map — desktop: fill the full-bleed wrapper.
+   Mobile: keep the SVG at its native width so pins stay tappable,
+   let the user pan horizontally. A right-edge fade hints at the
+   overflow without being intrusive.
+   ============================================================ */
+.r-map-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.r-map-scroll::-webkit-scrollbar {
+  display: none;
+}
+.r-map-inner {
+  width: 100%;
+}
+.r-map-fade {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .r-map-inner {
+    min-width: 860px;
+  }
+  .r-map-fade {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 12px;
+    bottom: 0;
+    width: 56px;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      rgba(247, 247, 245, 0) 0%,
+      rgba(247, 247, 245, 0.9) 80%,
+      var(--bg) 100%
+    );
+  }
+}
+
+/* ============================================================
+   Responsive overrides — narrow viewports collapse the desktop
+   3- and 4-col grids and stack the section-head + CTA pairs.
+   ============================================================ */
+@media (max-width: 960px) {
+  .r-footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 32px !important;
+  }
+  .r-footer-card {
+    padding: 40px 32px 24px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .r-nav {
+    gap: 12px !important;
+  }
+  .r-nav-links {
+    display: none !important;
+  }
+  .r-nav-signin {
+    display: none !important;
+  }
+
+  .r-hero {
+    padding: 40px 20px 16px !important;
+  }
+  .r-hero-ctas {
+    flex-direction: column !important;
+    width: 100%;
+    align-items: stretch !important;
+  }
+  .r-hero-ctas > * {
+    justify-content: center !important;
+    width: 100%;
+  }
+
+  .r-section {
+    padding: 48px 20px 64px !important;
+  }
+  .r-section-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    margin-bottom: 28px !important;
+  }
+
+  .r-grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+
+  .r-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 36px !important;
+    padding-bottom: 32px !important;
+  }
+  .r-footer-card {
+    padding: 36px 24px 20px !important;
+    border-radius: 22px !important;
+  }
+  .r-footer-ctas {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .r-footer-ctas > * {
+    justify-content: center !important;
+    width: 100%;
+  }
+  .r-footer-bottom {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+}

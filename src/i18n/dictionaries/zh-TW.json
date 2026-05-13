@@ -1,0 +1,267 @@
+{
+  "meta": {
+    "title": "Roam 漫旅 — 讓旅行更自由",
+    "description": "你的旅行護身符。一張 eSIM，落地哪裡都連線。Roam 漫旅，wherever you go。"
+  },
+  "nav": {
+    "coverage": "覆蓋範圍",
+    "plans": "方案",
+    "howItWorks": "怎麼用",
+    "help": "說明",
+    "reviews": "旅人回饋",
+    "signIn": "登入",
+    "cta": "取得 eSIM"
+  },
+  "hero": {
+    "eyebrowBadge": "漫旅",
+    "eyebrowText": "讓旅行更自由 · wherever you go",
+    "headlineLead": "在陌生的城市，",
+    "headlineAccent": "走熟悉的旅人路。",
+    "subtitle": "一張 eSIM，落地哪裡都連線。Roam 是你旅行裡安靜的護身符 — 點地圖節點，看 200+ 個目的地的即時涵蓋。",
+    "ctaPrimary": "在這支手機安裝",
+    "ctaSecondary": "看完整覆蓋 →",
+    "deviceFootnote": "支援 iPhone XS 以上 · Google Pixel 3 以上。"
+  },
+  "howItWorks": {
+    "eyebrow": "怎麼用",
+    "title": "三步驟，從登機門到落地連線。",
+    "subtitle": "Roam 在背景跟當地電信商打交道、挑最強訊號、然後安靜地待著。你只要走自己的路。",
+    "steps": [
+      {
+        "title": "選你要去的地方。",
+        "body": "挑一個國家 — 或選整段旅程的區域包。"
+      },
+      {
+        "title": "掃 QR Code。",
+        "body": "Roam 一分鐘內裝成第二門號。不寄實體卡，原本的號碼不動。"
+      },
+      {
+        "title": "落地，自動上線。",
+        "body": "一連上當地網路就啟用。要加值，隨時開 App 加。"
+      }
+    ]
+  },
+  "walk": {
+    "eyebrow": "永遠在線",
+    "title": "訊號跑了，Roam 替你接住。",
+    "subtitle": "一條網路靜下來，Roam 自動跳到另一條。你繼續往前走，剩下的我們接。"
+  },
+  "pov": {
+    "eyebrow": "從你的視角"
+  },
+  "footer": {
+    "headlineLead": "讓旅行更自由。",
+    "headlineAccent": "Wherever you go.",
+    "subtitle": "Roam 漫旅 — 一張安靜把事做好的 eSIM。讓你在陌生的城市，做熟悉的旅人。",
+    "ctaPrimary": "安裝 Roam",
+    "ctaSecondary": "聯繫客服",
+    "columns": {
+      "product": {
+        "title": "產品",
+        "items": [
+          { "label": "覆蓋地圖", "href": "/#coverage" },
+          { "label": "方案", "href": "/#plans" },
+          { "label": "旅人回饋", "href": "/reviews" },
+          { "label": "個人旅客", "href": "/#" },
+          { "label": "服務狀態", "href": "/#" }
+        ]
+      },
+      "company": {
+        "title": "公司",
+        "items": [
+          { "label": "關於", "href": "/#" },
+          { "label": "媒體報導", "href": "/#" },
+          { "label": "招募", "href": "/#" },
+          { "label": "部落格", "href": "/#" },
+          { "label": "聯絡", "href": "/#" }
+        ]
+      },
+      "help": {
+        "title": "說明",
+        "items": [
+          { "label": "常見問題", "href": "/faq" },
+          { "label": "相容裝置", "href": "/faq#compatibility" },
+          { "label": "安裝指南", "href": "/faq#install" },
+          { "label": "隱私", "href": "/privacy" },
+          { "label": "資安", "href": "/privacy" }
+        ]
+      }
+    },
+    "copyright": "© 2026 Roam Networks · 漫旅 wherever you go",
+    "legal": {
+      "terms": "服務條款",
+      "privacy": "隱私",
+      "cookies": "Cookie"
+    }
+  },
+  "map": {
+    "live": "即時",
+    "operators": "電信商",
+    "coverage": "覆蓋",
+    "speeds": "速度",
+    "data": "資費",
+    "carriersSuffix": "家"
+  },
+  "page": {
+    "back": "← 回首頁",
+    "lastUpdated": "最後更新"
+  },
+  "privacy": {
+    "eyebrow": "隱私",
+    "title": "我們留下哪些、不留下哪些。",
+    "subtitle": "Roam 走極簡資料模型。下面是短版。要長版，跟我們說，我們寄給你。",
+    "lastUpdatedAt": "2026-05-13",
+    "sections": [
+      {
+        "title": "我們留下的",
+        "body": "你的帳號 email、綁定 eSIM profile 的裝置識別碼、以及匿名化的流量計數 — 為了計費正確。"
+      },
+      {
+        "title": "我們不留的",
+        "body": "不看你的網路內容、不讀你的訊息、不錄你的通話。任何資料都不會賣給廣告商，永遠不會。"
+      },
+      {
+        "title": "資料放在哪裡",
+        "body": "歐洲與亞太區段、靜態加密、存取留紀錄。備份 30 天後自動失效。沒有你的同意，資料不會出境到第三國。"
+      },
+      {
+        "title": "你的權利",
+        "body": "從 Roam App → 設定 → 隱私可以匯出全部資料，或刪掉。我們在 7 天內回覆。"
+      },
+      {
+        "title": "聯絡",
+        "body": "有問題、邊角案例、主管機關需求都寄到 privacy@roam.example。每一封都有人讀。"
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "常見問題",
+    "title": "快速回答。",
+    "subtitle": "找不到你的問題？開 Roam App 找客服，幾分鐘內會有真人接。",
+    "groups": [
+      {
+        "title": "相容裝置",
+        "anchor": "compatibility",
+        "items": [
+          {
+            "q": "我的手機支援 eSIM 嗎？",
+            "a": "任何 iPhone XS 之後的型號、Google Pixel 3 之後、以及 2020 年後的 Samsung 旗艦多半支援。結帳時點「查看相容裝置」可以再確認。"
+          },
+          {
+            "q": "Roam 會取代我原本的 SIM 嗎？",
+            "a": "不會。Roam 裝成第二門號，原本的號碼可以繼續接電話、收簡訊、收 2FA。"
+          }
+        ]
+      },
+      {
+        "title": "安裝",
+        "anchor": "install",
+        "items": [
+          {
+            "q": "裝起來要多久？",
+            "a": "大概一分鐘。掃 QR、確認門號、完成。"
+          },
+          {
+            "q": "可以出發前就裝好嗎？",
+            "a": "可以，建議這樣做。在家用 wifi 裝好，落地後再切換到 Roam 那條線上網。"
+          },
+          {
+            "q": "旅程中換國家怎麼辦？",
+            "a": "開 App 選新的國家就好，eSIM 在原地更新，不用重裝。"
+          }
+        ]
+      },
+      {
+        "title": "資費與方案",
+        "anchor": "plans",
+        "items": [
+          {
+            "q": "用完了怎麼辦？",
+            "a": "在 App 兩下就可以加值，新買的會疊在剩下的之上。"
+          },
+          {
+            "q": "用不完會被吃掉嗎？",
+            "a": "不會。同一個區域的方案，沒用完的流量保留 60 天。"
+          },
+          {
+            "q": "可以分享熱點嗎？",
+            "a": "Trip 跟 Region 方案可以。Day 方案是單機限定。"
+          }
+        ]
+      },
+      {
+        "title": "隱私與計費",
+        "anchor": "privacy",
+        "items": [
+          {
+            "q": "Roam 看得到我的使用內容嗎？",
+            "a": "只看到每段連線的總流量，看不到你連去哪、看了什麼。完整清單在隱私頁。"
+          },
+          {
+            "q": "退費怎麼處理？",
+            "a": "如果我們在你目的地真的接不上訊號，未使用的流量會退費。從 App → 設定 → 計費送單。"
+          }
+        ]
+      }
+    ]
+  },
+  "reviews": {
+    "eyebrow": "旅人回饋",
+    "title": "從路上寫回來的話。",
+    "subtitle": "下面是早期使用者的範例故事 — 上線後會換成真實評價。先讓你看看 Roam 是給哪種旅程的。",
+    "items": [
+      {
+        "from": "新加坡",
+        "to": "日本",
+        "name": "Lin Wei",
+        "role": "設計師 · 14 天",
+        "quote": "半夜降落羽田，過海關前就有訊號。地圖能用、計程車 App 能用、家裡的訊息也通了。本來就是要這樣。"
+      },
+      {
+        "from": "台灣",
+        "to": "英國",
+        "name": "Mei Chen",
+        "role": "攝影師 · 21 天",
+        "quote": "在倫敦、愛丁堡、都柏林之間移動完全不用碰任何東西。沒有換卡、沒有機場排隊、沒有凌晨兩點手忙腳亂。"
+      },
+      {
+        "from": "日本",
+        "to": "美國",
+        "name": "Hiro Tanaka",
+        "role": "工程師 · 公路旅行",
+        "quote": "從洛杉磯一路開到西雅圖，訊號一路跟著我。兩個州立公園裡開熱點寫 code，以前在那種地方早就放棄了。"
+      },
+      {
+        "from": "香港",
+        "to": "義大利",
+        "name": "Anya Park",
+        "role": "獨自旅行",
+        "quote": "在佛羅倫斯下火車，開地圖，走到 Airbnb。沒有「在路上找 SIM 卡店」的支線任務。"
+      },
+      {
+        "from": "美國",
+        "to": "泰國",
+        "name": "Marcus Reid",
+        "role": "背包客 · 35 天",
+        "quote": "比青年旅館推薦的當地 SIM 還便宜，而且全程保住自己的美國門號收 2FA。"
+      },
+      {
+        "from": "韓國",
+        "to": "澳洲",
+        "name": "Jisoo Han",
+        "role": "一家四口",
+        "quote": "兩大兩小、兩張 eSIM，方案在 App 合成家庭包。雪梨到 Cairns 一路沒斷過訊號。"
+      }
+    ],
+    "controls": {
+      "prev": "上一則",
+      "next": "下一則",
+      "goTo": "跳到評價"
+    }
+  },
+  "language": {
+    "label": "語言",
+    "en": "EN",
+    "zh-TW": "中"
+  }
+}
