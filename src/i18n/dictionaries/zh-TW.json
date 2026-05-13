@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "title": "Roam — 安靜的連線，落地哪裡都在。",
+    "description": "一張 eSIM，覆蓋 200+ 個目的地。用多少付多少，永遠不收 roaming 費。"
+  },
+  "nav": {
+    "coverage": "覆蓋範圍",
+    "plans": "方案",
+    "howItWorks": "怎麼用",
+    "help": "說明",
+    "signIn": "登入",
+    "cta": "取得 eSIM"
+  },
+  "hero": {
+    "eyebrowBadge": "新上線",
+    "eyebrowText": "用多少付多少 — 永遠不收 roaming 費。",
+    "headlineLead": "落地之前，",
+    "headlineAccent": "就已連線。",
+    "subtitle": "一張 eSIM，覆蓋 200+ 個目的地。點地圖節點看即時涵蓋。",
+    "ctaPrimary": "在這支手機安裝",
+    "ctaSecondary": "看完整覆蓋 →",
+    "deviceFootnote": "支援 iPhone XS 以上 · Google Pixel 3 以上。"
+  },
+  "howItWorks": {
+    "eyebrow": "怎麼用",
+    "title": "不需要實體卡，也不必等。",
+    "subtitle": "三步驟，從「我剛落地」到傳第一句訊息回家。我們替你跟當地電信商談、走最強訊號、然後安靜地待在背景。",
+    "steps": [
+      {
+        "title": "選目的地。",
+        "body": "挑你要飛去的國家 — 或選一個整段旅程的區域包。"
+      },
+      {
+        "title": "掃 QR Code。完成。",
+        "body": "Roam 一分鐘內安裝成第二門號。不寄實體卡、不用拔來拔去。"
+      },
+      {
+        "title": "落地就上線。",
+        "body": "一連上當地網路就自動啟用。要加值隨時開 App 加。"
+      }
+    ]
+  },
+  "walk": {
+    "eyebrow": "永遠在線",
+    "title": "訊號斷了？Roam 接上。",
+    "subtitle": "一旦網路變不穩，Roam 會自動切到另一個。你繼續走，其他的我們處理。"
+  },
+  "pov": {
+    "eyebrow": "從你的角度看"
+  },
+  "footer": {
+    "headlineLead": "走得更遠。",
+    "headlineAccent": "彼此更近。",
+    "subtitle": "一張安靜把事做好的 eSIM — 讓你旅途中抬頭看世界，而不是看訊號格。",
+    "ctaPrimary": "安裝 Roam",
+    "ctaSecondary": "聯繫客服",
+    "columns": {
+      "product": {
+        "title": "產品",
+        "links": ["覆蓋地圖", "方案", "團隊用戶", "個人旅客", "服務狀態"]
+      },
+      "company": {
+        "title": "公司",
+        "links": ["關於", "媒體報導", "招募", "部落格", "聯絡"]
+      },
+      "help": {
+        "title": "說明",
+        "links": ["相容裝置", "安裝指南", "加值與退款", "資安", "隱私"]
+      }
+    },
+    "copyright": "© 2026 Roam Networks。eSIM 為 GSMA 的註冊商標。",
+    "legal": {
+      "terms": "服務條款",
+      "privacy": "隱私",
+      "cookies": "Cookie"
+    }
+  },
+  "map": {
+    "live": "即時",
+    "operators": "電信商",
+    "coverage": "覆蓋",
+    "speeds": "速度",
+    "data": "資費",
+    "carriersSuffix": "家"
+  },
+  "language": {
+    "label": "語言",
+    "en": "EN",
+    "zh-TW": "中"
+  }
+}

@@ -9,6 +9,8 @@ import type {
   Topology,
 } from "topojson-specification";
 
+import type { Dictionary } from "@/app/[lang]/dictionaries";
+
 type Country = {
   iso: string;
   name: string;
@@ -75,7 +77,7 @@ function tilt(x: number, y: number) {
 
 type WorldTopology = Topology<{ countries: GeometryCollection }>;
 
-export function WorldMap() {
+export function WorldMap({ dict }: { dict: Dictionary["map"] }) {
   const [world, setWorld] = useState<WorldTopology | null>(null);
   const [hovered, setHovered] = useState<ProjectedMarker | null>(null);
   const [pinned, setPinned] = useState<ProjectedMarker | null>(null);
@@ -386,6 +388,7 @@ export function WorldMap() {
         <CoverageTooltip
           country={activeCountry}
           lineLen={PIN_HEIGHT * (0.55 + 0.55 * activeCountry.k)}
+          dict={dict}
         />
       )}
     </div>
@@ -395,9 +398,11 @@ export function WorldMap() {
 function CoverageTooltip({
   country,
   lineLen,
+  dict,
 }: {
   country: ProjectedMarker;
   lineLen: number;
+  dict: Dictionary["map"];
 }) {
   const topY = country.y - lineLen - 18;
   const leftPct = (country.x / VIEW_W) * 100;
@@ -451,7 +456,7 @@ function CoverageTooltip({
               letterSpacing: "0.04em",
             }}
           >
-            LIVE
+            {dict.live}
           </span>
           <div
             style={{
@@ -466,10 +471,13 @@ function CoverageTooltip({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-          <Row label="Operators" value={`${country.providers} carriers`} />
-          <Row label="Coverage" value={country.coverage} />
-          <Row label="Speeds" value={country.speeds} />
-          <Row label="Data" value={country.dataPlans} />
+          <Row
+            label={dict.operators}
+            value={`${country.providers} ${dict.carriersSuffix}`}
+          />
+          <Row label={dict.coverage} value={country.coverage} />
+          <Row label={dict.speeds} value={country.speeds} />
+          <Row label={dict.data} value={country.dataPlans} />
         </div>
       </div>
 

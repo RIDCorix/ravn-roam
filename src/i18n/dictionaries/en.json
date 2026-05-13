@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "title": "Roam — Quiet connectivity, anywhere you land.",
+    "description": "One eSIM, 200+ destinations. Pay-as-you-go data with no roaming fees."
+  },
+  "nav": {
+    "coverage": "Coverage",
+    "plans": "Plans",
+    "howItWorks": "How it works",
+    "help": "Help",
+    "signIn": "Sign in",
+    "cta": "Get an eSIM"
+  },
+  "hero": {
+    "eyebrowBadge": "New",
+    "eyebrowText": "Pay-as-you-go data — no roaming fees, ever.",
+    "headlineLead": "Connected,",
+    "headlineAccent": "before you land.",
+    "subtitle": "One eSIM, 200+ destinations. Tap a node for live coverage.",
+    "ctaPrimary": "Install on this phone",
+    "ctaSecondary": "See full coverage →",
+    "deviceFootnote": "Works on iPhone XS and newer · Google Pixel 3 and newer."
+  },
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "title": "A SIM card without the card. Or the wait.",
+    "subtitle": "Three steps from “I just landed” to first message home. We talk to the local operator on your behalf, route over the strongest signal, and stay out of your way.",
+    "steps": [
+      {
+        "title": "Pick a destination.",
+        "body": "Choose the country you’re flying to — or pick a regional bundle for a whole trip."
+      },
+      {
+        "title": "Scan a QR. Done.",
+        "body": "Roam installs onto your phone as a second line in under a minute. Nothing to ship, nothing to plug in."
+      },
+      {
+        "title": "Land, and it’s live.",
+        "body": "The line wakes the moment you connect to a local network. Top up from the app whenever."
+      }
+    ]
+  },
+  "walk": {
+    "eyebrow": "Always on",
+    "title": "When the signal drops, Roam catches it.",
+    "subtitle": "If a network goes quiet, Roam silently routes you to another. You keep walking; we handle the rest."
+  },
+  "pov": {
+    "eyebrow": "From your view"
+  },
+  "footer": {
+    "headlineLead": "Travel further.",
+    "headlineAccent": "Stay close.",
+    "subtitle": "An eSIM that quietly does its job — so you can spend the trip looking up, not at your bars.",
+    "ctaPrimary": "Install Roam",
+    "ctaSecondary": "Talk to support",
+    "columns": {
+      "product": {
+        "title": "Product",
+        "links": ["Coverage map", "Plans", "For teams", "For travelers", "Status"]
+      },
+      "company": {
+        "title": "Company",
+        "links": ["About", "Press", "Careers", "Blog", "Contact"]
+      },
+      "help": {
+        "title": "Help",
+        "links": ["Compatibility", "Setup guide", "Top-up & refunds", "Security", "Privacy"]
+      }
+    },
+    "copyright": "© 2026 Roam Networks. eSIM is a trademark of GSMA.",
+    "legal": {
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "cookies": "Cookies"
+    }
+  },
+  "map": {
+    "live": "LIVE",
+    "operators": "Operators",
+    "coverage": "Coverage",
+    "speeds": "Speeds",
+    "data": "Data",
+    "carriersSuffix": "carriers"
+  },
+  "language": {
+    "label": "Language",
+    "en": "EN",
+    "zh-TW": "中"
+  }
+}

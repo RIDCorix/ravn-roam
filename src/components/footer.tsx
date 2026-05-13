@@ -1,34 +1,22 @@
 import { Button } from "./button";
 import { Icon } from "./icons";
 import { FooterLink } from "./footer-link";
+import type { Dictionary } from "@/app/[lang]/dictionaries";
 
-type Column = { title: string; links: string[] };
+export function Footer({ dict }: { dict: Dictionary["footer"] }) {
+  const columns = [
+    dict.columns.product,
+    dict.columns.company,
+    dict.columns.help,
+  ];
 
-const columns: Column[] = [
-  {
-    title: "Product",
-    links: ["Coverage map", "Plans", "For teams", "For travelers", "Status"],
-  },
-  {
-    title: "Company",
-    links: ["About", "Press", "Careers", "Blog", "Contact"],
-  },
-  {
-    title: "Help",
-    links: [
-      "Compatibility",
-      "Setup guide",
-      "Top-up & refunds",
-      "Security",
-      "Privacy",
-    ],
-  },
-];
-
-export function Footer() {
   return (
-    <footer style={{ position: "relative", padding: "0 24px 32px" }}>
+    <footer
+      className="r-footer"
+      style={{ position: "relative", padding: "0 24px 32px" }}
+    >
       <div
+        className="r-footer-card"
         style={{
           maxWidth: 1200,
           margin: "0 auto",
@@ -52,6 +40,7 @@ export function Footer() {
         />
 
         <div
+          className="r-footer-grid"
           style={{
             position: "relative",
             display: "grid",
@@ -106,7 +95,7 @@ export function Footer() {
             <h3
               style={{
                 margin: 0,
-                fontSize: "clamp(28px, 3vw, 40px)",
+                fontSize: "clamp(26px, 3vw, 40px)",
                 fontWeight: 600,
                 letterSpacing: "-0.03em",
                 lineHeight: 1.08,
@@ -114,7 +103,7 @@ export function Footer() {
                 textWrap: "balance",
               }}
             >
-              Travel further.
+              {dict.headlineLead}
               <br />
               <span
                 style={{
@@ -123,7 +112,7 @@ export function Footer() {
                   fontWeight: 500,
                 }}
               >
-                Stay close.
+                {dict.headlineAccent}
               </span>
             </h3>
             <p
@@ -135,16 +124,18 @@ export function Footer() {
                 color: "rgba(255,255,255,0.65)",
               }}
             >
-              An eSIM that quietly does its job — so you can spend the trip
-              looking up, not at your bars.
+              {dict.subtitle}
             </p>
 
-            <div style={{ display: "flex", gap: 10 }}>
+            <div
+              className="r-footer-ctas"
+              style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
+            >
               <Button size="md" variant="accent">
-                Install Roam
+                {dict.ctaPrimary}
                 <Icon name="arrowRight" size={13} />
               </Button>
-              <FooterLink href="#">Talk to support</FooterLink>
+              <FooterLink href="#">{dict.ctaSecondary}</FooterLink>
             </div>
           </div>
 
@@ -180,6 +171,7 @@ export function Footer() {
         </div>
 
         <div
+          className="r-footer-bottom"
           style={{
             position: "relative",
             paddingTop: 24,
@@ -197,7 +189,7 @@ export function Footer() {
               fontFamily: "var(--font-mono)",
             }}
           >
-            © 2026 Roam Networks. eSIM is a trademark of GSMA.
+            {dict.copyright}
           </div>
           <div
             style={{
@@ -205,25 +197,17 @@ export function Footer() {
               gap: 24,
               fontSize: 13,
               color: "rgba(255,255,255,0.7)",
+              flexWrap: "wrap",
             }}
           >
-            <a
-              href="#"
-              style={{ color: "inherit", textDecoration: "none" }}
-            >
-              Terms
+            <a href="#" style={{ color: "inherit", textDecoration: "none" }}>
+              {dict.legal.terms}
             </a>
-            <a
-              href="#"
-              style={{ color: "inherit", textDecoration: "none" }}
-            >
-              Privacy
+            <a href="#" style={{ color: "inherit", textDecoration: "none" }}>
+              {dict.legal.privacy}
             </a>
-            <a
-              href="#"
-              style={{ color: "inherit", textDecoration: "none" }}
-            >
-              Cookies
+            <a href="#" style={{ color: "inherit", textDecoration: "none" }}>
+              {dict.legal.cookies}
             </a>
           </div>
         </div>

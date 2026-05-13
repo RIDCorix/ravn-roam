@@ -1,10 +1,18 @@
 import { Icon } from "./icons";
 import { Button } from "./button";
 import { WorldMap } from "./world-map";
+import type { Dictionary } from "@/app/[lang]/dictionaries";
 
-export function Hero() {
+export function Hero({
+  dict,
+  mapDict,
+}: {
+  dict: Dictionary["hero"];
+  mapDict: Dictionary["map"];
+}) {
   return (
     <section
+      className="r-hero"
       style={{
         position: "relative",
         padding: "64px 24px 24px",
@@ -30,6 +38,7 @@ export function Hero() {
             padding: "6px 14px 6px 8px",
             fontSize: 12.5,
             color: "var(--fg-secondary)",
+            textAlign: "center",
           }}
         >
           <span
@@ -43,21 +52,17 @@ export function Hero() {
               letterSpacing: "-0.005em",
             }}
           >
-            New
+            {dict.eyebrowBadge}
           </span>
-          Pay-as-you-go data — no roaming fees, ever.
-          <Icon
-            name="arrowRight"
-            size={13}
-            color="var(--fg-secondary)"
-          />
+          {dict.eyebrowText}
+          <Icon name="arrowRight" size={13} color="var(--fg-secondary)" />
         </span>
 
         <h1
           style={{
             margin: 0,
             textAlign: "center",
-            fontSize: "clamp(44px, 7.6vw, 88px)",
+            fontSize: "clamp(40px, 7.6vw, 88px)",
             fontWeight: 700,
             letterSpacing: "-0.045em",
             lineHeight: 0.96,
@@ -66,7 +71,7 @@ export function Hero() {
             textWrap: "balance",
           }}
         >
-          Connected,{" "}
+          {dict.headlineLead}{" "}
           <span
             style={{
               fontStyle: "italic",
@@ -74,7 +79,7 @@ export function Hero() {
               color: "var(--accent)",
             }}
           >
-            before you land.
+            {dict.headlineAccent}
           </span>
         </h1>
 
@@ -89,21 +94,21 @@ export function Hero() {
             textWrap: "pretty",
           }}
         >
-          One eSIM, 200+ destinations. Tap a node for live coverage.
+          {dict.subtitle}
         </p>
 
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div className="r-hero-ctas" style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <Button size="lg">
-            Install on this phone
+            {dict.ctaPrimary}
             <Icon name="arrowRight" size={14} />
           </Button>
           <Button size="lg" variant="ghost">
-            See full coverage →
+            {dict.ctaSecondary}
           </Button>
         </div>
 
-        <div style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>
-          Works on iPhone XS and newer · Google Pixel 3 and newer.
+        <div style={{ fontSize: 12.5, color: "var(--fg-muted)", textAlign: "center" }}>
+          {dict.deviceFootnote}
         </div>
       </div>
 
@@ -118,7 +123,7 @@ export function Hero() {
           paddingTop: 12,
         }}
       >
-        <WorldMap />
+        <WorldMap dict={mapDict} />
       </div>
     </section>
   );

@@ -1,8 +1,10 @@
+import type { Dictionary } from "@/app/[lang]/dictionaries";
+
 const CYCLE = 14;
 
-export function WalkScene() {
+export function WalkScene({ dict }: { dict: Dictionary["walk"] }) {
   return (
-    <section style={{ padding: "64px 24px 96px" }}>
+    <section className="r-section" style={{ padding: "64px 24px 96px" }}>
       <div
         style={{
           maxWidth: 1200,
@@ -13,6 +15,7 @@ export function WalkScene() {
         }}
       >
         <div
+          className="r-section-head"
           style={{
             display: "flex",
             alignItems: "flex-end",
@@ -32,12 +35,12 @@ export function WalkScene() {
                 marginBottom: 14,
               }}
             >
-              Always on
+              {dict.eyebrow}
             </div>
             <h2
               style={{
                 margin: 0,
-                fontSize: "clamp(32px, 4.2vw, 52px)",
+                fontSize: "clamp(28px, 4.2vw, 52px)",
                 fontWeight: 600,
                 letterSpacing: "-0.03em",
                 lineHeight: 1.04,
@@ -45,7 +48,7 @@ export function WalkScene() {
                 textWrap: "balance",
               }}
             >
-              When the signal drops, Roam catches it.
+              {dict.title}
             </h2>
           </div>
           <p
@@ -58,8 +61,7 @@ export function WalkScene() {
               textWrap: "pretty",
             }}
           >
-            If a network goes quiet, Roam silently routes you to another. You
-            keep walking; we handle the rest.
+            {dict.subtitle}
           </p>
         </div>
 

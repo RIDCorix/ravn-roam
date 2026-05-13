@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+import { notFound } from "next/navigation";
 
-import "./globals.css";
+import "../globals.css";
+import { getDictionary, hasLocale } from "./dictionaries";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,30 +16,44 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Roam — Quiet connectivity, anywhere you land.",
-  description:
-    "One eSIM, 200+ destinations. Pay-as-you-go data with no roaming fees.",
-  metadataBase: new URL("https://roam.example"),
-  icons: {
-    icon: "/favicon.svg",
-  },
-  openGraph: {
-    title: "Roam — Quiet connectivity, anywhere you land.",
-    description:
-      "One eSIM, 200+ destinations. Pay-as-you-go data with no roaming fees.",
-    type: "website",
-  },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!hasLocale(lang)) return {};
+  const dict = await getDictionary(lang);
+  return {
+    title: dict.meta.title,
+    description: dict.meta.description,
+    metadataBase: new URL("https://roam.example"),
+    icons: { icon: "/favicon.svg" },
+    openGraph: {
+      title: dict.meta.title,
+      description: dict.meta.description,
+      type: "website",
+    },
+  };
+}
 
-export default function RootLayout({
+export async function generateStaticParams() {
+  return [{ lang: "en" }, { lang: "zh-TW" }];
+}
+
+export default async function RootLayout({
   children,
-}: Readonly<{
+  params,
+}: {
   children: React.ReactNode;
-}>) {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!hasLocale(lang)) notFound();
+
   return (
     <html
-      lang="en"
+      lang={lang}
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">

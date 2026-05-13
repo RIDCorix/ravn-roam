@@ -1,10 +1,23 @@
 import { Icon, RoamLogo } from "./icons";
 import { Button } from "./button";
 import { NavLink } from "./nav-link";
+import { LanguageSwitcher } from "./language-switcher";
+import type { Dictionary, Locale } from "@/app/[lang]/dictionaries";
 
-const links = ["Coverage", "Plans", "How it works", "Help"];
+export function RoamNav({
+  dict,
+  currentLocale,
+}: {
+  dict: Dictionary;
+  currentLocale: Locale;
+}) {
+  const links: Array<{ key: keyof Dictionary["nav"]; label: string }> = [
+    { key: "coverage", label: dict.nav.coverage },
+    { key: "plans", label: dict.nav.plans },
+    { key: "howItWorks", label: dict.nav.howItWorks },
+    { key: "help", label: dict.nav.help },
+  ];
 
-export function RoamNav() {
   return (
     <div
       style={{
@@ -21,6 +34,7 @@ export function RoamNav() {
       }}
     >
       <nav
+        className="r-nav"
         style={{
           width: "100%",
           maxWidth: 1200,
@@ -30,11 +44,12 @@ export function RoamNav() {
           padding: "10px 4px",
         }}
       >
-        <a href="#" style={{ textDecoration: "none" }}>
+        <a href={`/${currentLocale}`} style={{ textDecoration: "none" }}>
           <RoamLogo />
         </a>
 
         <div
+          className="r-nav-links"
           style={{
             display: "flex",
             alignItems: "center",
@@ -42,27 +57,30 @@ export function RoamNav() {
             marginLeft: 16,
           }}
         >
-          {links.map((label) => (
-            <NavLink key={label} href="#">
-              {label}
+          {links.map((l) => (
+            <NavLink key={l.key} href="#">
+              {l.label}
             </NavLink>
           ))}
         </div>
 
         <div style={{ flex: 1 }} />
 
+        <LanguageSwitcher current={currentLocale} dict={dict.language} />
+
         <a
           href="#"
+          className="r-nav-signin"
           style={{
             fontSize: 13.5,
             color: "var(--fg-secondary)",
             textDecoration: "none",
           }}
         >
-          Sign in
+          {dict.nav.signIn}
         </a>
         <Button size="sm" style={{ padding: "8px 14px", fontSize: 13.5 }}>
-          Get an eSIM
+          {dict.nav.cta}
           <Icon name="arrowRight" size={13} />
         </Button>
       </nav>

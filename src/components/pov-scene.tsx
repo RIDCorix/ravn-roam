@@ -1,8 +1,10 @@
+import type { Dictionary } from "@/app/[lang]/dictionaries";
+
 const POV_CYCLE = 14;
 
-export function PovScene() {
+export function PovScene({ dict }: { dict: Dictionary["pov"] }) {
   return (
-    <section style={{ padding: "0 24px 96px" }}>
+    <section className="r-section" style={{ padding: "0 24px 96px" }}>
       <div
         style={{
           maxWidth: 1200,
@@ -21,7 +23,7 @@ export function PovScene() {
             fontWeight: 500,
           }}
         >
-          From your view
+          {dict.eyebrow}
         </div>
 
         <div

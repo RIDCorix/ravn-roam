@@ -118,3 +118,80 @@ body {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* ============================================================
+   Responsive overrides — narrow viewports collapse the desktop
+   3- and 4-col grids and stack the section-head + CTA pairs.
+   ============================================================ */
+@media (max-width: 960px) {
+  .r-footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 32px !important;
+  }
+  .r-footer-card {
+    padding: 40px 32px 24px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .r-nav {
+    gap: 12px !important;
+  }
+  .r-nav-links {
+    display: none !important;
+  }
+  .r-nav-signin {
+    display: none !important;
+  }
+
+  .r-hero {
+    padding: 40px 20px 16px !important;
+  }
+  .r-hero-ctas {
+    flex-direction: column !important;
+    width: 100%;
+    align-items: stretch !important;
+  }
+  .r-hero-ctas > * {
+    justify-content: center !important;
+    width: 100%;
+  }
+
+  .r-section {
+    padding: 48px 20px 64px !important;
+  }
+  .r-section-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    margin-bottom: 28px !important;
+  }
+
+  .r-grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+
+  .r-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 36px !important;
+    padding-bottom: 32px !important;
+  }
+  .r-footer-card {
+    padding: 36px 24px 20px !important;
+    border-radius: 22px !important;
+  }
+  .r-footer-ctas {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .r-footer-ctas > * {
+    justify-content: center !important;
+    width: 100%;
+  }
+  .r-footer-bottom {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+}
