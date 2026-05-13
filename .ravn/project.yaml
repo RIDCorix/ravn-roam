@@ -1,0 +1,17 @@
+# RAVN-managed project metadata.
+#
+# Filled in by ravn-agent during prompts/project-create.md.
+# Personal project — no Drive / client docs section.
+
+project:
+  name: "ravn-roam"
+  display_name: "Roam"
+  description: "全新 eSIM 產品 (personal). External collaborators planned."
+  type: "personal"
+  created: "2026-05-13"
+
+linear:
+  scope: "workspace"               # ADR-001 exception (TEC-29) — dedicated workspace, not the `ravn` hub
+  workspace: "ravn-roam"           # Linear workspace URL key
+  team_key: "ROA"
+  team_id: null                    # filled once `linear-sync-team-workflow.py --apply` runs (currently blocked on sops firewall — see TEC-29 thread)
