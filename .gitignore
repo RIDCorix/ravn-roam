@@ -1,0 +1,13 @@
+# Claude Code per-user local state
+.claude/
+
+# Cyrus agent worktree per-user state
+.cyrus/
+
+# macOS
+.DS_Store
+
+# Editor state
+.vscode/
+.idea/
+*.swp
