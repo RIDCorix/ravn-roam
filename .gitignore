@@ -1,0 +1,12 @@
+# Claude Code local settings (per-agent, per-machine)
+.claude/
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+
+# Env
+.env
+.env.local
+.env.*.local
