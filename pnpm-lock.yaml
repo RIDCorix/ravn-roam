@@ -6,14 +6,13 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/landing:
     dependencies:
-      '@supabase/ssr':
-        specifier: ^0.10.3
-        version: 0.10.3(@supabase/supabase-js@2.105.4)
-      '@supabase/supabase-js':
-        specifier: ^2.105.4
-        version: 2.105.4
+      '@roam/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       d3-geo:
         specifier: ^3.1.1
         version: 3.1.1
@@ -26,9 +25,6 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
-      server-only:
-        specifier: ^0.0.1
-        version: 0.0.1
       topojson-client:
         specifier: ^3.1.0
         version: 3.1.0
@@ -69,6 +65,31 @@ importers:
       tailwindcss:
         specifier: ^4
         version: 4.3.0
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/shared:
+    dependencies:
+      '@supabase/ssr':
+        specifier: ^0.10.3
+        version: 0.10.3(@supabase/supabase-js@2.105.4)
+      '@supabase/supabase-js':
+        specifier: ^2.105.4
+        version: 2.105.4
+      next:
+        specifier: ^16.0.0
+        version: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      server-only:
+        specifier: ^0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.41
       typescript:
         specifier: ^5
         version: 5.9.3
