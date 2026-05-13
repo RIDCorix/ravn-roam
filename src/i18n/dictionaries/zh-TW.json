@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Roam — 安靜的連線，落地哪裡都在。",
-    "description": "一張 eSIM，覆蓋 200+ 個目的地。用多少付多少，永遠不收 roaming 費。"
+    "title": "Roam 漫旅 — 讓旅行更自由",
+    "description": "你的旅行護身符。一張 eSIM，落地哪裡都連線。Roam 漫旅，wherever you go。"
   },
   "nav": {
     "coverage": "覆蓋範圍",
@@ -12,46 +12,46 @@
     "cta": "取得 eSIM"
   },
   "hero": {
-    "eyebrowBadge": "新上線",
-    "eyebrowText": "用多少付多少 — 永遠不收 roaming 費。",
-    "headlineLead": "落地之前，",
-    "headlineAccent": "就已連線。",
-    "subtitle": "一張 eSIM，覆蓋 200+ 個目的地。點地圖節點看即時涵蓋。",
+    "eyebrowBadge": "漫旅",
+    "eyebrowText": "讓旅行更自由 · wherever you go",
+    "headlineLead": "在陌生的城市，",
+    "headlineAccent": "走熟悉的旅人路。",
+    "subtitle": "一張 eSIM，落地哪裡都連線。Roam 是你旅行裡安靜的護身符 — 點地圖節點，看 200+ 個目的地的即時涵蓋。",
     "ctaPrimary": "在這支手機安裝",
     "ctaSecondary": "看完整覆蓋 →",
     "deviceFootnote": "支援 iPhone XS 以上 · Google Pixel 3 以上。"
   },
   "howItWorks": {
     "eyebrow": "怎麼用",
-    "title": "不需要實體卡，也不必等。",
-    "subtitle": "三步驟，從「我剛落地」到傳第一句訊息回家。我們替你跟當地電信商談、走最強訊號、然後安靜地待在背景。",
+    "title": "三步驟，從登機門到落地連線。",
+    "subtitle": "Roam 在背景跟當地電信商打交道、挑最強訊號、然後安靜地待著。你只要走自己的路。",
     "steps": [
       {
-        "title": "選目的地。",
-        "body": "挑你要飛去的國家 — 或選一個整段旅程的區域包。"
+        "title": "選你要去的地方。",
+        "body": "挑一個國家 — 或選整段旅程的區域包。"
       },
       {
-        "title": "掃 QR Code。完成。",
-        "body": "Roam 一分鐘內安裝成第二門號。不寄實體卡、不用拔來拔去。"
+        "title": "掃 QR Code。",
+        "body": "Roam 一分鐘內裝成第二門號。不寄實體卡，原本的號碼不動。"
       },
       {
-        "title": "落地就上線。",
-        "body": "一連上當地網路就自動啟用。要加值隨時開 App 加。"
+        "title": "落地，自動上線。",
+        "body": "一連上當地網路就啟用。要加值，隨時開 App 加。"
       }
     ]
   },
   "walk": {
     "eyebrow": "永遠在線",
-    "title": "訊號斷了？Roam 接上。",
-    "subtitle": "一旦網路變不穩，Roam 會自動切到另一個。你繼續走，其他的我們處理。"
+    "title": "訊號跑了，Roam 替你接住。",
+    "subtitle": "一條網路靜下來，Roam 自動跳到另一條。你繼續往前走，剩下的我們接。"
   },
   "pov": {
-    "eyebrow": "從你的角度看"
+    "eyebrow": "從你的視角"
   },
   "footer": {
-    "headlineLead": "走得更遠。",
-    "headlineAccent": "彼此更近。",
-    "subtitle": "一張安靜把事做好的 eSIM — 讓你旅途中抬頭看世界，而不是看訊號格。",
+    "headlineLead": "讓旅行更自由。",
+    "headlineAccent": "Wherever you go.",
+    "subtitle": "Roam 漫旅 — 一張安靜把事做好的 eSIM。讓你在陌生的城市，做熟悉的旅人。",
     "ctaPrimary": "安裝 Roam",
     "ctaSecondary": "聯繫客服",
     "columns": {
@@ -68,7 +68,7 @@
         "links": ["相容裝置", "安裝指南", "加值與退款", "資安", "隱私"]
       }
     },
-    "copyright": "© 2026 Roam Networks。eSIM 為 GSMA 的註冊商標。",
+    "copyright": "© 2026 Roam Networks · 漫旅 wherever you go",
     "legal": {
       "terms": "服務條款",
       "privacy": "隱私",

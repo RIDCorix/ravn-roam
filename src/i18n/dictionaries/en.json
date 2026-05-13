@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Roam — Quiet connectivity, anywhere you land.",
-    "description": "One eSIM, 200+ destinations. Pay-as-you-go data with no roaming fees."
+    "title": "Roam — Make travel freer, wherever you go.",
+    "description": "A quiet eSIM that catches the signal so you don’t have to. One line, 200+ destinations. Wherever you go."
   },
   "nav": {
     "coverage": "Coverage",
@@ -13,45 +13,45 @@
   },
   "hero": {
     "eyebrowBadge": "New",
-    "eyebrowText": "Pay-as-you-go data — no roaming fees, ever.",
-    "headlineLead": "Connected,",
-    "headlineAccent": "before you land.",
-    "subtitle": "One eSIM, 200+ destinations. Tap a node for live coverage.",
+    "eyebrowText": "Make travel freer · wherever you go.",
+    "headlineLead": "Land in a new city,",
+    "headlineAccent": "travel like you know it.",
+    "subtitle": "One eSIM, 200+ destinations. Roam is the quiet companion for the unfamiliar — tap a node for live coverage.",
     "ctaPrimary": "Install on this phone",
     "ctaSecondary": "See full coverage →",
     "deviceFootnote": "Works on iPhone XS and newer · Google Pixel 3 and newer."
   },
   "howItWorks": {
     "eyebrow": "How it works",
-    "title": "A SIM card without the card. Or the wait.",
-    "subtitle": "Three steps from “I just landed” to first message home. We talk to the local operator on your behalf, route over the strongest signal, and stay out of your way.",
+    "title": "Three steps, gate to ground.",
+    "subtitle": "Roam talks to the local carrier on your behalf, picks the strongest signal, and stays out of your way. You just walk.",
     "steps": [
       {
-        "title": "Pick a destination.",
-        "body": "Choose the country you’re flying to — or pick a regional bundle for a whole trip."
+        "title": "Pick where you’re going.",
+        "body": "Choose a country — or pick a regional bundle for the whole trip."
       },
       {
-        "title": "Scan a QR. Done.",
-        "body": "Roam installs onto your phone as a second line in under a minute. Nothing to ship, nothing to plug in."
+        "title": "Scan a QR.",
+        "body": "Roam installs as a second line in under a minute. Your number stays untouched."
       },
       {
-        "title": "Land, and it’s live.",
-        "body": "The line wakes the moment you connect to a local network. Top up from the app whenever."
+        "title": "Land, and you’re on.",
+        "body": "It wakes the moment you connect to a local network. Top up in the app whenever."
       }
     ]
   },
   "walk": {
     "eyebrow": "Always on",
-    "title": "When the signal drops, Roam catches it.",
-    "subtitle": "If a network goes quiet, Roam silently routes you to another. You keep walking; we handle the rest."
+    "title": "Signal slips, Roam catches it.",
+    "subtitle": "When a network goes quiet, Roam hops to another. You keep walking; we hold the line."
   },
   "pov": {
     "eyebrow": "From your view"
   },
   "footer": {
-    "headlineLead": "Travel further.",
-    "headlineAccent": "Stay close.",
-    "subtitle": "An eSIM that quietly does its job — so you can spend the trip looking up, not at your bars.",
+    "headlineLead": "Make travel freer.",
+    "headlineAccent": "Wherever you go.",
+    "subtitle": "Roam — a quiet eSIM that just works, so an unfamiliar city starts to feel like one you know.",
     "ctaPrimary": "Install Roam",
     "ctaSecondary": "Talk to support",
     "columns": {
@@ -68,7 +68,7 @@
         "links": ["Compatibility", "Setup guide", "Top-up & refunds", "Security", "Privacy"]
       }
     },
-    "copyright": "© 2026 Roam Networks. eSIM is a trademark of GSMA.",
+    "copyright": "© 2026 Roam Networks · wherever you go",
     "legal": {
       "terms": "Terms",
       "privacy": "Privacy",
