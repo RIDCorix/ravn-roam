@@ -11,11 +11,20 @@ export function RoamNav({
   dict: Dictionary;
   currentLocale: Locale;
 }) {
-  const links: Array<{ key: keyof Dictionary["nav"]; label: string }> = [
-    { key: "coverage", label: dict.nav.coverage },
-    { key: "plans", label: dict.nav.plans },
-    { key: "howItWorks", label: dict.nav.howItWorks },
-    { key: "help", label: dict.nav.help },
+  const links: Array<{
+    key: keyof Dictionary["nav"];
+    label: string;
+    href: string;
+  }> = [
+    { key: "coverage", label: dict.nav.coverage, href: `/${currentLocale}#coverage` },
+    { key: "plans", label: dict.nav.plans, href: `/${currentLocale}#plans` },
+    {
+      key: "howItWorks",
+      label: dict.nav.howItWorks,
+      href: `/${currentLocale}#how-it-works`,
+    },
+    { key: "reviews", label: dict.nav.reviews, href: `/${currentLocale}/reviews` },
+    { key: "help", label: dict.nav.help, href: `/${currentLocale}/faq` },
   ];
 
   return (
@@ -58,7 +67,7 @@ export function RoamNav({
           }}
         >
           {links.map((l) => (
-            <NavLink key={l.key} href="#">
+            <NavLink key={l.key} href={l.href}>
               {l.label}
             </NavLink>
           ))}

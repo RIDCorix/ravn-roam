@@ -1,9 +1,16 @@
 import { Button } from "./button";
 import { Icon } from "./icons";
 import { FooterLink } from "./footer-link";
-import type { Dictionary } from "@/app/[lang]/dictionaries";
+import type { Dictionary, Locale } from "@/app/[lang]/dictionaries";
+import { localized } from "@/lib/href";
 
-export function Footer({ dict }: { dict: Dictionary["footer"] }) {
+export function Footer({
+  dict,
+  currentLocale,
+}: {
+  dict: Dictionary["footer"];
+  currentLocale: Locale;
+}) {
   const columns = [
     dict.columns.product,
     dict.columns.company,
@@ -160,9 +167,13 @@ export function Footer({ dict }: { dict: Dictionary["footer"] }) {
                   gap: 12,
                 }}
               >
-                {col.links.map((l) => (
-                  <FooterLink key={l} href="#" variant="column">
-                    {l}
+                {col.items.map((item) => (
+                  <FooterLink
+                    key={item.label}
+                    href={localized(item.href, currentLocale)}
+                    variant="column"
+                  >
+                    {item.label}
                   </FooterLink>
                 ))}
               </div>
@@ -203,7 +214,10 @@ export function Footer({ dict }: { dict: Dictionary["footer"] }) {
             <a href="#" style={{ color: "inherit", textDecoration: "none" }}>
               {dict.legal.terms}
             </a>
-            <a href="#" style={{ color: "inherit", textDecoration: "none" }}>
+            <a
+              href={`/${currentLocale}/privacy`}
+              style={{ color: "inherit", textDecoration: "none" }}
+            >
               {dict.legal.privacy}
             </a>
             <a href="#" style={{ color: "inherit", textDecoration: "none" }}>

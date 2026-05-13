@@ -5,7 +5,11 @@ const stepIcons: IconName[] = ["map", "qr", "plane"];
 
 export function HowItWorks({ dict }: { dict: Dictionary["howItWorks"] }) {
   return (
-    <section className="r-section" style={{ padding: "64px 24px 80px" }}>
+    <section
+      id="how-it-works"
+      className="r-section"
+      style={{ padding: "64px 24px 80px", scrollMarginTop: 80 }}
+    >
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <div
           className="r-section-head"
@@ -84,8 +88,30 @@ export function HowItWorks({ dict }: { dict: Dictionary["howItWorks"] }) {
                 }}
               >
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: 14 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 14,
+                  }}
                 >
+                  <span
+                    style={{
+                      position: "relative",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 56,
+                      height: 56,
+                      borderRadius: 16,
+                      background: "var(--accent-softer)",
+                      color: "var(--accent)",
+                      boxShadow:
+                        "inset 0 0 0 1px rgba(15, 184, 180, 0.18)",
+                    }}
+                  >
+                    <Icon name={stepIcons[idx] ?? "map"} size={24} />
+                  </span>
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
@@ -95,20 +121,6 @@ export function HowItWorks({ dict }: { dict: Dictionary["howItWorks"] }) {
                     }}
                   >
                     {number}
-                  </span>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 32,
-                      height: 32,
-                      borderRadius: 10,
-                      background: "var(--accent-softer)",
-                      color: "var(--accent)",
-                    }}
-                  >
-                    <Icon name={stepIcons[idx] ?? "map"} size={16} />
                   </span>
                 </div>
 

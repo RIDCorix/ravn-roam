@@ -8,6 +8,7 @@
     "plans": "Plans",
     "howItWorks": "How it works",
     "help": "Help",
+    "reviews": "Reviews",
     "signIn": "Sign in",
     "cta": "Get an eSIM"
   },
@@ -57,15 +58,33 @@
     "columns": {
       "product": {
         "title": "Product",
-        "links": ["Coverage map", "Plans", "For teams", "For travelers", "Status"]
+        "items": [
+          { "label": "Coverage map", "href": "/#coverage" },
+          { "label": "Plans", "href": "/#plans" },
+          { "label": "Reviews", "href": "/reviews" },
+          { "label": "For travelers", "href": "/#" },
+          { "label": "Status", "href": "/#" }
+        ]
       },
       "company": {
         "title": "Company",
-        "links": ["About", "Press", "Careers", "Blog", "Contact"]
+        "items": [
+          { "label": "About", "href": "/#" },
+          { "label": "Press", "href": "/#" },
+          { "label": "Careers", "href": "/#" },
+          { "label": "Blog", "href": "/#" },
+          { "label": "Contact", "href": "/#" }
+        ]
       },
       "help": {
         "title": "Help",
-        "links": ["Compatibility", "Setup guide", "Top-up & refunds", "Security", "Privacy"]
+        "items": [
+          { "label": "FAQ", "href": "/faq" },
+          { "label": "Compatibility", "href": "/faq#compatibility" },
+          { "label": "Setup guide", "href": "/faq#install" },
+          { "label": "Privacy", "href": "/privacy" },
+          { "label": "Security", "href": "/privacy" }
+        ]
       }
     },
     "copyright": "© 2026 Roam Networks · wherever you go",
@@ -82,6 +101,163 @@
     "speeds": "Speeds",
     "data": "Data",
     "carriersSuffix": "carriers"
+  },
+  "page": {
+    "back": "← Back to home",
+    "lastUpdated": "Last updated"
+  },
+  "privacy": {
+    "eyebrow": "Privacy",
+    "title": "What we hold, and what we don’t.",
+    "subtitle": "Roam runs on a near-zero data diet. Everything below is the short version. If you want the long version, ask us — we’ll send it.",
+    "lastUpdatedAt": "2026-05-13",
+    "sections": [
+      {
+        "title": "What we collect",
+        "body": "An email for your account, a device identifier to bind the eSIM profile, and anonymised data-usage counters so we can bill you correctly."
+      },
+      {
+        "title": "What we don’t",
+        "body": "We don’t inspect your traffic. We don’t read your messages or listen to your calls. We don’t sell anything to advertisers, ever."
+      },
+      {
+        "title": "Where it lives",
+        "body": "Encrypted at rest in EU and APAC regions. Access is logged. Backups expire after 30 days. No data ever leaves to a third country without your explicit consent."
+      },
+      {
+        "title": "Your rights",
+        "body": "Export everything we hold about you, or delete it, from Settings → Privacy in the Roam app. We respond to requests within 7 days."
+      },
+      {
+        "title": "Contact",
+        "body": "Questions, edge cases, regulator requests: privacy@roam.example. A human reads every email."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Quick answers.",
+    "subtitle": "If your question isn’t here, chat us from the Roam app — a human picks up within minutes.",
+    "groups": [
+      {
+        "title": "Compatibility",
+        "anchor": "compatibility",
+        "items": [
+          {
+            "q": "Does my phone support eSIM?",
+            "a": "Any iPhone XS or newer, Google Pixel 3 or newer, and most Samsung flagships from 2020 onward. Tap “See compatibility” in checkout to confirm yours."
+          },
+          {
+            "q": "Will Roam replace my home SIM?",
+            "a": "No. Roam installs as a second line. Your home number stays active for calls, texts, and 2FA."
+          }
+        ]
+      },
+      {
+        "title": "Install",
+        "anchor": "install",
+        "items": [
+          {
+            "q": "How long does setup take?",
+            "a": "About a minute. Scan a QR, accept the cellular plan, done."
+          },
+          {
+            "q": "Can I install before I fly?",
+            "a": "Yes — that’s the recommended path. Install at home over wifi, switch the data line on once you land."
+          },
+          {
+            "q": "I switched destinations mid-trip. What now?",
+            "a": "Open the app, pick the new country, the eSIM updates in place. No reinstall."
+          }
+        ]
+      },
+      {
+        "title": "Data and plans",
+        "anchor": "plans",
+        "items": [
+          {
+            "q": "What if I run out of data?",
+            "a": "You can top up from the app in two taps. The new pack stacks on top of whatever’s left."
+          },
+          {
+            "q": "Does data roll over?",
+            "a": "Yes. Unused data rolls over for 60 days inside the same region."
+          },
+          {
+            "q": "Can I tether?",
+            "a": "Yes on Trip and Region plans. Day plans are single-device."
+          }
+        ]
+      },
+      {
+        "title": "Privacy and billing",
+        "anchor": "privacy",
+        "items": [
+          {
+            "q": "What does Roam see about my usage?",
+            "a": "Aggregate bytes per session, nothing about destinations or content. See the Privacy page for the full list."
+          },
+          {
+            "q": "How do refunds work?",
+            "a": "If we can’t deliver service in your destination, we refund unused data. Standard request from Settings → Billing."
+          }
+        ]
+      }
+    ]
+  },
+  "reviews": {
+    "eyebrow": "Reviews",
+    "title": "Notes from people on the move.",
+    "subtitle": "Sample stories from early Roam travelers. Real reviews land at launch — these are the kinds of trips Roam was built for.",
+    "items": [
+      {
+        "from": "Singapore",
+        "to": "Japan",
+        "name": "Lin Wei",
+        "role": "Designer · 14 days",
+        "quote": "Landed at Haneda at midnight, had data before I cleared customs. Map worked, taxi app worked, family chat worked. That was the whole pitch."
+      },
+      {
+        "from": "Taiwan",
+        "to": "United Kingdom",
+        "name": "Mei Chen",
+        "role": "Photographer · 21 days",
+        "quote": "Switched between London, Edinburgh, and Dublin without touching anything. No SIM swaps, no airport queues, no panic at 2am."
+      },
+      {
+        "from": "Japan",
+        "to": "United States",
+        "name": "Hiro Tanaka",
+        "role": "Engineer · road trip",
+        "quote": "Drove from LA to Seattle. Signal followed me up the coast. Tethered the laptop in two state parks where I’d have given up before."
+      },
+      {
+        "from": "Hong Kong",
+        "to": "Italy",
+        "name": "Anya Park",
+        "role": "Solo trip",
+        "quote": "Got off the train in Florence, opened the maps app, walked to my Airbnb. No mid-trip side quests to find a SIM kiosk."
+      },
+      {
+        "from": "United States",
+        "to": "Thailand",
+        "name": "Marcus Reid",
+        "role": "Backpacker · 35 days",
+        "quote": "Cheaper than the hostel-recommended local SIM, and I kept my US number for 2FA the whole way through."
+      },
+      {
+        "from": "Korea",
+        "to": "Australia",
+        "name": "Jisoo Han",
+        "role": "Family of four",
+        "quote": "Two parents, two kids, two eSIMs. Plans shared into a Family bundle in the app. Sydney to Cairns, never a dead pocket."
+      }
+    ],
+    "controls": {
+      "prev": "Previous review",
+      "next": "Next review",
+      "goTo": "Go to review"
+    }
   },
   "language": {
     "label": "Language",
