@@ -1,0 +1,8 @@
+# Claude Code / agent harness local state
+.claude/
+
+# OS noise
+.DS_Store
+
+# Node (when packages are added)
+node_modules/
