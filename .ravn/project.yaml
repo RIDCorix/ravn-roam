@@ -19,11 +19,20 @@ linear:
 infra:
   vercel:
     scope: "ridcorixs-projects"    # firewall-cleared, no `transbiz` substring (ROA-13)
-    project_name: "roam-web"
-    project_id: "prj_0dreWsHEmlttOlBuxo19zZhZ8P96"
     org_id: "team_vy0ucdoFE2lw5ozI3SYTKCZ7"
-    git_connected: true            # auto-preview deploys on every branch/PR push
     production_branch: "main"
+    git_connected: true            # auto-preview deploys on every branch/PR push
+    # Two projects, one repo, different root folders (ROA-92).
+    roam_web:
+      project_name: "roam-web"
+      project_id: "prj_0dreWsHEmlttOlBuxo19zZhZ8P96"
+      root_directory: "apps/landing"
+      ignored_build_step: "git diff HEAD^ HEAD --quiet apps/landing packages/shared"
+    roam_system:
+      project_name: "roam-system"
+      project_id: null             # filled after Ray creates the project in Vercel dashboard (ROA-92 manual step 3)
+      root_directory: "apps/web"
+      ignored_build_step: "git diff HEAD^ HEAD --quiet apps/web packages/shared"
   supabase:
     project: "ravn-shared"         # per agent-rules/06-shared-supabase.md
     schema: "roam_poc"
