@@ -9,7 +9,7 @@ This repo is **main-only** (per `CLAUDE.md` — rule 8's
 `ravn/integration` overlay does NOT apply here). Production deploy
 target = `main`; previews = every other branch.
 
-Railway is deferred — see [§4](#4--railway-deferred).
+Railway is active for the backend API — see [§4](#4--railway--backend-api).
 
 References:
 
@@ -130,6 +130,10 @@ role, **not** a separate Supabase project. See
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server     | Yes      | `supabase.shared.anon_key`                                  |
 | `DATABASE_URL` (apps)           | `apps/*` server only | When DB  | `supabase.shared.poc_roles.roam_poc.connection_url`         |
 | `DATABASE_URL` (api)            | `services/api`       | When DB  | `supabase.shared.poc_roles.roam_poc_backend.connection_url` |
+| `FASTMOVE_BASE_URL`             | `services/api`       | Yes      | `fastmove.api.base_url`                                     |
+| `FASTMOVE_MERCHANT_ID`          | `services/api`       | Yes      | `fastmove.api.merchant_id`                                  |
+| `FASTMOVE_MERCHANT_KEY`         | `services/api`       | Yes      | `fastmove.api.merchant_key`                                 |
+| `GIT_SHA`                       | `services/api`       | No       | Railway `${{RAILWAY_GIT_COMMIT_SHA}}` (informational)       |
 | `NEXT_PUBLIC_SITE_URL`          | Browser + server     | Yes      | (n/a — env-specific literal)                                |
 
 A local template lives at `.env.example`. Copy to `.env.local` and fill
@@ -140,13 +144,89 @@ values; `.env.local` is gitignored.
 
 ---
 
-## 4. Railway — deferred
+## 4. Railway — backend API
 
-Skipped for now (ROA-13, 2026-05-13). The marketing site does not need
-Railway; Vercel + shared Supabase cover hosting, previews, and the
-database. When a backend service or worker appears that needs Railway,
-revisit this section to add the deploy artifact (Dockerfile or
-`railway.json`), env wiring, and any per-PoC Postgres role rotation.
+`services/api` (Hono on Node 22 + Drizzle) ships to a personal-scope
+Railway project `roam-api`. Activated 2026-05-13 (ROA-93) once
+`services/api` had a real Hono service (ROA-91) and the
+`roam_poc_backend` DB role existed (ROA-94).
+
+Build/start are driven by [`railway.json`](../railway.json) at the repo
+root — Nixpacks reads it and runs the monorepo-style install + filtered
+build, so the dashboard "Build Command" / "Start Command" can stay
+blank.
+
+**Verified in code (already in this repo):**
+
+- `railway.json` at repo root: Nixpacks builder, build =
+  `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @roam/api build`,
+  start = `node services/api/dist/index.js`, healthcheck `/healthz`.
+- `package.json` (root): `packageManager: pnpm@11.0.9` so corepack pins
+  the right pnpm — lockfile is v9, Nixpacks default pnpm is too old.
+- `/healthz` returns `{ ok: true, sha }` (process-level liveness).
+- `/readyz` runs `select 1` through Drizzle and returns 503 if DB is
+  unreachable — wire this to Railway readiness if you want traffic
+  gated on DB, otherwise leave `/healthz` as the dashboard healthcheck.
+
+**Dashboard steps (human, one-time — `manual-required`):**
+
+Personal scope only. `agent-rules/07-company-firewall.md` — reject any
+workspace whose name contains `transbiz`.
+
+1. Railway dashboard → _New Project_ → name = `roam-api`. Confirm the
+   target workspace is the **personal** one (no `transbiz` in slug).
+2. _Source_ → GitHub repo `RIDCorix/ravn-roam`. Leave **Root Directory
+   empty** (build needs the monorepo root for `pnpm install`).
+3. _Settings → Build_ → set **Watch Paths** = `services/api/**` and
+   `packages/shared/**` so unrelated PR pushes don't redeploy.
+4. _Settings → Build_ / _Deploy_ → leave Build Command and Start
+   Command blank. `railway.json` drives both. Confirm Nixpacks is the
+   detected builder.
+5. _Variables_ → add the entries listed in [§3 — Env vars](#3--env-vars)
+   from the hub via `secrets-get.sh` (see
+   [§5](#5--credentials--hub-secrets-flow)). Do NOT paste values from
+   elsewhere. `PORT` is auto-injected; map `GIT_SHA` to
+   `${{RAILWAY_GIT_COMMIT_SHA}}`.
+6. _Settings → Networking_ → generate the auto-assigned public domain.
+   Record it as `infra.railway.roam_api.public_url` in
+   `.ravn/project.yaml`.
+7. _Settings → Healthcheck_ → confirm path = `/healthz`, timeout 30s,
+   restart on failure (max 3 retries). Already declared in
+   `railway.json` but the dashboard fields should match.
+8. Trigger a manual deploy. Verify
+   `https://<railway-domain>/healthz` returns `{ ok: true, sha: <...> }`,
+   then `/readyz` returns `{ ok: true, db: "ok" }` once `DATABASE_URL`
+   is set.
+
+**Env vars (Railway service):**
+
+| Variable                | Source                                                           |
+| ----------------------- | ---------------------------------------------------------------- |
+| `DATABASE_URL`          | hub: `supabase.shared.poc_roles.roam_poc_backend.connection_url` |
+| `FASTMOVE_BASE_URL`     | hub: `fastmove.api.base_url`                                     |
+| `FASTMOVE_MERCHANT_ID`  | hub: `fastmove.api.merchant_id`                                  |
+| `FASTMOVE_MERCHANT_KEY` | hub: `fastmove.api.merchant_key`                                 |
+| `FASTMOVE_DEPT_ID`      | hub: `fastmove.api.dept_id` (if Fastmove dispenses one)          |
+| `PORT`                  | auto-injected by Railway — do not set manually                   |
+| `GIT_SHA`               | `${{RAILWAY_GIT_COMMIT_SHA}}` (Railway reference variable)       |
+
+`fastmove.api.*` and the optional `railway.roam_api.project_token` rows
+must be added to the hub TEC-22 master secrets issue per
+`agent-rules/10-secrets-via-linear.md`. Until they're there,
+`secrets-get.sh` returns empty and the service boots but Fastmove
+calls fail.
+
+**Acceptance gates (when re-running this section):**
+
+- [ ] Railway service deploy is green; build picks up the
+      `services/api/**` + `packages/shared/**` watch filter.
+- [ ] `GET /healthz` → 200 `{ ok: true, sha }` on the public domain.
+- [ ] `GET /readyz` → 200 `{ ok: true, db: "ok" }` (proves
+      `DATABASE_URL` wiring).
+- [ ] Pushing an unrelated change (e.g. `apps/landing/**`) does NOT
+      trigger a redeploy.
+- [ ] `infra.railway.roam_api.public_url` is recorded in
+      `.ravn/project.yaml`.
 
 ---
 
