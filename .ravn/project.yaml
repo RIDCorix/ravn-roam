@@ -34,7 +34,7 @@ infra:
       ignored_build_step: "git diff --quiet HEAD^ HEAD -- apps/landing packages/shared pnpm-lock.yaml pnpm-workspace.yaml package.json"
     roam_system:
       project_name: "roam-system"
-      project_id: null             # filled by Ray once the dashboard create step lands (ROA-92)
+      project_id: "prj_MHWHUH52ZcMQDTErEruVdqlt6HxW"
       root: "apps/web"
       package: "@roam/web"
       git_connected: true
