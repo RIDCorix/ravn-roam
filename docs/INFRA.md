@@ -263,10 +263,18 @@ Railway project `roam-api`. Activated 2026-05-13 (ROA-93) once
 `services/api` had a real Hono service (ROA-91) and the
 `roam_poc_backend` DB role existed (ROA-94).
 
-Build/start are driven by [`railway.json`](../railway.json) at the repo
-root — Nixpacks reads it and runs the monorepo-style install + filtered
-build, so the dashboard "Build Command" / "Start Command" can stay
-blank.
+Build is driven by [`railway.json`](../railway.json)'s `build.buildCommand`,
+which Nixpacks honors — that part Just Works.
+
+**Start command is NOT.** Empirically (ROA-95 first deploy attempt),
+Railway's Nixpacks ignored `railway.json`'s `deploy.startCommand` and
+fell back to the root `package.json`'s `start` script (= `pnpm --filter
+@roam/landing start`), which booted Next.js landing on the API port and
+made `/healthz` 404. The fix: explicitly set both Build and Start
+Command at the **service** level (dashboard or
+`serviceInstanceUpdate`) so they win over package.json fallbacks. The
+`railway.json` is kept as a pinned source of truth for the values, but
+the service-level fields are what the platform actually executes.
 
 **Verified in code (already in this repo):**
 
@@ -291,9 +299,12 @@ workspace whose name contains `transbiz`.
    empty** (build needs the monorepo root for `pnpm install`).
 3. _Settings → Build_ → set **Watch Paths** = `services/api/**` and
    `packages/shared/**` so unrelated PR pushes don't redeploy.
-4. _Settings → Build_ / _Deploy_ → leave Build Command and Start
-   Command blank. `railway.json` drives both. Confirm Nixpacks is the
-   detected builder.
+4. _Settings → Build_ / _Deploy_ → set **Build Command** =
+   `corepack enable && pnpm install --frozen-lockfile && pnpm --filter @roam/api build`
+   and **Start Command** = `node services/api/dist/index.js`. **Don't**
+   leave them blank — see the note above; Nixpacks ignores
+   `railway.json`'s `startCommand` and runs the root `package.json`
+   `start` script instead, which boots landing instead of the API.
 5. _Variables_ → add the entries listed in [§3 — Env vars](#3--env-vars)
    from the hub via `secrets-get.sh` (see
    [§5](#5--credentials--hub-secrets-flow)). Do NOT paste values from
