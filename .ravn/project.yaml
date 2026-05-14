@@ -27,5 +27,10 @@ infra:
   supabase:
     project: "ravn-shared"         # per agent-rules/06-shared-supabase.md
     schema: "roam_poc"
-    role: "roam_poc_user"          # password row at supabase.shared.poc_roles.roam_poc.password in hub TEC-22
-    # Schema + role still need to be provisioned against the shared DB; see docs/INFRA.md §2.
+    roles:
+      - name: "roam_poc_user"          # apps/web SSR + apps/landing — read/write under RLS
+        secret_root: "supabase.shared.poc_roles.roam_poc.*"
+      - name: "roam_poc_backend"       # services/api + drizzle-kit migrations (ROA-94)
+        secret_root: "supabase.shared.poc_roles.roam_poc_backend.*"
+    # Schema + roles provisioned against the shared DB by Ray (manual psql per agent-rules/06).
+    # See docs/INFRA.md §2 for the SQL.
