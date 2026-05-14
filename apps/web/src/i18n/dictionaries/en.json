@@ -5,7 +5,182 @@
   },
   "admin": {
     "heading": "Admin",
-    "tagline": "Operator console placeholder."
+    "tagline": "Operator console placeholder.",
+    "nav": {
+      "products": "Products",
+      "supplier_plans": "Supplier plans",
+      "suppliers": "Suppliers"
+    },
+    "common": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "create": "Create",
+      "back": "Back",
+      "loading": "Loading…",
+      "no_results": "No results.",
+      "search": "Search",
+      "filter": "Filter",
+      "all": "All",
+      "yes": "Yes",
+      "no": "No",
+      "locked_published": "Locked — published products cannot edit this field.",
+      "locked_archived": "Locked — unarchive to edit.",
+      "errors": {
+        "generic": "Something went wrong. Try again.",
+        "network": "Network error — check your connection."
+      }
+    },
+    "products": {
+      "title": "Products",
+      "create": "Create product",
+      "create_from_plan": "Create from supplier plan",
+      "filters": {
+        "publication_state": "Publication state",
+        "category": "Category",
+        "search_placeholder": "Search by slug or name…"
+      },
+      "columns": {
+        "name": "Name",
+        "slug": "Slug",
+        "category": "Category",
+        "state": "State",
+        "operational_state": "Op state",
+        "destinations": "Destinations",
+        "data": "Data",
+        "validity": "Validity",
+        "retail": "Retail",
+        "updated_at": "Updated"
+      },
+      "states": {
+        "draft": "Draft",
+        "in_review": "In review",
+        "published": "Published",
+        "archived": "Archived"
+      },
+      "operational_states": {
+        "ok": "OK",
+        "sold_out": "Sold out",
+        "suspended": "Suspended",
+        "out_of_window": "Out of window"
+      },
+      "categories": {
+        "single_country": "Single country",
+        "regional": "Regional",
+        "global": "Global",
+        "addon_topup": "Add-on / top-up"
+      },
+      "form": {
+        "slug": "Slug",
+        "slug_hint": "Lowercase letters, digits, hyphens. Used as the URL key.",
+        "category": "Category",
+        "display_name": "Display name",
+        "description": "Description",
+        "marketing_destinations": "Marketing destinations",
+        "marketing_destinations_hint": "ISO 3166-1 alpha-2 codes, comma-separated.",
+        "data_amount_mb": "Data (MB)",
+        "data_amount_mb_hint": "-1 for unlimited.",
+        "validity_days": "Validity (days)",
+        "activation_policy_display": "Activation policy (display)",
+        "sales_window_start": "Sales window start",
+        "sales_window_end": "Sales window end",
+        "sales_region_allow": "Allow regions",
+        "sales_region_deny": "Deny regions",
+        "purchase_cap_per_user": "Cap per user",
+        "purchase_cap_total": "Cap total",
+        "tags": "Tags"
+      },
+      "mappings": {
+        "title": "Supplier mappings",
+        "add": "Add fallback",
+        "primary": "Primary",
+        "fallback": "Fallback #{n}",
+        "no_mappings": "No mappings yet. Add a primary plan to start.",
+        "remove_confirm": "Remove this mapping?",
+        "reorder": "Reorder",
+        "save_order": "Save order",
+        "cancel_reorder": "Cancel reorder",
+        "violations_header": "Cannot use this plan as a fallback:",
+        "violations": {
+          "data_amount_mb_too_low": "Fallback plan offers too little data.",
+          "validity_days_too_short": "Fallback plan does not last long enough.",
+          "destinations_missing": "Fallback plan does not cover all marketing destinations."
+        },
+        "picker_title": "Pick a supplier plan",
+        "picker_filter_country": "Country (ISO-2)",
+        "picker_filter_search": "Search name / external id"
+      },
+      "pricing": {
+        "title": "Pricing",
+        "currency": "Currency",
+        "retail": "Retail price",
+        "msrp": "MSRP (strike-through)",
+        "markup_mode": "Markup mode",
+        "markup_value": "Markup value",
+        "fx_policy": "FX policy",
+        "cost_snapshot": "Cost snapshot",
+        "cost_snapshot_empty": "Wire a primary mapping to lock in a cost snapshot.",
+        "modes": {
+          "fixed_amount": "Fixed amount",
+          "percentage": "Percentage",
+          "target_margin": "Target margin (%)",
+          "manual": "Manual"
+        },
+        "fx_policies": {
+          "snapshot_at_publish": "Snapshot at publish",
+          "daily_refresh": "Daily refresh",
+          "manual": "Manual"
+        },
+        "computed_retail": "Computed retail",
+        "computed_margin": "Effective margin"
+      },
+      "publication": {
+        "title": "Publication",
+        "current_state": "Current state",
+        "actions": {
+          "submit": "Submit for review",
+          "approve": "Approve",
+          "reject": "Reject",
+          "publish": "Publish (skip review)",
+          "archive": "Archive",
+          "unarchive": "Unarchive"
+        },
+        "preview": "Preview"
+      }
+    },
+    "supplier_plans": {
+      "title": "Supplier plans",
+      "filters": {
+        "country": "Country (ISO-2)",
+        "search_placeholder": "Search name or external id…",
+        "available_only": "Available only"
+      },
+      "columns": {
+        "supplier": "Supplier",
+        "external_id": "External ID",
+        "name": "Name",
+        "destinations": "Destinations",
+        "data": "Data",
+        "validity": "Validity",
+        "activation_policy": "Activation",
+        "delivery_model": "Delivery",
+        "cost": "Cost",
+        "available": "Available"
+      },
+      "row_action_create_product": "Use as primary →"
+    },
+    "preview": {
+      "title": "Storefront preview",
+      "intro": "Approximation of how the product appears on the storefront.",
+      "destinations": "Destinations",
+      "data": "Data",
+      "validity": "Validity",
+      "activation_policy": "Activation",
+      "retail": "Price",
+      "tags": "Tags",
+      "back_to_edit": "Back to edit"
+    }
   },
   "storefront": {
     "heading": "Storefront",

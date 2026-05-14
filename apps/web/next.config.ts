@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@roam/shared"],
+  transpilePackages: ["@roam/shared", "@roam/catalog"],
 };
 
 export default nextConfig;

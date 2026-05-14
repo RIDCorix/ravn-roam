@@ -5,10 +5,31 @@
   --fg: #111111;
   --fg-secondary: #666666;
   --accent: #0fb8b4;
+  --surface: #ffffff;
+  --surface-muted: #f2f2ef;
+  --border: #e6e6e0;
+  --border-strong: #d0d0c7;
+  --danger: #c43c2e;
+  --success: #2e8b57;
+  --warning: #b8860b;
 }
 
 html,
 body {
   background: var(--bg);
   color: var(--fg);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
 }

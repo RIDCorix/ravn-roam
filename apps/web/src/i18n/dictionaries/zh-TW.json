@@ -5,7 +5,182 @@
   },
   "admin": {
     "heading": "後台",
-    "tagline": "營運後台 placeholder。"
+    "tagline": "營運後台 placeholder。",
+    "nav": {
+      "products": "商品",
+      "supplier_plans": "供應商方案",
+      "suppliers": "供應商"
+    },
+    "common": {
+      "save": "儲存",
+      "cancel": "取消",
+      "delete": "刪除",
+      "edit": "編輯",
+      "create": "建立",
+      "back": "返回",
+      "loading": "讀取中…",
+      "no_results": "沒有結果。",
+      "search": "搜尋",
+      "filter": "篩選",
+      "all": "全部",
+      "yes": "是",
+      "no": "否",
+      "locked_published": "已鎖定 — 已發布商品無法編輯此欄位。",
+      "locked_archived": "已鎖定 — 請先取消封存。",
+      "errors": {
+        "generic": "發生錯誤,請再試一次。",
+        "network": "網路錯誤 — 請檢查連線。"
+      }
+    },
+    "products": {
+      "title": "商品",
+      "create": "建立商品",
+      "create_from_plan": "從供應商方案建立",
+      "filters": {
+        "publication_state": "發布狀態",
+        "category": "類別",
+        "search_placeholder": "以 slug 或名稱搜尋…"
+      },
+      "columns": {
+        "name": "名稱",
+        "slug": "Slug",
+        "category": "類別",
+        "state": "狀態",
+        "operational_state": "營運狀態",
+        "destinations": "目的地",
+        "data": "流量",
+        "validity": "有效期",
+        "retail": "售價",
+        "updated_at": "最近更新"
+      },
+      "states": {
+        "draft": "草稿",
+        "in_review": "審核中",
+        "published": "已發布",
+        "archived": "已封存"
+      },
+      "operational_states": {
+        "ok": "正常",
+        "sold_out": "售完",
+        "suspended": "停售",
+        "out_of_window": "不在販售期"
+      },
+      "categories": {
+        "single_country": "單國",
+        "regional": "區域",
+        "global": "全球",
+        "addon_topup": "加購 / 加值"
+      },
+      "form": {
+        "slug": "Slug",
+        "slug_hint": "小寫英數與連字號,用於網址。",
+        "category": "類別",
+        "display_name": "顯示名稱",
+        "description": "說明",
+        "marketing_destinations": "行銷目的地",
+        "marketing_destinations_hint": "ISO 3166-1 alpha-2,以逗號分隔。",
+        "data_amount_mb": "流量 (MB)",
+        "data_amount_mb_hint": "-1 表示不限。",
+        "validity_days": "有效期(天)",
+        "activation_policy_display": "啟用方式(顯示)",
+        "sales_window_start": "上架時間",
+        "sales_window_end": "下架時間",
+        "sales_region_allow": "可購地區",
+        "sales_region_deny": "禁售地區",
+        "purchase_cap_per_user": "每客上限",
+        "purchase_cap_total": "全期上限",
+        "tags": "標籤"
+      },
+      "mappings": {
+        "title": "供應商對應",
+        "add": "加入備援",
+        "primary": "主方案",
+        "fallback": "備援 #{n}",
+        "no_mappings": "尚未建立對應。請先加入主方案。",
+        "remove_confirm": "確定移除這條對應?",
+        "reorder": "重新排序",
+        "save_order": "儲存順序",
+        "cancel_reorder": "取消排序",
+        "violations_header": "此方案無法作為備援:",
+        "violations": {
+          "data_amount_mb_too_low": "備援方案的流量低於主方案。",
+          "validity_days_too_short": "備援方案的有效期短於主方案。",
+          "destinations_missing": "備援方案未涵蓋所有行銷目的地。"
+        },
+        "picker_title": "選擇供應商方案",
+        "picker_filter_country": "國家(ISO-2)",
+        "picker_filter_search": "搜尋名稱或外部 ID"
+      },
+      "pricing": {
+        "title": "定價",
+        "currency": "幣別",
+        "retail": "售價",
+        "msrp": "建議售價(劃線)",
+        "markup_mode": "加價模式",
+        "markup_value": "加價數值",
+        "fx_policy": "匯率策略",
+        "cost_snapshot": "成本快照",
+        "cost_snapshot_empty": "請先設定主方案以鎖定成本快照。",
+        "modes": {
+          "fixed_amount": "固定金額",
+          "percentage": "百分比",
+          "target_margin": "目標毛利率(%)",
+          "manual": "手動輸入"
+        },
+        "fx_policies": {
+          "snapshot_at_publish": "發布時凍結",
+          "daily_refresh": "每日更新",
+          "manual": "手動"
+        },
+        "computed_retail": "計算售價",
+        "computed_margin": "實際毛利率"
+      },
+      "publication": {
+        "title": "發布",
+        "current_state": "目前狀態",
+        "actions": {
+          "submit": "送出審核",
+          "approve": "核准",
+          "reject": "退回",
+          "publish": "直接發布",
+          "archive": "封存",
+          "unarchive": "取消封存"
+        },
+        "preview": "預覽"
+      }
+    },
+    "supplier_plans": {
+      "title": "供應商方案",
+      "filters": {
+        "country": "國家(ISO-2)",
+        "search_placeholder": "搜尋名稱或外部 ID…",
+        "available_only": "僅顯示可用"
+      },
+      "columns": {
+        "supplier": "供應商",
+        "external_id": "外部 ID",
+        "name": "名稱",
+        "destinations": "目的地",
+        "data": "流量",
+        "validity": "有效期",
+        "activation_policy": "啟用",
+        "delivery_model": "交付",
+        "cost": "成本",
+        "available": "可用"
+      },
+      "row_action_create_product": "以此建立商品 →"
+    },
+    "preview": {
+      "title": "門市預覽",
+      "intro": "近似商品在門市的呈現。",
+      "destinations": "目的地",
+      "data": "流量",
+      "validity": "有效期",
+      "activation_policy": "啟用",
+      "retail": "售價",
+      "tags": "標籤",
+      "back_to_edit": "返回編輯"
+    }
   },
   "storefront": {
     "heading": "門市",
