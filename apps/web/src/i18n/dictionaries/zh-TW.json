@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "title": "Roam — 系統",
+    "description": "Roam 後台與門市。"
+  },
+  "admin": {
+    "heading": "後台",
+    "tagline": "營運後台 placeholder。"
+  },
+  "storefront": {
+    "heading": "門市",
+    "tagline": "顧客端 placeholder。"
+  }
+}

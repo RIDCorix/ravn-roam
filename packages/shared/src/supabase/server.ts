@@ -3,7 +3,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { publicEnv } from "@/lib/env";
+import { getEnv } from "../env";
 
 // Anon-key, cookie-bound Supabase client for Server Components and Route
 // Handlers. Honors RLS — same access surface as a browser session.
@@ -12,8 +12,9 @@ import { publicEnv } from "@/lib/env";
 // per-PoC `<slug>_poc_user` role, NOT through the shared service_role key.
 // See agent-rules/06-shared-supabase.md.
 export async function createSupabaseServerClient() {
+  const env = getEnv();
   const cookieStore = await cookies();
-  return createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+  return createServerClient(env.supabaseUrl, env.supabaseAnonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
