@@ -14,6 +14,12 @@ const schema = z.object({
   FASTMOVE_MERCHANT_ID: z.string().optional(),
   FASTMOVE_DEPT_ID: z.string().optional(),
   FASTMOVE_MERCHANT_KEY: z.string().optional(),
+
+  // Shared secret for the `/admin/*` routes. The admin UI button passes
+  // this in `x-admin-token`. Until a proper auth layer lands (post-Phase 2)
+  // the route refuses to start the sync when this is unset, so we never
+  // ship an open trigger to staging by accident.
+  ADMIN_API_TOKEN: z.string().min(16).optional(),
 });
 
 export type Env = z.infer<typeof schema>;
