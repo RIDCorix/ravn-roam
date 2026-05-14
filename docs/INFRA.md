@@ -58,15 +58,15 @@ Roam gets isolation via its own Postgres schema + a least-privilege
 role, **not** a separate Supabase project. See
 `agent-rules/06-shared-supabase.md`.
 
-**Naming for this repo:**
+**Naming for this repo (two roles, one schema):**
 
-| Asset            | Value                                                    |
-| ---------------- | -------------------------------------------------------- |
-| Schema           | `roam_poc`                                               |
-| Role             | `roam_poc_user`                                          |
-| Role search_path | `roam_poc`                                               |
-| Secret root      | `supabase.shared.poc_roles.roam_poc.*` (hub Linear)      |
-| Connection URL   | hub: `supabase.shared.poc_roles.roam_poc.connection_url` |
+| Asset            | `roam_poc_user` (apps)                                   | `roam_poc_backend` (services/api + migrations)                   |
+| ---------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
+| Schema           | `roam_poc`                                               | `roam_poc`                                                       |
+| Role search_path | `roam_poc`                                               | `roam_poc`                                                       |
+| Secret root      | `supabase.shared.poc_roles.roam_poc.*` (hub Linear)      | `supabase.shared.poc_roles.roam_poc_backend.*` (hub Linear)      |
+| Connection URL   | hub: `supabase.shared.poc_roles.roam_poc.connection_url` | hub: `supabase.shared.poc_roles.roam_poc_backend.connection_url` |
+| Used by          | `apps/web` SSR, `apps/landing` SSR (read/write under RLS)| `services/api`, `drizzle-kit` migrations                         |
 
 **Provisioning (one-time, human-driven against the shared project):**
 
@@ -75,7 +75,7 @@ role, **not** a separate Supabase project. See
    PGPASSWORD=$(<hub>/scripts/secrets-get.sh supabase.shared.db_password) \
      psql "host=$(<hub>/scripts/secrets-get.sh supabase.shared.db_host) port=5432 user=postgres dbname=postgres sslmode=require"
    ```
-2. Inside psql:
+2. Inside psql, provision the schema + the read/write role for apps:
    ```sql
    CREATE SCHEMA roam_poc;
    CREATE ROLE roam_poc_user WITH LOGIN PASSWORD '<generated>';
@@ -84,13 +84,33 @@ role, **not** a separate Supabase project. See
    ALTER ROLE roam_poc_user SET search_path TO roam_poc;
    REVOKE ALL ON SCHEMA public FROM roam_poc_user;
    ```
-3. Record `roam_poc` + `roam_poc_user` (NOT the password) in
-   `.ravn/project.yaml` under `infra.supabase`.
-4. Add the password as the row
-   `supabase.shared.poc_roles.roam_poc.password` to the hub master
-   secrets issue (TEC-22) per `agent-rules/10-secrets-via-linear.md`.
-   Also add the assembled `DATABASE_URL` as
-   `supabase.shared.poc_roles.roam_poc.connection_url`.
+3. Provision the backend / migration role (ROA-94). Same schema, separate
+   credentials so `services/api` and `drizzle-kit` never share secrets with
+   the apps tier:
+   ```sql
+   CREATE ROLE roam_poc_backend WITH LOGIN PASSWORD '<generated>';
+   GRANT USAGE, CREATE ON SCHEMA roam_poc TO roam_poc_backend;
+   GRANT ALL ON ALL TABLES IN SCHEMA roam_poc TO roam_poc_backend;
+   GRANT ALL ON ALL SEQUENCES IN SCHEMA roam_poc TO roam_poc_backend;
+   GRANT ALL ON ALL FUNCTIONS IN SCHEMA roam_poc TO roam_poc_backend;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA roam_poc GRANT ALL ON TABLES TO roam_poc_backend;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA roam_poc GRANT ALL ON SEQUENCES TO roam_poc_backend;
+   ALTER ROLE roam_poc_backend SET search_path TO roam_poc;
+   REVOKE ALL ON SCHEMA public FROM roam_poc_backend;
+   ```
+4. Record `roam_poc` + both role names (NOT passwords) in
+   `.ravn/project.yaml` under `infra.supabase.roles`.
+5. Add the credentials as rows to the hub master secrets issue (TEC-22) per
+   `agent-rules/10-secrets-via-linear.md`:
+   - `supabase.shared.poc_roles.roam_poc.password`
+   - `supabase.shared.poc_roles.roam_poc.connection_url`
+   - `supabase.shared.poc_roles.roam_poc_backend.password`
+   - `supabase.shared.poc_roles.roam_poc_backend.connection_url`
+
+   Backend connection URL shape:
+   ```
+   postgres://roam_poc_backend:<pass>@<db_host>:5432/postgres?sslmode=require&options=--search_path%3Droam_poc
+   ```
 
 **Client usage in this repo:**
 
@@ -104,12 +124,13 @@ role, **not** a separate Supabase project. See
 
 ## 3. Env vars
 
-| Variable                        | Where it runs    | Required | Hub secret path                                     |
-| ------------------------------- | ---------------- | -------- | --------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Browser + server | Yes      | `supabase.shared.url`                               |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server | Yes      | `supabase.shared.anon_key`                          |
-| `DATABASE_URL`                  | Server only      | When DB  | `supabase.shared.poc_roles.roam_poc.connection_url` |
-| `NEXT_PUBLIC_SITE_URL`          | Browser + server | Yes      | (n/a — env-specific literal)                        |
+| Variable                        | Where it runs        | Required | Hub secret path                                             |
+| ------------------------------- | -------------------- | -------- | ----------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Browser + server     | Yes      | `supabase.shared.url`                                       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server     | Yes      | `supabase.shared.anon_key`                                  |
+| `DATABASE_URL` (apps)           | `apps/*` server only | When DB  | `supabase.shared.poc_roles.roam_poc.connection_url`         |
+| `DATABASE_URL` (api)            | `services/api`       | When DB  | `supabase.shared.poc_roles.roam_poc_backend.connection_url` |
+| `NEXT_PUBLIC_SITE_URL`          | Browser + server     | Yes      | (n/a — env-specific literal)                                |
 
 A local template lives at `.env.example`. Copy to `.env.local` and fill
 values; `.env.local` is gitignored.
