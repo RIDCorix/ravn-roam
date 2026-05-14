@@ -24,6 +24,19 @@ infra:
     org_id: "team_vy0ucdoFE2lw5ozI3SYTKCZ7"
     git_connected: true            # auto-preview deploys on every branch/PR push
     production_branch: "main"
+  railway:
+    # Personal scope only — `agent-rules/07-company-firewall.md` rejects any
+    # workspace whose name contains `transbiz`. ROA-93 activates this.
+    roam_api:
+      project_name: "roam-api"
+      service_root: "services/api"
+      watch_paths:
+        - "services/api/**"
+        - "packages/shared/**"
+      healthcheck_path: "/healthz"
+      readiness_path: "/readyz"
+      public_url: null             # filled by Ray after Railway auto-domain assignment (ROA-93)
+      project_id: null             # filled by Ray once Railway project exists
   supabase:
     project: "ravn-shared"         # per agent-rules/06-shared-supabase.md
     schema: "roam_poc"
