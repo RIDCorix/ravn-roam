@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "title": "Roam — System",
+    "description": "Roam admin + storefront."
+  },
+  "admin": {
+    "heading": "Admin",
+    "tagline": "Operator console placeholder."
+  },
+  "storefront": {
+    "heading": "Storefront",
+    "tagline": "Buyer experience placeholder."
+  }
+}
