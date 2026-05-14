@@ -45,14 +45,16 @@ infra:
     # workspace whose name contains `transbiz`. ROA-93 activates this.
     roam_api:
       project_name: "roam-api"
+      project_id: "1fdb4724-ce23-4fca-b15b-5140748ba8f6"
+      service_id: "db3e9109-8def-4b81-a948-618b8566572f"
+      production_environment_id: "5ac4517d-93d4-4ab5-a43e-bb02deb0352b"
       service_root: "services/api"
       watch_paths:
         - "services/api/**"
         - "packages/shared/**"
       healthcheck_path: "/healthz"
       readiness_path: "/readyz"
-      public_url: null             # filled by Ray after Railway auto-domain assignment (ROA-93)
-      project_id: null             # filled by Ray once Railway project exists
+      public_url: "https://roam-api-production-ff71.up.railway.app"
   supabase:
     project: "ravn-shared"         # per agent-rules/06-shared-supabase.md
     schema: "roam_poc"
