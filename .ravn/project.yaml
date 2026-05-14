@@ -19,11 +19,27 @@ linear:
 infra:
   vercel:
     scope: "ridcorixs-projects"    # firewall-cleared, no `transbiz` substring (ROA-13)
-    project_name: "roam-web"
-    project_id: "prj_0dreWsHEmlttOlBuxo19zZhZ8P96"
     org_id: "team_vy0ucdoFE2lw5ozI3SYTKCZ7"
-    git_connected: true            # auto-preview deploys on every branch/PR push
-    production_branch: "main"
+    # Two projects, one repo (ROA-92). Each project's Root Directory points
+    # at its app package so Vercel's Next.js detector finds the right
+    # package.json. "Include source files outside of the Root Directory"
+    # stays ON so workspace deps (packages/shared) install correctly.
+    roam_web:
+      project_name: "roam-web"
+      project_id: "prj_0dreWsHEmlttOlBuxo19zZhZ8P96"
+      root: "apps/landing"         # was "." before ROA-89 — must be re-pointed in dashboard
+      package: "@roam/landing"
+      git_connected: true          # auto-preview deploys on every branch/PR push
+      production_branch: "main"
+      ignored_build_step: "git diff --quiet HEAD^ HEAD -- apps/landing packages/shared pnpm-lock.yaml pnpm-workspace.yaml package.json"
+    roam_system:
+      project_name: "roam-system"
+      project_id: null             # filled by Ray once the dashboard create step lands (ROA-92)
+      root: "apps/web"
+      package: "@roam/web"
+      git_connected: true
+      production_branch: "main"
+      ignored_build_step: "git diff --quiet HEAD^ HEAD -- apps/web packages/shared pnpm-lock.yaml pnpm-workspace.yaml package.json"
   railway:
     # Personal scope only — `agent-rules/07-company-firewall.md` rejects any
     # workspace whose name contains `transbiz`. ROA-93 activates this.

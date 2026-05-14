@@ -1,13 +1,23 @@
 # Infra setup
 
-End-to-end checklist for getting the Roam marketing site running on
-**Vercel** (web hosting + previews) and the **shared Supabase project**
-(`ravn-shared`). Items marked _dashboard_ must be done by a human with
-the right account access — they cannot be driven from this repo.
+End-to-end checklist for getting the Roam stack running on **Vercel**
+(two projects — landing + system), **Railway** (`services/api`), and
+the **shared Supabase project** (`ravn-shared`). Items marked
+_dashboard_ must be done by a human with the right account access —
+they cannot be driven from this repo.
 
 This repo is **main-only** (per `CLAUDE.md` — rule 8's
 `ravn/integration` overlay does NOT apply here). Production deploy
 target = `main`; previews = every other branch.
+
+Repo layout (post ROA-89 monorepo restructure):
+
+```
+apps/landing      → @roam/landing → Vercel project `roam-web`     (marketing site)
+apps/web          → @roam/web     → Vercel project `roam-system`  (admin + storefront)
+services/api      → @roam/api     → Railway project `roam-api`    (Hono + Drizzle)
+packages/shared   → @roam/shared  → consumed by both apps (Supabase clients, env)
+```
 
 Railway is active for the backend API — see [§4](#4--railway--backend-api).
 
@@ -22,32 +32,97 @@ References:
 
 ---
 
-## 1. Vercel — hosting + preview deploys
+## 1. Vercel — two projects, one repo
 
 Next.js 16 ships a verified Vercel adapter and Vercel auto-detects
-everything, so **no `vercel.json` is needed** for the default deploy.
+everything, so **no `vercel.json` is needed** — but each app needs its
+own Vercel project pointed at the right monorepo sub-path.
 
-Project: `roam-web` in scope `ridcorixs-projects` (firewall-cleared —
-no `transbiz` substring). Project metadata is recorded in
+Both projects live in scope `ridcorixs-projects` (firewall-cleared, no
+`transbiz` substring). Project metadata is recorded in
 `.ravn/project.yaml` under `infra.vercel`.
 
-**Verified at scaffold time (agent-driven):**
+| Vercel project | App package    | Root Directory   | Default deploy URL                              |
+| -------------- | -------------- | ---------------- | ----------------------------------------------- |
+| `roam-web`     | `@roam/landing`| `apps/landing`   | `https://roam-web-ridcorixs-projects.vercel.app`|
+| `roam-system`  | `@roam/web`    | `apps/web`       | `https://roam-system-ridcorixs-projects.vercel.app` (TBD until project exists) |
 
-1. `vercel link --yes --project roam-web --scope ridcorixs-projects`
-   linked the local checkout.
-2. `vercel git connect …` connected the GitHub repo so every push /
-   PR triggers a preview deploy automatically.
-3. Production branch = `main` (matches this repo's main-only model).
+Production branch = `main` for both. Preview deploys = every other branch.
 
-**Dashboard steps (human, one-time):**
+### 1a. `roam-web` (landing — `apps/landing`)
 
-1. Open the Vercel project → _Settings → Environment Variables_ and add
-   the entries listed in [§3 — Env vars](#3--env-vars). Values come
-   from the hub (see [§5](#5--credentials--hub-secrets-flow)) — do NOT
-   paste secrets manually from elsewhere.
-2. Confirm _Settings → Git_ shows the repo connected and "Preview
-   Deployments" is enabled for all branches.
-3. (Later) Add the custom domain under _Settings → Domains_.
+Originally created (pre-monorepo) pointing at repo root. After ROA-89
+moved Next.js code into `apps/landing/`, the Root Directory must be
+re-pointed; without that, Vercel can't find `next` in `package.json`
+and builds fail in <10s with:
+
+```
+Error: No Next.js version detected. Make sure your package.json has
+"next" in either "dependencies" or "devDependencies". Also check your
+Root Directory setting matches the directory of your package.json file.
+```
+
+**Dashboard steps (human, one-time — `manual-required`):**
+
+1. Vercel dashboard → `roam-web` → _Settings → General → Root
+   Directory_ → set to `apps/landing`. **Leave _Include source files
+   outside of the Root Directory in the Build Step_ ON** so the
+   workspace install can reach `packages/shared` and the root
+   `pnpm-lock.yaml`.
+2. _Settings → General → Framework Preset_ stays "Next.js" (auto).
+   Build / Install / Output commands stay blank — Vercel's pnpm
+   workspace detection handles them once Root Directory is right.
+3. _Settings → Git → Ignored Build Step_ → set to:
+   ```bash
+   git diff --quiet HEAD^ HEAD -- apps/landing packages/shared pnpm-lock.yaml pnpm-workspace.yaml package.json
+   ```
+   so a `services/api`-only or `apps/web`-only PR doesn't waste a
+   landing build. Vercel treats exit 0 as "skip", exit 1 as "build".
+4. _Settings → Environment Variables_ → load the
+   `apps/landing` row block from [§3 — Env vars](#3--env-vars) via the
+   hub flow (see [§5](#5--credentials--hub-secrets-flow)). Do NOT
+   paste secrets manually.
+5. _Settings → Domains_ — keep the auto domain; add a custom domain
+   later when marketing is ready.
+
+### 1b. `roam-system` (system frontend — `apps/web`)
+
+New project. Created together with the dashboard work above (ROA-92).
+Same GitHub repo, different root.
+
+**Dashboard steps (human, one-time — `manual-required`):**
+
+1. Vercel dashboard → _Add New → Project_ → import
+   `RIDCorix/ravn-roam` → scope `ridcorixs-projects`.
+2. Name = `roam-system`. _Root Directory_ = `apps/web`. Keep
+   _Include source files outside of the Root Directory_ ON.
+3. Framework Preset auto-detects as Next.js. Build / Install / Output
+   stay blank.
+4. _Settings → Git_ → Production Branch = `main`. Preview deploys for
+   every other branch (Vercel default).
+5. _Settings → Git → Ignored Build Step_ → set to:
+   ```bash
+   git diff --quiet HEAD^ HEAD -- apps/web packages/shared pnpm-lock.yaml pnpm-workspace.yaml package.json
+   ```
+6. _Settings → Environment Variables_ → load the `apps/web` row block
+   from [§3 — Env vars](#3--env-vars). `NEXT_PUBLIC_SITE_URL` here
+   points at the system origin (NOT the landing origin).
+7. Trigger a manual deploy from `main` to confirm green. Record the
+   assigned `project_id` and default URL in
+   `.ravn/project.yaml > infra.vercel.roam_system`.
+
+### Acceptance gates (re-run after the dashboard work lands)
+
+- [ ] `vercel list roam-web --scope ridcorixs-projects` shows the
+      latest deploy as `Ready`, not `Error`, with build duration > 15s
+      (sub-10s means Vercel still can't find Next.js).
+- [ ] `vercel list roam-system --scope ridcorixs-projects` exists and
+      latest deploy is `Ready`.
+- [ ] Pushing a `services/api/**`-only commit produces "Build skipped"
+      on both Vercel projects (proves Ignored Build Step).
+- [ ] `infra.vercel.roam_web.root` = `apps/landing` and
+      `infra.vercel.roam_system.root` = `apps/web` in
+      `.ravn/project.yaml`.
 
 ---
 
@@ -124,23 +199,60 @@ role, **not** a separate Supabase project. See
 
 ## 3. Env vars
 
-| Variable                        | Where it runs        | Required | Hub secret path                                             |
-| ------------------------------- | -------------------- | -------- | ----------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Browser + server     | Yes      | `supabase.shared.url`                                       |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server     | Yes      | `supabase.shared.anon_key`                                  |
-| `DATABASE_URL` (apps)           | `apps/*` server only | When DB  | `supabase.shared.poc_roles.roam_poc.connection_url`         |
-| `DATABASE_URL` (api)            | `services/api`       | When DB  | `supabase.shared.poc_roles.roam_poc_backend.connection_url` |
-| `FASTMOVE_BASE_URL`             | `services/api`       | Yes      | `fastmove.api.base_url`                                     |
-| `FASTMOVE_MERCHANT_ID`          | `services/api`       | Yes      | `fastmove.api.merchant_id`                                  |
-| `FASTMOVE_MERCHANT_KEY`         | `services/api`       | Yes      | `fastmove.api.merchant_key`                                 |
-| `GIT_SHA`                       | `services/api`       | No       | Railway `${{RAILWAY_GIT_COMMIT_SHA}}` (informational)       |
-| `NEXT_PUBLIC_SITE_URL`          | Browser + server     | Yes      | (n/a — env-specific literal)                                |
+Three deploy targets → three distinct env scopes. Templates:
 
-A local template lives at `.env.example`. Copy to `.env.local` and fill
-values; `.env.local` is gitignored.
+- `apps/landing` → repo-root `.env.example` (legacy location — predates
+  ROA-89's monorepo move; copy it into `apps/landing/.env.local`)
+- `apps/web` → `apps/web/.env.example`
+- `services/api` → `services/api/.env.example`
+
+Copy to `.env.local` (Next.js) or `.env` (services/api) for local dev;
+`.env*` is gitignored.
 
 > Next.js 16 reads `.env*` from the **project root only** — keep them
-> next to `package.json`, not inside `/src`.
+> next to each app's `package.json` (i.e., inside `apps/landing/` or
+> `apps/web/`), NOT at repo root and NOT inside `/src`.
+
+### 3a. `apps/landing` (Vercel project `roam-web`)
+
+| Variable                        | Where it runs    | Required | Hub secret path                                     |
+| ------------------------------- | ---------------- | -------- | --------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Browser + server | Yes      | `supabase.shared.url`                               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server | Yes      | `supabase.shared.anon_key`                          |
+| `DATABASE_URL`                  | Server only      | When DB  | `supabase.shared.poc_roles.roam_poc.connection_url` |
+| `NEXT_PUBLIC_SITE_URL`          | Browser + server | Yes      | (n/a — env-specific literal, marketing origin)      |
+
+### 3b. `apps/web` (Vercel project `roam-system`)
+
+| Variable                        | Where it runs    | Required | Hub secret path                                     |
+| ------------------------------- | ---------------- | -------- | --------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Browser + server | Yes      | `supabase.shared.url`                               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server | Yes      | `supabase.shared.anon_key`                          |
+| `DATABASE_URL`                  | Server only      | When DB  | `supabase.shared.poc_roles.roam_poc.connection_url` |
+| `NEXT_PUBLIC_SITE_URL`          | Browser + server | Yes      | (n/a — env-specific literal, system origin)         |
+| `NEXT_PUBLIC_API_BASE_URL`      | Browser + server | When API | Railway public URL from `infra.railway.roam_api.public_url` |
+
+`apps/web` uses the **same** `roam_poc_user` role as `apps/landing` —
+both apps go through Supabase SSR / RLS, so they share the apps-tier
+role. Backend-only writes route through `services/api`, NOT direct
+from `apps/web`.
+
+### 3c. `services/api` (Railway project `roam-api`)
+
+| Variable                | Where it runs | Required          | Hub secret path                                             |
+| ----------------------- | ------------- | ----------------- | ----------------------------------------------------------- |
+| `DATABASE_URL`          | Server        | When DB           | `supabase.shared.poc_roles.roam_poc_backend.connection_url` |
+| `FASTMOVE_BASE_URL`     | Server        | When Fastmove     | `fastmove.api.base_url`                                     |
+| `FASTMOVE_MERCHANT_ID`  | Server        | When Fastmove     | `fastmove.api.merchant_id`                                  |
+| `FASTMOVE_DEPT_ID`      | Server        | If Fastmove issues one | `fastmove.api.dept_id`                                 |
+| `FASTMOVE_MERCHANT_KEY` | Server        | When Fastmove     | `fastmove.api.merchant_key`                                 |
+| `PORT`                  | Server        | Auto              | Railway injects automatically                               |
+| `GIT_SHA`               | Server        | No (informational)| Railway `${{RAILWAY_GIT_COMMIT_SHA}}`                       |
+
+`services/api` env vars are all optional at boot — the service starts
+and serves `/healthz` even with none set. Required-ness is enforced at
+the point of use (`getDb()` requires `DATABASE_URL`,
+`FastmoveClient` requires the `FASTMOVE_*` set).
 
 ---
 
@@ -248,12 +360,33 @@ When a new credential is needed:
 
 ## 6. Health-check before going live
 
-- [ ] Vercel production deploy is green on `main`.
+Frontend (per Vercel project — run for `roam-web` AND `roam-system`):
+
+- [ ] Production deploy green on `main`.
 - [ ] Preview deploy on a sample PR resolves.
 - [ ] Env vars present in **both** Preview and Production scopes, all
       sourced from the hub.
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm build` all pass locally and
-      in Vercel.
-- [ ] `NEXT_PUBLIC_SITE_URL` matches the actual deployed origin (drives
-      OpenGraph cards).
+- [ ] `pnpm --filter @roam/landing build` and `pnpm --filter @roam/web build`
+      both pass locally.
+- [ ] `pnpm -r typecheck` and `pnpm -r lint` go green.
+- [ ] `NEXT_PUBLIC_SITE_URL` matches the actual deployed origin per app
+      (`roam-web` → marketing origin, `roam-system` → system origin).
+- [ ] Ignored Build Step skip works: pushing a `services/api`-only diff
+      shows "Build skipped" on both Vercel projects.
 - [ ] Custom domain (if any) verified and HTTPS active.
+
+Backend (`services/api` on Railway):
+
+- [ ] `GET /healthz` → 200 `{ ok: true, sha }` on the Railway public URL.
+- [ ] `GET /readyz` → 200 `{ ok: true, db: "ok" }` (proves
+      `DATABASE_URL` + `roam_poc_backend` wiring).
+- [ ] Railway watch-paths filter (`services/api/**`, `packages/shared/**`)
+      skips redeploys on `apps/**`-only changes.
+
+Cross-stack:
+
+- [ ] `apps/web`'s `NEXT_PUBLIC_API_BASE_URL` matches
+      `infra.railway.roam_api.public_url` (or a stable custom domain
+      pointing at it).
+- [ ] `infra` block in `.ravn/project.yaml` matches every real
+      `project_id` / `public_url` (no `null`s for live infra).
