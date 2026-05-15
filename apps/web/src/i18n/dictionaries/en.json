@@ -299,6 +299,55 @@
   },
   "storefront": {
     "heading": "Storefront",
-    "tagline": "Buyer experience placeholder."
+    "tagline": "Buyer experience placeholder.",
+    "nav": {
+      "home": "Home",
+      "trips": "Trips",
+      "tasks": "Tasks",
+      "shop": "Shop",
+      "me": "Me"
+    },
+    "home": {
+      "greeting": "Good afternoon, {name}",
+      "subtitle_active": "In {city} · {days} days until you fly home",
+      "subtitle_no_trip": "Wherever, whenever",
+      "esim_active_label": "Active · {network}",
+      "esim_country_plan": "{country} · {plan}",
+      "esim_remaining_unit": "GB left",
+      "esim_days_left": "days left",
+      "esim_used": "Used {gb} GB",
+      "esim_remaining": "{gb} GB remaining",
+      "actions": {
+        "topup": "Top up",
+        "switch_hotspot": "Switch hotspot",
+        "troubleshoot": "Troubleshoot"
+      },
+      "quick_actions": {
+        "shop": "Buy eSIM",
+        "new_trip": "New trip",
+        "ask_lumi": "Ask Lumi",
+        "my_tasks": "My tasks"
+      },
+      "lumi_nudge": {
+        "name": "Lumi",
+        "time_just_now": "just now",
+        "body": "Your Europe trip starts 10/5 — your UK ETA is still pending. Apply today, it averages 3 days."
+      },
+      "next_trip": {
+        "label_with_countdown": "Next trip · {days} days to go",
+        "duration_days": "{days} days"
+      },
+      "active_trip": {
+        "section_title": "In-progress trip",
+        "summary": "{title} · {n} tasks left",
+        "view_all": "View all →"
+      }
+    },
+    "tabs": {
+      "trips_placeholder": "Phase C-1: trips list + detail coming soon.",
+      "tasks_placeholder": "Phase C-3: cross-trip task aggregation coming soon.",
+      "shop_placeholder": "Phase C-4: eSIM shop coming soon.",
+      "me_placeholder": "Phase C-5: profile + settings coming soon."
+    }
   }
 }

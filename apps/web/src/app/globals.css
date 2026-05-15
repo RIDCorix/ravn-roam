@@ -65,7 +65,7 @@
   /* ---- TYPE ---- */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-mono: var(--font-intel-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   /* ---- SHADOWS ---- */
   --shadow-xs: 0 1px 2px rgba(17, 17, 32, 0.04);
@@ -225,4 +225,17 @@ body {
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================================
+   Keyframes used by storefront — small set, additive only.
+   ============================================================ */
+@keyframes lume-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+@keyframes lume-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
 }
