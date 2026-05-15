@@ -7,9 +7,11 @@
     "heading": "後台",
     "tagline": "營運後台 placeholder。",
     "nav": {
+      "orders": "訂單",
       "products": "商品",
       "supplier_plans": "供應商方案",
-      "suppliers": "供應商"
+      "suppliers": "供應商",
+      "vendors": "通路 / Vendor"
     },
     "common": {
       "save": "儲存",
@@ -148,6 +150,141 @@
         },
         "preview": "預覽"
       }
+    },
+    "orders": {
+      "title": "訂單",
+      "subtitle": "所有來源訂單與毛利",
+      "create": "建立訂單",
+      "filters": {
+        "search_placeholder": "搜尋訂單號或客戶 email…",
+        "status": "狀態",
+        "vendor": "通路 Vendor",
+        "since": "起",
+        "until": "迄"
+      },
+      "statuses": {
+        "pending": "待付款",
+        "paid": "已付款",
+        "fulfilled": "已交付",
+        "cancelled": "已取消",
+        "refunded": "已退款"
+      },
+      "columns": {
+        "order_number": "訂單號",
+        "vendor": "通路",
+        "customer": "客戶",
+        "status": "狀態",
+        "total": "金額",
+        "cost": "成本",
+        "margin": "毛利",
+        "created_at": "建立"
+      },
+      "summary": {
+        "today_revenue": "今日營收",
+        "month_revenue": "本月營收",
+        "pending": "待付款",
+        "refunded": "已退款"
+      },
+      "no_orders": "尚無訂單。",
+      "actions": {
+        "mark_paid": "標記已付款",
+        "mark_fulfilled": "標記已交付",
+        "cancel": "取消訂單",
+        "refund": "退款"
+      },
+      "detail": {
+        "title": "訂單詳情",
+        "items": "明細",
+        "metadata": "Metadata"
+      }
+    },
+    "vendors": {
+      "title": "通路 / Vendor",
+      "subtitle": "經銷商、OTA、旅行社",
+      "create": "新增 Vendor",
+      "filters": {
+        "search_placeholder": "搜尋代號或名稱…",
+        "status": "狀態",
+        "tier": "層級",
+        "grade": "評級"
+      },
+      "tiers": {
+        "platform": "平台",
+        "tier1": "Tier-1",
+        "tier2": "Tier-2"
+      },
+      "statuses": {
+        "active": "啟用",
+        "paused": "暫停",
+        "terminated": "終止"
+      },
+      "grades": {
+        "A": "A 級",
+        "B": "B 級",
+        "C": "C 級"
+      },
+      "columns": {
+        "code": "代號",
+        "name": "名稱",
+        "tier": "層級",
+        "grade": "評級",
+        "commission": "佣金",
+        "status": "狀態",
+        "contact": "聯絡 Email",
+        "updated_at": "更新"
+      },
+      "no_vendors": "尚無 Vendor。",
+      "form": {
+        "code": "代號",
+        "code_hint": "短代號，唯一且不可改",
+        "display_name": "顯示名稱",
+        "tier": "層級",
+        "status": "狀態",
+        "grade": "評級",
+        "contact_email": "聯絡 Email",
+        "commission_rate": "佣金比例",
+        "commission_rate_hint": "0–1 的小數，例：0.12 = 12%",
+        "notes": "備註"
+      }
+    },
+    "dashboard": {
+      "title": "銷售儀表板",
+      "subtitle": "即時觀察成本、收益與訂單",
+      "ranges": {
+        "today": "今天",
+        "7d": "7 天",
+        "30d": "30 天",
+        "90d": "90 天"
+      },
+      "kpi": {
+        "revenue": "收入",
+        "cost": "成本",
+        "margin": "毛利率",
+        "orders": "訂單數"
+      },
+      "sections": {
+        "top_vendors": "通路 Top 5",
+        "supplier_cost": "供應商成本佔比",
+        "recent_orders": "近期訂單",
+        "order_status": "訂單狀態"
+      },
+      "empty": {
+        "no_data": "尚無資料",
+        "no_data_hint": "建立第一張訂單後，這裡會出現完整的營收圖表。"
+      }
+    },
+    "tweaks": {
+      "title": "Tweaks",
+      "appearance": "外觀",
+      "accent": "主色",
+      "ambient": "背景光暈",
+      "density": "資料密度",
+      "density_options": {
+        "comfortable": "寬鬆",
+        "compact": "緊湊"
+      },
+      "display": "顯示",
+      "currency": "幣別"
     },
     "supplier_plans": {
       "title": "供應商方案",

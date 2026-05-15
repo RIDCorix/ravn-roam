@@ -13,12 +13,20 @@ export type AuditAction =
   | "supplier.pause"
   | "supplier.resume"
   | "supplier_plan.toggle"
-  | "supplier.sync";
+  | "supplier.sync"
+  | "vendor.create"
+  | "vendor.update"
+  | "order.create"
+  | "order.pending"
+  | "order.paid"
+  | "order.fulfilled"
+  | "order.cancelled"
+  | "order.refunded";
 
 export interface AuditEntry {
   actor: string;
   action: AuditAction;
-  targetType: "supplier" | "supplier_plan";
+  targetType: "supplier" | "supplier_plan" | "vendor" | "order";
   targetId: string;
   before?: Record<string, unknown> | null;
   after?: Record<string, unknown> | null;

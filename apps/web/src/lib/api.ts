@@ -280,3 +280,197 @@ export async function triggerSupplierSync(
     },
   );
 }
+
+// ────────────────────────────────────────────────────────────────────────
+// VENDORS (ROA-100 admin redesign — tier-1 RBAC + commercial metadata)
+// ────────────────────────────────────────────────────────────────────────
+
+export interface Vendor {
+  id: string;
+  code: string;
+  display_name: string;
+  tier: "platform" | "tier1" | "tier2";
+  status: "active" | "paused" | "terminated";
+  grade: "A" | "B" | "C" | null;
+  contact_email: string | null;
+  commission_rate: number | null;
+  contract_terms: Record<string, unknown>;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorFilters {
+  status?: Vendor["status"];
+  tier?: Vendor["tier"];
+  grade?: Vendor["grade"] extends infer T ? Exclude<T, null> : never;
+  q?: string;
+}
+
+export async function listVendors(
+  filters: VendorFilters = {},
+): Promise<Vendor[]> {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.tier) params.set("tier", filters.tier);
+  if (filters.grade) params.set("grade", filters.grade);
+  if (filters.q) params.set("q", filters.q);
+  const qs = params.toString();
+  const { vendors } = await jsonFetch<{ vendors: Vendor[] }>(
+    `/admin/vendors${qs ? `?${qs}` : ""}`,
+  );
+  return vendors;
+}
+
+export async function getVendor(id: string): Promise<Vendor> {
+  const { vendor } = await jsonFetch<{ vendor: Vendor }>(`/admin/vendors/${id}`);
+  return vendor;
+}
+
+export async function createVendor(input: {
+  code: string;
+  display_name: string;
+  tier?: Vendor["tier"];
+  status?: Vendor["status"];
+  grade?: Vendor["grade"];
+  contact_email?: string | null;
+  commission_rate?: number | null;
+  contract_terms?: Record<string, unknown>;
+  notes?: string | null;
+}): Promise<Vendor> {
+  const { vendor } = await jsonFetch<{ vendor: Vendor }>(`/admin/vendors`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return vendor;
+}
+
+export async function patchVendor(
+  id: string,
+  input: Partial<Omit<Vendor, "id" | "code" | "created_at" | "updated_at">>,
+): Promise<Vendor> {
+  const { vendor } = await jsonFetch<{ vendor: Vendor }>(
+    `/admin/vendors/${id}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  return vendor;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// ORDERS (ROA-100)
+// ────────────────────────────────────────────────────────────────────────
+
+export interface Order {
+  id: string;
+  order_number: string;
+  vendor_id: string;
+  customer_email: string;
+  customer_name: string | null;
+  status: "pending" | "paid" | "fulfilled" | "cancelled" | "refunded";
+  total_amount: number;
+  cost_amount: number;
+  currency: string;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  paid_at: string | null;
+  fulfilled_at: string | null;
+  cancelled_at: string | null;
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: string | null;
+  supplier_plan_id: string;
+  qty: number;
+  unit_price: number;
+  unit_cost: number;
+  currency: string;
+  status: "pending_fulfilment" | "fulfilled" | "failed" | "refunded";
+  created_at: string;
+  fulfilled_at: string | null;
+}
+
+export interface OrderFilters {
+  status?: Order["status"];
+  vendor_id?: string;
+  q?: string;
+  since?: string;
+  until?: string;
+}
+
+export async function listOrders(
+  filters: OrderFilters = {},
+): Promise<Order[]> {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.vendor_id) params.set("vendor_id", filters.vendor_id);
+  if (filters.q) params.set("q", filters.q);
+  if (filters.since) params.set("since", filters.since);
+  if (filters.until) params.set("until", filters.until);
+  const qs = params.toString();
+  const { orders } = await jsonFetch<{ orders: Order[] }>(
+    `/admin/orders${qs ? `?${qs}` : ""}`,
+  );
+  return orders;
+}
+
+export async function getOrder(id: string): Promise<{
+  order: Order;
+  items: OrderItem[];
+}> {
+  return jsonFetch<{ order: Order; items: OrderItem[] }>(`/admin/orders/${id}`);
+}
+
+export async function transitionOrder(
+  id: string,
+  status: Order["status"],
+): Promise<Order> {
+  const { order } = await jsonFetch<{ order: Order }>(
+    `/admin/orders/${id}/transitions`,
+    { method: "POST", body: JSON.stringify({ status }) },
+  );
+  return order;
+}
+
+export interface DashboardAggregates {
+  range: { since: string };
+  totals: {
+    orders: number;
+    revenue: number;
+    cost: number;
+    margin: number;
+    pending: number;
+    paid: number;
+    fulfilled: number;
+    cancelled: number;
+    refunded: number;
+  };
+  top_vendors: Array<{
+    vendor_id: string;
+    vendor_code: string;
+    vendor_name: string;
+    revenue: number;
+    orders: number;
+  }>;
+  supplier_cost_share: Array<{
+    supplier_id: string;
+    supplier_code: string;
+    supplier_name: string;
+    cost: number;
+    items: number;
+  }>;
+  recent_orders: Order[];
+}
+
+export async function getDashboardAggregates(
+  since?: string,
+): Promise<DashboardAggregates> {
+  const params = new URLSearchParams();
+  if (since) params.set("since", since);
+  const qs = params.toString();
+  return jsonFetch<DashboardAggregates>(
+    `/admin/orders/aggregates/dashboard${qs ? `?${qs}` : ""}`,
+  );
+}
