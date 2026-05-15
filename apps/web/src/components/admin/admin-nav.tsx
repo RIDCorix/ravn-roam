@@ -1,27 +1,74 @@
 "use client";
 
-// Sidebar nav with active-state highlight. Lives client-side so we can read
-// pathname; the rest of the admin shell stays a server component.
+// Sidebar nav with active-state highlight. Lucide icons are imported here
+// (client) rather than passed in as props from the server layout — RSC
+// can't serialize bare component references through props, only JSX
+// elements. Hard-coding the nav structure here also keeps the layout's
+// server component free of icon-library deps.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  PackageSearch,
+  type LucideIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export interface AdminNavItem {
+interface NavItem {
   href: string;
   label: string;
   Icon: LucideIcon;
 }
 
-export interface AdminNavGroup {
+interface NavGroup {
   label?: string;
-  items: AdminNavItem[];
+  items: NavItem[];
 }
 
-export function AdminNav({ groups }: { groups: AdminNavGroup[] }) {
+export interface AdminNavLabels {
+  dashboard: string;
+  products: string;
+  supplier_plans: string;
+}
+
+export function AdminNav({
+  lang,
+  labels,
+}: {
+  lang: string;
+  labels: AdminNavLabels;
+}) {
   const pathname = usePathname();
+
+  const groups: NavGroup[] = [
+    {
+      items: [
+        {
+          href: `/${lang}/admin`,
+          label: labels.dashboard,
+          Icon: LayoutDashboard,
+        },
+      ],
+    },
+    {
+      label: "Catalog",
+      items: [
+        {
+          href: `/${lang}/admin/products`,
+          label: labels.products,
+          Icon: Package,
+        },
+        {
+          href: `/${lang}/admin/supplier-plans`,
+          label: labels.supplier_plans,
+          Icon: PackageSearch,
+        },
+      ],
+    },
+  ];
 
   return (
     <nav className="flex flex-col gap-5 px-3 py-4">
