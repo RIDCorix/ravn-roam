@@ -504,7 +504,6 @@
       },
       "tabs": {
         "overview": "Overview",
-        "lumi": "Lumi",
         "checklist": "Checklist"
       },
       "detail": {
@@ -521,20 +520,31 @@
         "done": "Done",
         "shop_cta": "Open",
         "empty": "No tasks for this trip yet."
-      },
-      "lumi": {
-        "intro": "Lumi is helping you plan \"{title}\". Tell her any time about new plans.",
-        "greeting": "Hi! Want to talk about \"{title}\"? Tell me which cities and how many days, and I'll sketch an itinerary and pick an eSIM.",
-        "composer_placeholder": "Tell Lumi something…",
-        "suggestions": [
-          "Add two more days in London",
-          "Show me eSIM options",
-          "How much EUR should I exchange?"
-        ],
-        "error_prefix": "Lumi can't reply right now: ",
-        "itinerary_title": "Suggested itinerary",
-        "esim_cta_fallback": "See eSIM plans"
       }
+    },
+    "lumi": {
+      "launcher_label": "Ask Lumi",
+      "sheet_title": "Lumi",
+      "sheet_subtitle": "Your trip co-pilot",
+      "close": "Close",
+      "intro_default": "I can see your planned trips. Tell me any new ideas any time.",
+      "intro_trip": "Lumi is helping you plan \"{title}\".",
+      "greeting_default": "Hi! Want to plan something new or talk about an existing trip? Tell me destinations and days — I'll sketch an itinerary and pick an eSIM.",
+      "greeting_trip": "Hi! Want to talk about \"{title}\"? Tell me which cities and days to add, and I'll adjust.",
+      "composer_placeholder": "Tell Lumi something…",
+      "suggestions_default": [
+        "What's my next trip?",
+        "Show me eSIM options",
+        "Plan a 5-day Tokyo trip"
+      ],
+      "suggestions_trip": [
+        "Add two days in London",
+        "Show me eSIM options",
+        "How much EUR should I exchange?"
+      ],
+      "error_prefix": "Lumi can't reply right now: ",
+      "itinerary_title": "Suggested itinerary",
+      "esim_cta_fallback": "See eSIM plans"
     }
   }
 }

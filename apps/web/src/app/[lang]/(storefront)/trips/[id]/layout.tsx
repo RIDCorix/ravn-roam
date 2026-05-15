@@ -65,7 +65,6 @@ export default async function TripDetailLayout({
         tripId={trip.id}
         labels={{
           overview: t.tabs.overview,
-          lumi: t.tabs.lumi,
           checklist: t.tabs.checklist,
         }}
         pendingCount={pendingCount}

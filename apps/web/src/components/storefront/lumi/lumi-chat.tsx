@@ -1,9 +1,10 @@
 "use client";
 
-// Client-side glue for the Lumi tab. Holds the chat transcript, talks to
-// /api/lumi via streaming fetch, and shows a streaming assistant bubble that
-// updates token-by-token. Persistence and tool calling are explicitly out
-// of scope for C-2 (see ROA-102) — this is in-memory only.
+// Client-side glue for the Lumi launcher sheet. Holds the chat transcript,
+// streams replies from /api/lumi, and renders streaming bubbles token-by-
+// token. Lumi knows about *all* of the user's trips (cross-view context)
+// and which one — if any — is currently focused on screen. Persistence and
+// tool calling are explicitly out of scope for C-2.
 
 import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
@@ -17,18 +18,19 @@ import type { ChatMessage } from "./types";
 export interface LumiChatLabels extends ChatBubbleLabels {
   intro: string;
   composerPlaceholder: string;
-  suggestionsTitle?: string;
   suggestions: string[];
   errorPrefix: string;
 }
 
 export function LumiChat({
-  trip,
+  trips,
+  currentTrip,
   lang,
   labels,
   greeting,
 }: {
-  trip: Trip;
+  trips: Trip[];
+  currentTrip?: Trip;
   lang: string;
   labels: LumiChatLabels;
   greeting: string;
@@ -74,13 +76,15 @@ export function LumiChat({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           messages: history,
-          trip: {
-            id: trip.id,
-            title: trip.title,
-            start: trip.start,
-            end: trip.end,
-            days: trip.days,
-          },
+          trips: trips.map((t) => ({
+            id: t.id,
+            title: t.title,
+            start: t.start,
+            end: t.end,
+            status: t.status,
+            days: t.days,
+          })),
+          currentTripId: currentTrip?.id,
           lang,
         }),
       });
@@ -108,9 +112,9 @@ export function LumiChat({
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex h-full flex-col">
       <div
-        className="flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5"
+        className="mx-4 mt-3 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5"
         style={{ background: "rgba(15,184,180,0.06)" }}
       >
         <span
@@ -127,38 +131,45 @@ export function LumiChat({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex flex-col gap-3 py-1">
-        {messages.map((m) => (
-          <ChatBubble key={m.id} message={m} lang={lang} labels={labels} />
-        ))}
-      </div>
-
-      {labels.suggestions.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {labels.suggestions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setDraft(s)}
-              className="cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] text-fg-secondary transition-colors hover:bg-[rgba(0,0,0,0.04)]"
-              style={{
-                background: "var(--surface)",
-                boxShadow: "inset 0 0 0 1px var(--divider-strong)",
-              }}
-            >
-              {s}
-            </button>
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-3"
+      >
+        <div className="flex flex-col gap-3">
+          {messages.map((m) => (
+            <ChatBubble key={m.id} message={m} lang={lang} labels={labels} />
           ))}
         </div>
-      )}
+      </div>
 
-      <Composer
-        draft={draft}
-        onChange={setDraft}
-        onSubmit={() => send(draft)}
-        placeholder={labels.composerPlaceholder}
-        disabled={streaming}
-      />
+      <div className="border-t border-divider px-4 pt-2.5 pb-3">
+        {labels.suggestions.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {labels.suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setDraft(s)}
+                className="cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] text-fg-secondary transition-colors hover:bg-[rgba(0,0,0,0.04)]"
+                style={{
+                  background: "var(--surface)",
+                  boxShadow: "inset 0 0 0 1px var(--divider-strong)",
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <Composer
+          draft={draft}
+          onChange={setDraft}
+          onSubmit={() => send(draft)}
+          placeholder={labels.composerPlaceholder}
+          disabled={streaming}
+        />
+      </div>
     </div>
   );
 }

@@ -28,16 +28,18 @@ interface TripContext {
   title?: string;
   start?: string;
   end?: string;
+  status?: string;
   days?: Array<{ d: string; city: string; note?: string }>;
 }
 
 interface LumiRequest {
   messages: IncomingMessage[];
-  trip?: TripContext;
+  trips?: TripContext[];
+  currentTripId?: string;
   lang?: string;
 }
 
-const SYSTEM_PROMPT = `You are Lumi, a friendly travel assistant inside the Roam eSIM app. You help users plan trips and recommend eSIM data plans for the countries they visit.
+const SYSTEM_PROMPT = `You are Lumi, a friendly travel assistant inside the Roam eSIM app. You are summoned from a floating launcher that follows the user across every screen. You know about all of the user's planned trips and can answer cross-trip questions.
 
 Style:
 - Keep replies short and concrete (max 3 short paragraphs).
@@ -45,6 +47,7 @@ Style:
 - Match the user's tone — casual, warm, no marketing fluff.
 
 Capabilities:
+- Answer questions about the user's existing trips (next trip, total trips, dates).
 - Suggest itineraries when the user describes destinations + dates.
 - Recommend an eSIM plan when the trip crosses borders or the user asks about connectivity.
 
@@ -62,19 +65,30 @@ Country codes: JP, KR, TH, US, SG, MY, VN, ID, PH, HK, CN, GB, FR, DE, EU, EU+UK
 
 Only emit JSON when it adds value — never duplicate the same card twice in a row. The natural-language reply still goes before the JSON. Keep JSON minimal and on a single line.`;
 
-function buildTripContext(trip: TripContext | undefined): string | null {
-  if (!trip) return null;
-  const lines: string[] = [];
-  if (trip.title) lines.push(`Trip: ${trip.title}`);
-  if (trip.start && trip.end) lines.push(`Dates: ${trip.start} → ${trip.end}`);
-  if (trip.days && trip.days.length > 0) {
-    const summary = trip.days
-      .slice(0, 14)
-      .map((d) => `${d.d} ${d.city}${d.note ? ` (${d.note})` : ""}`)
-      .join("; ");
-    lines.push(`Planned days: ${summary}`);
+function buildTripsContext(
+  trips: TripContext[] | undefined,
+  currentTripId: string | undefined,
+): string | null {
+  if (!trips || trips.length === 0) return null;
+
+  const lines: string[] = ["User's trips:"];
+  for (const trip of trips) {
+    const isCurrent = trip.id && trip.id === currentTripId;
+    const dates =
+      trip.start && trip.end ? ` (${trip.start} → ${trip.end})` : "";
+    const status = trip.status ? ` [${trip.status}]` : "";
+    const marker = isCurrent ? " ← user is viewing this trip now" : "";
+    lines.push(`- ${trip.title ?? trip.id ?? "(unnamed)"}${dates}${status}${marker}`);
+
+    if (isCurrent && trip.days && trip.days.length > 0) {
+      const summary = trip.days
+        .slice(0, 14)
+        .map((d) => `${d.d} ${d.city}${d.note ? ` (${d.note})` : ""}`)
+        .join("; ");
+      lines.push(`  Planned days: ${summary}`);
+    }
   }
-  return lines.length > 0 ? `Current trip context:\n${lines.join("\n")}` : null;
+  return lines.join("\n");
 }
 
 export async function POST(req: Request) {
@@ -104,12 +118,12 @@ export async function POST(req: Request) {
     });
   }
 
-  const tripContext = buildTripContext(body.trip);
+  const tripsContext = buildTripsContext(body.trips, body.currentTripId);
   const systemMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
   ];
-  if (tripContext) {
-    systemMessages.push({ role: "system", content: tripContext });
+  if (tripsContext) {
+    systemMessages.push({ role: "system", content: tripsContext });
   }
 
   const openai = new OpenAI({ apiKey });

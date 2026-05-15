@@ -1,20 +1,20 @@
 "use client";
 
 // Tab navigation for the trip detail page. C-1 used in-page state to flip
-// between overview and checklist; C-2 promotes the tabs to real routes
-// (overview / lumi / checklist) so the Lumi tab can have its own chat URL
-// and the user can deep-link back to a specific tab.
+// between overview and checklist; we promote the tabs to real routes so
+// each tab is deep-linkable. Lumi is *not* a tab — she lives as a global
+// floating launcher in the storefront shell so the user can summon her
+// from any view.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
-export type TripTabId = "overview" | "lumi" | "checklist";
+export type TripTabId = "overview" | "checklist";
 
 export interface TripTabsLabels {
   overview: string;
-  lumi: string;
   checklist: string;
 }
 
@@ -33,20 +33,13 @@ export function TripDetailTabBar({
 }: TripTabsProps) {
   const pathname = usePathname() ?? "";
   const base = `/${lang}/trips/${tripId}`;
-  const active: TripTabId = pathname.endsWith("/lumi")
-    ? "lumi"
-    : pathname.endsWith("/checklist")
-      ? "checklist"
-      : "overview";
+  const active: TripTabId = pathname.endsWith("/checklist")
+    ? "checklist"
+    : "overview";
 
   return (
     <div className="flex gap-0 border-b border-divider px-4">
       <TabLink href={base} active={active === "overview"} label={labels.overview} />
-      <TabLink
-        href={`${base}/lumi`}
-        active={active === "lumi"}
-        label={labels.lumi}
-      />
       <TabLink
         href={`${base}/checklist`}
         active={active === "checklist"}
