@@ -64,6 +64,38 @@ export interface ProductMedia {
   hero?: string;
 }
 
+export type SupplierStatus = "active" | "paused" | "terminated";
+export type SupplierIntegrationType = "api" | "manual_csv";
+
+export interface Supplier {
+  id: string;
+  code: string;
+  display_name: string;
+  status: SupplierStatus;
+  integration_type: SupplierIntegrationType;
+  default_currency: string;
+  contact: Record<string, unknown>;
+  credentials_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SupplierPlanSyncTrigger = "cron" | "admin" | "system";
+export type SupplierPlanSyncStatus = "success" | "partial" | "failed";
+
+export interface SupplierPlanSyncLog {
+  id: string;
+  supplier_id: string;
+  trigger: SupplierPlanSyncTrigger;
+  triggered_by: string | null;
+  started_at: string;
+  finished_at: string | null;
+  status: SupplierPlanSyncStatus;
+  summary: Record<string, unknown>;
+  error_message: string | null;
+  plan_count: number | null;
+}
+
 export interface SupplierPlan {
   id: string;
   supplier_id: string;
@@ -77,8 +109,16 @@ export interface SupplierPlan {
   cost_amount: number;
   cost_currency: string;
   available: boolean;
+  admin_enabled: boolean;
   inventory_hint: number | null;
   last_synced_at: string | null;
+}
+
+export interface SupplierPlanDetail extends SupplierPlan {
+  network_operators: Record<string, unknown>;
+  raw_payload: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProductSupplierMapping {

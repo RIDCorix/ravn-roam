@@ -8,7 +8,9 @@ export * from "./supplier-plan";
 export * from "./supplier-plan-sync-log";
 export * from "./product";
 export * from "./product-supplier-mapping";
+export * from "./audit-log";
 
+import { auditLog } from "./audit-log";
 import { product } from "./product";
 import { productSupplierMapping } from "./product-supplier-mapping";
 import { supplier } from "./supplier";
@@ -23,6 +25,7 @@ export const schema = {
   supplierPlanSyncLog,
   product,
   productSupplierMapping,
+  auditLog,
 } as const;
 
 export default schema;

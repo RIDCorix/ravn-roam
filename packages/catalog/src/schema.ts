@@ -4,6 +4,48 @@
 
 import { z } from "zod";
 
+export const supplierStatusSchema = z.enum(["active", "paused", "terminated"]);
+
+export const supplierIntegrationTypeSchema = z.enum(["api", "manual_csv"]);
+
+export const supplierCreateSchema = z.object({
+  code: z
+    .string()
+    .min(2)
+    .max(40)
+    .regex(/^[a-z0-9][a-z0-9_-]*$/, "lowercase letters, digits, underscores, hyphens"),
+  display_name: z.string().min(1).max(120),
+  status: supplierStatusSchema.default("active"),
+  integration_type: supplierIntegrationTypeSchema.default("api"),
+  default_currency: z.string().length(3, "ISO 4217 currency code (3 chars)"),
+  contact: z.record(z.string(), z.unknown()).default({}),
+  credentials_ref: z.string().min(1).max(200).nullable().optional(),
+});
+
+export const supplierUpdateSchema = supplierCreateSchema
+  .omit({ code: true })
+  .partial();
+
+export const supplierPauseSchema = z.object({
+  // Explicit "what state should this supplier be in" rather than a blind
+  // toggle. Keeps the API safe to retry and the audit log unambiguous.
+  status: z.enum(["active", "paused"]),
+});
+
+// supplier_plan PATCH is intentionally narrow: only the admin-controlled
+// gate is mutable. Numeric / inclusion fields are owned by the sync job and
+// must not be edited from the UI. Validated both client- and server-side.
+export const supplierPlanAdminPatchSchema = z.object({
+  admin_enabled: z.boolean(),
+});
+
+export type SupplierCreateInput = z.infer<typeof supplierCreateSchema>;
+export type SupplierUpdateInput = z.infer<typeof supplierUpdateSchema>;
+export type SupplierPauseInput = z.infer<typeof supplierPauseSchema>;
+export type SupplierPlanAdminPatchInput = z.infer<
+  typeof supplierPlanAdminPatchSchema
+>;
+
 export const productCategorySchema = z.enum([
   "single_country",
   "regional",

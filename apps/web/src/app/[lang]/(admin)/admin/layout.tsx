@@ -38,6 +38,7 @@ export default async function AdminLayout({
             labels={{
               dashboard: dict.admin.heading,
               products: dict.admin.nav.products,
+              suppliers: dict.admin.nav.suppliers,
               supplier_plans: dict.admin.nav.supplier_plans,
             }}
           />

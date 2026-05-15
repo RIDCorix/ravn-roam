@@ -22,6 +22,7 @@ function plan(overrides: Partial<SupplierPlan> = {}): SupplierPlan {
     cost_amount: 4,
     cost_currency: "USD",
     available: true,
+    admin_enabled: true,
     inventory_hint: null,
     last_synced_at: null,
     ...overrides,

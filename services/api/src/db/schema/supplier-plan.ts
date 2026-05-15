@@ -45,6 +45,10 @@ export const supplierPlan = roamPoc.table(
     costAmount: numeric("cost_amount", { precision: 12, scale: 4 }).notNull(),
     costCurrency: text("cost_currency").notNull(),
     available: boolean("available").notNull().default(true),
+    // Admin-controlled gate. `available` is owned by the sync job and tracks
+    // upstream supplier state; `admin_enabled` is the operator's local kill
+    // switch. Storefront eligibility = available AND admin_enabled.
+    adminEnabled: boolean("admin_enabled").notNull().default(true),
     inventoryHint: integer("inventory_hint"),
     // Original supplier response — kept as a parseable archive so renaming
     // upstream fields does not lose history.

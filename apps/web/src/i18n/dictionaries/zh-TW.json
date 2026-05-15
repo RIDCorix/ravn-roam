@@ -154,7 +154,12 @@
       "filters": {
         "country": "國家(ISO-2)",
         "search_placeholder": "搜尋名稱或外部 ID…",
-        "available_only": "僅顯示可用"
+        "available_only": "僅顯示可用",
+        "supplier": "供應商",
+        "min_data_mb": "最低流量 (MB)",
+        "min_validity_days": "最短有效期(天)",
+        "max_validity_days": "最長有效期(天)",
+        "admin_enabled": "後台啟用"
       },
       "columns": {
         "supplier": "供應商",
@@ -166,9 +171,108 @@
         "activation_policy": "啟用",
         "delivery_model": "交付",
         "cost": "成本",
-        "available": "可用"
+        "available": "可用",
+        "admin_enabled": "啟用"
       },
-      "row_action_create_product": "以此建立商品 →"
+      "row_action_create_product": "以此建立商品 →",
+      "row_action_detail": "詳情",
+      "detail": {
+        "title": "供應商方案",
+        "intro": "此資料由同步排程維護 — 後台不可修改成本、目的地、流量、有效期與啟用方式。",
+        "section_summary": "摘要",
+        "section_payload": "上游原始 payload",
+        "field_supplier": "供應商",
+        "field_external_id": "外部 ID",
+        "field_destinations": "目的地",
+        "field_data": "流量",
+        "field_validity": "有效期",
+        "field_activation_policy": "啟用方式",
+        "field_delivery_model": "交付方式",
+        "field_cost": "成本",
+        "field_available": "上游可用",
+        "field_admin_enabled": "後台啟用",
+        "field_inventory_hint": "庫存提示",
+        "field_last_synced_at": "最近同步",
+        "field_created_at": "建立",
+        "field_updated_at": "更新",
+        "toggle_enable": "啟用方案",
+        "toggle_disable": "停用方案",
+        "locked_notice": "數值與內容欄位由同步排程維護,後台不可修改。"
+      }
+    },
+    "suppliers": {
+      "title": "供應商",
+      "create": "新增供應商",
+      "back": "返回供應商列表",
+      "filters": {
+        "status": "狀態",
+        "search_placeholder": "以代碼或名稱搜尋…"
+      },
+      "columns": {
+        "code": "代碼",
+        "display_name": "顯示名稱",
+        "status": "狀態",
+        "integration_type": "串接方式",
+        "default_currency": "預設幣別",
+        "updated_at": "最近更新"
+      },
+      "statuses": {
+        "active": "啟用",
+        "paused": "暫停",
+        "terminated": "終止"
+      },
+      "integration_types": {
+        "api": "API",
+        "manual_csv": "人工 CSV"
+      },
+      "form": {
+        "code": "代碼",
+        "code_hint": "對應供應商 adapter 的內部短代碼(小寫英數、底線、連字號)。",
+        "display_name": "顯示名稱",
+        "status": "狀態",
+        "integration_type": "串接方式",
+        "default_currency": "預設幣別 (ISO 4217)",
+        "credentials_ref": "憑證指標",
+        "credentials_ref_hint": "Secret store 的參照位置。請勿直接貼入憑證內容。",
+        "contact_json": "聯絡資訊 (JSON)",
+        "contact_json_hint": "聯絡與 SLA 備註,須為 JSON 物件。"
+      },
+      "detail": {
+        "summary": "摘要",
+        "sync_log": "最近同步紀錄",
+        "sync_log_empty": "尚無同步紀錄。",
+        "manual_sync": "手動觸發同步",
+        "manual_sync_in_progress": "同步中…",
+        "pause": "暫停供應商",
+        "resume": "重新啟用",
+        "terminated_notice": "此供應商已終止,無法重新啟用。",
+        "edit": "編輯供應商",
+        "view_plans": "查看此供應商的方案"
+      },
+      "sync_log_columns": {
+        "started_at": "開始時間",
+        "trigger": "觸發來源",
+        "triggered_by": "觸發者",
+        "status": "結果",
+        "plan_count": "方案數",
+        "duration": "耗時",
+        "error": "錯誤"
+      },
+      "sync_triggers": {
+        "cron": "排程",
+        "admin": "後台",
+        "system": "系統"
+      },
+      "sync_statuses": {
+        "success": "成功",
+        "partial": "部分成功",
+        "failed": "失敗"
+      },
+      "errors": {
+        "code_conflict": "已存在相同代碼的供應商。",
+        "contact_json_invalid": "聯絡資訊必須為合法 JSON。",
+        "supplier_terminated": "已終止的供應商無法變更狀態。"
+      }
     },
     "preview": {
       "title": "門市預覽",

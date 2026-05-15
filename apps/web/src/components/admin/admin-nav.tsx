@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Building2,
   LayoutDashboard,
   Package,
   PackageSearch,
@@ -31,6 +32,7 @@ interface NavGroup {
 export interface AdminNavLabels {
   dashboard: string;
   products: string;
+  suppliers: string;
   supplier_plans: string;
 }
 
@@ -60,6 +62,11 @@ export function AdminNav({
           href: `/${lang}/admin/products`,
           label: labels.products,
           Icon: Package,
+        },
+        {
+          href: `/${lang}/admin/suppliers`,
+          label: labels.suppliers,
+          Icon: Building2,
         },
         {
           href: `/${lang}/admin/supplier-plans`,
