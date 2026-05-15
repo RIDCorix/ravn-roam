@@ -1,35 +1,228 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* ================================================================
+   Roam admin/storefront design tokens. Mirrors apps/landing —
+   keep them in lockstep until we extract a shared @roam/tokens
+   package. All semantic colors flow through CSS variables so
+   shadcn primitives and our own components share one source of
+   truth (no inline-tailwind-color drift).
+
+   Naming follows the landing convention:
+   - bg / surface / surface-elevated / surface-sunken
+   - fg / fg-secondary / fg-muted / fg-subtle
+   - accent (brand teal) + variants
+   - semantic: success / warning / error / info (each + soft)
+   - cta (dark button)
+   - border / border-strong (admin needs explicit borders;
+     landing relies on dividers, but data tables need solid lines)
+   ================================================================ */
 
 :root {
+  /* ---- COLOR — NEUTRALS ---- */
   --bg: #f7f7f5;
-  --fg: #111111;
-  --fg-secondary: #666666;
-  --accent: #0fb8b4;
   --surface: #ffffff;
-  --surface-muted: #f2f2ef;
+  --surface-elevated: #fcfcfd;
+  --surface-sunken: #f2f2ef;
+  --surface-hover: #efefec;
+  --divider: rgba(0, 0, 0, 0.06);
+  --divider-strong: rgba(0, 0, 0, 0.1);
   --border: #e6e6e0;
   --border-strong: #d0d0c7;
-  --danger: #c43c2e;
-  --success: #2e8b57;
-  --warning: #b8860b;
+
+  --fg: #111111;
+  --fg-secondary: #666666;
+  --fg-muted: #999999;
+  --fg-subtle: #b8b8b8;
+  --fg-inverse: #ffffff;
+
+  /* ---- COLOR — ACCENT (teal — brand) ---- */
+  --accent: #0fb8b4;
+  --accent-hover: #1fc9c5;
+  --accent-light: #5dd9d5;
+  --accent-soft: #dcf4f3;
+  --accent-softer: #ebfaf9;
+  --accent-ring: rgba(15, 184, 180, 0.32);
+  --accent-glow: rgba(15, 184, 180, 0.24);
+  --accent-fg: #ffffff;
+
+  /* ---- COLOR — SEMANTIC ---- */
+  --success: #10a37f;
+  --success-soft: #e7f6f1;
+  --warning: #d9994e;
+  --warning-soft: #fbf1e4;
+  --error: #e5484d;
+  --error-soft: #fcebec;
+  --info: #5b7cfa;
+  --info-soft: #ecf0fe;
+  --danger: #e5484d; /* legacy alias — kept for old components */
+
+  /* ---- COLOR — DARK / CTA ---- */
+  --cta: #111111;
+  --cta-hover: #1f1f1f;
+  --cta-fg: #ffffff;
+
+  /* ---- TYPE ---- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ---- SHADOWS ---- */
+  --shadow-xs: 0 1px 2px rgba(17, 17, 32, 0.04);
+  --shadow-sm: 0 2px 8px rgba(17, 17, 32, 0.04),
+    0 1px 2px rgba(17, 17, 32, 0.04);
+  --shadow-md: 0 8px 24px rgba(17, 17, 32, 0.06),
+    0 2px 6px rgba(17, 17, 32, 0.04);
+  --shadow-lg: 0 16px 48px rgba(17, 17, 32, 0.08),
+    0 4px 12px rgba(17, 17, 32, 0.05);
+  --shadow-glow-accent: 0 12px 40px rgba(15, 184, 180, 0.24),
+    0 0 0 1px rgba(15, 184, 180, 0.08);
+
+  /* ---- MOTION ---- */
+  --ease-out-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --dur-micro: 140ms;
+  --dur-fast: 180ms;
+  --dur-base: 260ms;
+
+  /* ---- RADIUS ---- */
+  --radius: 0.5rem;
+
+  /* ============================================================
+     shadcn/ui token bridge. shadcn components reference these
+     names directly (background, foreground, primary, ring …); we
+     point each at a brand token so installing a shadcn component
+     auto-inherits Roam's palette without per-component overrides.
+     ============================================================ */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --card-foreground: var(--fg);
+  --popover: var(--surface);
+  --popover-foreground: var(--fg);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-fg);
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--fg);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--fg-secondary);
+  --accent-bg: var(--accent-soft);
+  --accent-foreground: var(--accent);
+  --destructive: var(--error);
+  --destructive-foreground: var(--fg-inverse);
+  --border-rgb: var(--border);
+  --input: var(--border);
+  --ring: var(--accent-ring);
+  --chart-1: var(--accent);
+  --chart-2: var(--info);
+  --chart-3: var(--warning);
+  --chart-4: var(--success);
+  --chart-5: var(--error);
+  --sidebar: var(--surface-sunken);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--accent-fg);
+  --sidebar-accent: var(--surface);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--divider);
+  --sidebar-ring: var(--accent-ring);
 }
 
 html,
 body {
   background: var(--bg);
   color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ================================================================
+   @theme inline — exposes the CSS vars as Tailwind 4 utilities
+   (`bg-surface`, `text-fg-secondary`, `border-border-strong`, …).
+   Tailwind 4 reads from the @theme block at build time; only what
+   we list here becomes a utility.
+   ================================================================ */
 @theme inline {
   --color-bg: var(--bg);
-  --color-fg: var(--fg);
-  --color-fg-secondary: var(--fg-secondary);
-  --color-accent: var(--accent);
   --color-surface: var(--surface);
-  --color-surface-muted: var(--surface-muted);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-divider: var(--divider);
+  --color-divider-strong: var(--divider-strong);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
-  --color-danger: var(--danger);
+
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-inverse: var(--fg-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent-light);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-softer: var(--accent-softer);
+
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-error: var(--error);
+  --color-error-soft: var(--error-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-danger: var(--danger);
+
+  --color-cta: var(--cta);
+  --color-cta-hover: var(--cta-hover);
+  --color-cta-fg: var(--cta-fg);
+
+  /* shadcn names — keeps `bg-primary`, `text-foreground` etc. working */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
