@@ -24,7 +24,17 @@ const NAME_FIELDS = ["productName", "productNameZh", "name"] as const;
 const DATA_FIELDS = ["flowMb", "dataMb", "flow", "data"] as const;
 const VALIDITY_FIELDS = ["validDay", "validDays", "days", "valid"] as const;
 const DESTINATION_FIELDS = ["countryList", "countries", "areaList"] as const;
-const SINGLE_DESTINATION_FIELDS = ["countryCode", "country", "iso2"] as const;
+// `productRegion` is the v2.0.3 production response field — free-form
+// region label ("Japan", "China, Hong Kong & Macao", "非洲", "任何"), NOT
+// an ISO-2 code. Carrying it here as a fallback gives the supplier-plans
+// admin table something readable to display; admins translate it to real
+// ISO codes when promoting the plan into a product.
+const SINGLE_DESTINATION_FIELDS = [
+  "countryCode",
+  "country",
+  "iso2",
+  "productRegion",
+] as const;
 const INVENTORY_FIELDS = ["inventory", "stock", "remain"] as const;
 const AVAILABLE_FIELDS = ["available", "onSale", "enabled"] as const;
 

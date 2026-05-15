@@ -24,8 +24,9 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function fakeOkResponse(): QuoteMgMyQueryAllResponse {
   return {
-    resultCode: "0000",
-    quoteList: [
+    code: 0,
+    msg: null,
+    prodList: [
       {
         wmproductId: "WM-JP-7D",
         productName: "Japan 7-day 3GB",
@@ -130,9 +131,9 @@ describe("FastmoveAdapter", () => {
     }
   });
 
-  test("malformed body (no quoteList) surfaces as FastmoveUpstreamError", async () => {
+  test("malformed body (no prodList) surfaces as FastmoveUpstreamError", async () => {
     const fetchImpl: typeof fetch = vi.fn(async () =>
-      jsonResponse({ resultCode: "0000" }),
+      jsonResponse({ code: 0, msg: null }),
     );
     const adapter = new FastmoveAdapter({ ...CONFIG, fetchImpl });
 

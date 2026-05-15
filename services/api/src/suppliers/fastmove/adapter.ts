@@ -59,14 +59,14 @@ export class FastmoveAdapter implements SupplierAdapter {
 
   async *listPlans(): AsyncIterable<RawPlan> {
     const response = await this.queryAll();
-    for (const item of response.quoteList) {
+    for (const item of response.prodList) {
       yield mapFastmoveQuoteToRawPlan(item);
     }
   }
 
   async getPlan(externalId: string): Promise<RawPlan | null> {
     const response = await this.queryAll();
-    const hit = response.quoteList.find((q) => q.wmproductId === externalId);
+    const hit = response.prodList.find((q) => q.wmproductId === externalId);
     return hit ? mapFastmoveQuoteToRawPlan(hit) : null;
   }
 
@@ -118,9 +118,9 @@ export class FastmoveAdapter implements SupplierAdapter {
     }
 
     const json = (await res.json()) as QuoteMgMyQueryAllResponse;
-    if (!Array.isArray(json.quoteList)) {
+    if (!Array.isArray(json.prodList)) {
       throw new FastmoveUpstreamError(
-        "Fastmove response missing `quoteList`",
+        "Fastmove response missing `prodList`",
         res.status,
       );
     }
