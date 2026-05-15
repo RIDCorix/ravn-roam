@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DataTable } from "./data-table";
-import { formatData, formatDateTime, formatValidity } from "@/lib/format";
+import { formatData, formatValidity } from "@/lib/format";
 
 import type { AdminDict } from "./dict";
 
@@ -104,7 +104,9 @@ export function SupplierPlansTable({
         header: dict.admin.supplier_plans.columns.activation_policy,
         cell: ({ row }) => (
           <span className="text-xs text-fg-secondary">
-            {row.original.activation_policy}
+            {dict.admin.supplier_plans.activation_policies[
+              row.original.activation_policy
+            ] ?? row.original.activation_policy}
           </span>
         ),
       },
@@ -114,7 +116,9 @@ export function SupplierPlansTable({
         header: dict.admin.supplier_plans.columns.delivery_model,
         cell: ({ row }) => (
           <span className="text-xs text-fg-secondary">
-            {row.original.delivery_model}
+            {dict.admin.supplier_plans.delivery_models[
+              row.original.delivery_model
+            ] ?? row.original.delivery_model}
           </span>
         ),
       },
@@ -162,8 +166,6 @@ export function SupplierPlansTable({
     [lang, dict],
   );
 
-  const lastSync = plans.find((p) => p.last_synced_at)?.last_synced_at ?? null;
-
   return (
     <DataTable
       columns={columns}
@@ -171,13 +173,6 @@ export function SupplierPlansTable({
       searchColumnId="name"
       searchPlaceholder={dict.admin.supplier_plans.filters.search_placeholder}
       emptyMessage={dict.admin.common.no_results}
-      toolbarRight={
-        lastSync ? (
-          <span className="text-xs text-fg-muted">
-            Last sync: {formatDateTime(lastSync)}
-          </span>
-        ) : null
-      }
     />
   );
 }
