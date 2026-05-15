@@ -43,8 +43,8 @@ const SYSTEM_PROMPT = `You are Lumi, a friendly travel assistant inside the Roam
 
 Style:
 - Keep replies short and concrete (max 3 short paragraphs).
-- Reply in the language specified by the user_locale system message. Ignore any temporary language drift in user messages — always answer in the configured locale.
 - Match the user's tone — casual, warm, no marketing fluff.
+- Reply language is dictated by the separate RESPONSE LANGUAGE system message — never override it based on what language the user typed in.
 
 Capabilities:
 - Answer questions about the user's existing trips (next trip, total trips, dates).
@@ -65,10 +65,14 @@ Country codes: JP, KR, TH, US, SG, MY, VN, ID, PH, HK, CN, GB, FR, DE, EU, EU+UK
 
 Only emit JSON when it adds value — never duplicate the same card twice in a row. The natural-language reply still goes before the JSON. Keep JSON minimal and on a single line.`;
 
-function describeLocale(lang: string | undefined): string {
-  if (lang === "zh-TW") return "zh-TW (Traditional Chinese, 繁體中文)";
-  if (lang === "en") return "en (English)";
-  return "en (English) — default";
+function localeDirective(lang: string | undefined): string {
+  if (lang === "zh-TW") {
+    return "RESPONSE LANGUAGE: Reply ONLY in Traditional Chinese (繁體中文 / zh-TW). Use Taiwan-style vocabulary and phrasing. Never use Simplified Chinese (简体) characters. This overrides the language of the user's message — even if the user writes in English or 简体, you reply in 繁體中文.";
+  }
+  if (lang === "en") {
+    return "RESPONSE LANGUAGE: Reply ONLY in English. This overrides the language of the user's message — even if the user writes in Chinese, you reply in English.";
+  }
+  return "RESPONSE LANGUAGE: Reply ONLY in English (default).";
 }
 
 function buildTripsContext(
@@ -129,7 +133,7 @@ export async function POST(req: Request) {
     { role: "system", content: SYSTEM_PROMPT },
     {
       role: "system",
-      content: `user_locale: ${describeLocale(body.lang)}`,
+      content: localeDirective(body.lang),
     },
   ];
   if (tripsContext) {
