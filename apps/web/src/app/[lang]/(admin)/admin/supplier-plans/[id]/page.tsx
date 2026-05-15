@@ -117,11 +117,18 @@ export default async function SupplierPlanDetailPage({
           />
           <DefRow
             term={dict.admin.supplier_plans.detail.field_activation_policy}
-            desc={plan.activation_policy}
+            desc={
+              dict.admin.supplier_plans.activation_policies[
+                plan.activation_policy
+              ] ?? plan.activation_policy
+            }
           />
           <DefRow
             term={dict.admin.supplier_plans.detail.field_delivery_model}
-            desc={plan.delivery_model}
+            desc={
+              dict.admin.supplier_plans.delivery_models[plan.delivery_model] ??
+              plan.delivery_model
+            }
           />
           <DefRow
             term={dict.admin.supplier_plans.detail.field_cost}
