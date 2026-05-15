@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roam eSIM</title>
+  <link rel="stylesheet" href="colors_and_type.css">
+  <style>
+    html, body { margin: 0; padding: 0; }
+    html, body, #app { min-height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.45; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .screen-in { animation: fadeUp 280ms var(--ease-out-soft); }
+    /* Frame mode — wrap the entire app inside a phone shell when active */
+    .frame-mode {
+      min-height: 100vh;
+      display: flex; justify-content: center; align-items: flex-start;
+      padding: 32px 24px;
+      background:
+        radial-gradient(60% 50% at 20% 0%, rgba(15, 184, 180, 0.08), transparent 70%),
+        radial-gradient(40% 40% at 90% 100%, rgba(91,124,250,0.06), transparent 70%),
+        var(--surface-sunken);
+    }
+    .frame-phone {
+      width: 390px; height: 844px;
+      border-radius: 56px; padding: 12px;
+      background: #111;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.20), 0 0 0 8px #1F1F1F, 0 0 0 9px #2A2A2A;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .frame-phone-screen {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      /* Become containing block for fixed children so BottomNav anchors here */
+      transform: translateZ(0);
+    }
+    .frame-phone-notch {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 34px; background: #000; border-radius: 999px;
+      z-index: 30;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.10); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.18); }
+  </style>
+</head>
+<body data-screen-label="Roam eSIM Consumer App">
+  <div id="app"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="components/Primitives.jsx"></script>
+  <script type="text/babel" src="components/Data.jsx"></script>
+  <script type="text/babel" src="components/Shell.jsx"></script>
+  <script type="text/babel" src="components/Home.jsx"></script>
+  <script type="text/babel" src="components/Trips.jsx"></script>
+  <script type="text/babel" src="components/Lumi.jsx"></script>
+  <script type="text/babel" src="components/Tasks.jsx"></script>
+  <script type="text/babel" src="components/Shop.jsx"></script>
+  <script type="text/babel" src="components/Profile.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "frame": "phone",
+      "currency": "TWD",
+      "hasActiveESIM": true
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [screen, setScreen] = useState('home');
+      const [shopFilter, setShopFilter] = useState(null);
+
+      // RWD: track viewport
+      const [vw, setVw] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+      useEffect(() => {
+        const onR = () => setVw(window.innerWidth);
+        window.addEventListener('resize', onR);
+        return () => window.removeEventListener('resize', onR);
+      }, []);
+
+      // Inside the phone frame we're always mobile. Outside, RWD by viewport.
+      const isMobile = t.frame === 'phone' ? true : vw < 900;
+
+      // navigate('shop:JP') or navigate('trip:xx') or just navigate('shop')
+      const navigate = (target) => {
+        if (target.startsWith('shop:')) {
+          const filt = target.slice(5);
+          setShopFilter(filt || null);
+          setScreen('shop');
+        } else if (target === 'shop') {
+          setShopFilter(null);
+          setScreen('shop');
+        } else if (target === 'lumi') {
+          // Open Lumi inside the active or upcoming trip
+          const active = TRIPS.find(t => t.status === 'active') || TRIPS.find(t => t.status === 'upcoming');
+          if (active) setScreen('trip:' + active.id + ':lumi');
+          else setScreen('trips');
+        } else {
+          setScreen(target);
+        }
+      };
+
+      // Render screen
+      let body;
+      if (screen.startsWith('trip:')) {
+        const tripId = screen.slice(5).split(':')[0];
+        body = <TripDetail tripId={tripId} navigate={navigate} isMobile={isMobile}/>;
+      } else if (screen === 'home')   body = <Home   navigate={navigate} isMobile={isMobile}/>;
+      else if (screen === 'trips')   body = <Trips  navigate={navigate} isMobile={isMobile}/>;
+      else if (screen === 'tasks')   body = <Tasks  navigate={navigate} isMobile={isMobile}/>;
+      else if (screen === 'shop')    body = <Shop   navigate={navigate} isMobile={isMobile} prefilter={shopFilter} currency={t.currency}/>;
+      else if (screen === 'me')      body = <Profile navigate={navigate} currency={t.currency} onCurrencyChange={c => setTweak('currency', c)}/>;
+      else                            body = <Home navigate={navigate} isMobile={isMobile}/>;
+
+      const navScreen = screen.startsWith('trip:') ? 'trips' : screen;
+
+      const inner = (
+        <Shell screen={navScreen} onScreenChange={navigate} isMobile={isMobile}>
+          <div className="screen-in" key={screen}>
+            {body}
+          </div>
+        </Shell>
+      );
+
+      if (t.frame === 'phone') return (
+        <>
+          <div className="frame-mode">
+            <div className="frame-phone">
+              <div className="frame-phone-notch"/>
+              <div className="frame-phone-screen">
+                <div style={{ height: '100%', overflowY: 'auto' }}>
+                  {inner}
+                </div>
+              </div>
+            </div>
+          </div>
+          <TweaksPanelControls t={t} setTweak={setTweak}/>
+        </>
+      );
+
+      return (
+        <>
+          {inner}
+          <TweaksPanelControls t={t} setTweak={setTweak}/>
+        </>
+      );
+    }
+
+    function TweaksPanelControls({ t, setTweak }) {
+      return (
+        <TweaksPanel title="Tweaks">
+          <TweakSection label="預覽">
+            <TweakRadio
+              label="模式"
+              value={t.frame}
+              onChange={v => setTweak('frame', v)}
+              options={[
+                { value: 'phone',    label: '手機' },
+                { value: 'rwd',      label: '響應' },
+              ]}
+            />
+          </TweakSection>
+          <TweakSection label="顯示">
+            <TweakRadio
+              label="幣別"
+              value={t.currency}
+              onChange={v => setTweak('currency', v)}
+              options={[
+                { value: 'TWD', label: 'TWD' },
+                { value: 'USD', label: 'USD' },
+              ]}
+            />
+          </TweakSection>
+        </TweaksPanel>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+  </script>
+</body>
+</html>
