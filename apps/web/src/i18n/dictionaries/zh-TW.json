@@ -510,7 +510,7 @@
         "back": "回到行程",
         "not_found": "找不到行程",
         "day_unit": "天",
-        "day_word": "Day",
+        "day_label": "第 {n} 天",
         "timeline_section": "每日行程",
         "today": "今天"
       },

@@ -10,12 +10,13 @@ export function DailyTimeline({
   trip,
   sectionLabel,
   todayLabel,
-  dayWord,
+  dayLabelTemplate,
 }: {
   trip: Trip;
   sectionLabel: string;
   todayLabel: string;
-  dayWord: string;
+  // Format template for the per-day label, e.g. "第 {n} 天" or "Day {n}".
+  dayLabelTemplate: string;
 }) {
   const cities = uniqueCities(trip).slice(0, 5);
 
@@ -42,7 +43,7 @@ export function DailyTimeline({
                       className="whitespace-nowrap text-[11px] text-fg-muted"
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
-                      {dayWord} {i + 1}
+                      {dayLabelTemplate.replace("{n}", String(i + 1))}
                     </div>
                     <div
                       className="whitespace-nowrap text-[13px] font-medium text-fg"

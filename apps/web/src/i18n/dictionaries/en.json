@@ -510,7 +510,7 @@
         "back": "Back to trips",
         "not_found": "Trip not found",
         "day_unit": "days",
-        "day_word": "Day",
+        "day_label": "Day {n}",
         "timeline_section": "Daily itinerary",
         "today": "Today"
       },

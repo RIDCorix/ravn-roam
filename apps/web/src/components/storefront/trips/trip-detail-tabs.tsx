@@ -20,7 +20,7 @@ export interface TripDetailLabels {
   };
   timelineSection: string;
   todayBadge: string;
-  dayWord: string;
+  dayLabelTemplate: string;
   checklistGroups: {
     suggested: string;
     pending: string;
@@ -64,7 +64,7 @@ export function TripDetailTabs({
             trip={trip}
             sectionLabel={labels.timelineSection}
             todayLabel={labels.todayBadge}
-            dayWord={labels.dayWord}
+            dayLabelTemplate={labels.dayLabelTemplate}
           />
         ) : (
           <ChecklistView

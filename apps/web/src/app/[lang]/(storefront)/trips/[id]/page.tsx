@@ -34,7 +34,7 @@ export default async function TripDetailPage({
     },
     timelineSection: t.detail.timeline_section,
     todayBadge: t.detail.today,
-    dayWord: t.detail.day_word,
+    dayLabelTemplate: t.detail.day_label,
     checklistGroups: {
       suggested: t.checklist.suggested,
       pending: t.checklist.pending,
