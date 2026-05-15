@@ -18,3 +18,17 @@ VALUES (
   'Roam Platform'
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- Supplier seed (ROA-100).
+--
+-- The supplier_plan_sync orchestrator looks up the supplier row by `code`
+-- before pulling plans; if the row is missing it throws
+-- `no supplier row for code "fastmove" — seed it before running sync`.
+-- Bootstrapping a fresh env (staging / new Supabase project) therefore
+-- needs this row to exist before either the CLI or the admin manual-sync
+-- button can populate supplier_plan. Per ROA-86 D1 the first integration
+-- is Fastmove / 世界移動; currency TWD matches its quoted prices.
+
+INSERT INTO "roam_poc"."supplier" (code, display_name, status, integration_type, default_currency)
+VALUES ('fastmove', '世界移動 Fastmove', 'active', 'api', 'TWD')
+ON CONFLICT (code) DO NOTHING;
