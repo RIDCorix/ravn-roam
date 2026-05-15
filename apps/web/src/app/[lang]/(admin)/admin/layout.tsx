@@ -4,6 +4,7 @@ import { LayoutDashboard, Package, PackageSearch } from "lucide-react";
 
 import { getDictionary, hasLocale, LOCALES } from "../../dictionaries";
 
+import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs";
 import { AdminNav, type AdminNavGroup } from "@/components/admin/admin-nav";
 import { LocaleSwitcher } from "@/components/admin/locale-switcher";
 import { Toaster } from "sonner";
@@ -63,11 +64,14 @@ export default async function AdminLayout({
           <AdminNav groups={groups} />
         </aside>
         <main className="flex-1 min-w-0 flex flex-col">
-          <header className="h-14 flex items-center justify-end gap-3 px-6 border-b border-divider bg-surface">
-            <LocaleSwitcher
-              currentLang={lang}
-              locales={LOCALES as readonly string[]}
-            />
+          <header className="h-14 flex items-center gap-3 px-6 border-b border-divider bg-surface">
+            <AdminBreadcrumbs />
+            <div className="ml-auto flex items-center gap-3">
+              <LocaleSwitcher
+                currentLang={lang}
+                locales={LOCALES as readonly string[]}
+              />
+            </div>
           </header>
           <div className="flex-1 px-6 py-6">{children}</div>
         </main>
