@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { notFound } from "next/navigation";
 
 import "../globals.css";
@@ -11,9 +12,14 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Intel One Mono — Roam brand mono, used for code, kbd, table data,
+// signal-strength labels, mono numerals on the active eSIM card.
+// Variable font; weight range 300–700 in a single .ttf.
+const intelMono = localFont({
+  src: "../fonts/IntelOneMono-VariableFont_wght.ttf",
+  variable: "--font-intel-mono",
+  weight: "300 700",
+  display: "swap",
 });
 
 export async function generateMetadata({
@@ -47,7 +53,7 @@ export default async function RootLayout({
   return (
     <html
       lang={lang}
-      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${intelMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>

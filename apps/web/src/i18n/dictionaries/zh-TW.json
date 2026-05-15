@@ -436,6 +436,55 @@
   },
   "storefront": {
     "heading": "門市",
-    "tagline": "顧客端 placeholder。"
+    "tagline": "顧客端 placeholder。",
+    "nav": {
+      "home": "首頁",
+      "trips": "行程",
+      "tasks": "任務",
+      "shop": "商店",
+      "me": "我"
+    },
+    "home": {
+      "greeting": "午安，{name}",
+      "subtitle_active": "目前在{city}，{days} 天後返國",
+      "subtitle_no_trip": "想去哪裡都可以",
+      "esim_active_label": "使用中 · {network}",
+      "esim_country_plan": "{country} · {plan}",
+      "esim_remaining_unit": "GB 剩餘",
+      "esim_days_left": "天剩餘",
+      "esim_used": "已用 {gb} GB",
+      "esim_remaining": "剩 {gb} GB",
+      "actions": {
+        "topup": "加購流量",
+        "switch_hotspot": "切換熱點",
+        "troubleshoot": "疑難排解"
+      },
+      "quick_actions": {
+        "shop": "買 eSIM",
+        "new_trip": "新行程",
+        "ask_lumi": "問 Lumi",
+        "my_tasks": "我的任務"
+      },
+      "lumi_nudge": {
+        "name": "Lumi",
+        "time_just_now": "剛剛",
+        "body": "你的歐洲行 10/5 出發，英國 ETA 簽證還沒辦，建議今天先送件，平均 3 天核發。"
+      },
+      "next_trip": {
+        "label_with_countdown": "下個行程 · 還有 {days} 天",
+        "duration_days": "{days} 天"
+      },
+      "active_trip": {
+        "section_title": "進行中的行程",
+        "summary": "{title} · 還有 {n} 項任務",
+        "view_all": "全部 →"
+      }
+    },
+    "tabs": {
+      "trips_placeholder": "Phase C-1：行程與 Trip Detail 即將推出。",
+      "tasks_placeholder": "Phase C-3：跨行程任務聚合即將推出。",
+      "shop_placeholder": "Phase C-4：eSIM 商店即將推出。",
+      "me_placeholder": "Phase C-5：個人頁與設定即將推出。"
+    }
   }
 }
