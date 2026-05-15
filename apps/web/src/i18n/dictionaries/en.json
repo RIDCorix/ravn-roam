@@ -504,6 +504,7 @@
       },
       "tabs": {
         "overview": "Overview",
+        "lumi": "Lumi",
         "checklist": "Checklist"
       },
       "detail": {
@@ -520,6 +521,19 @@
         "done": "Done",
         "shop_cta": "Open",
         "empty": "No tasks for this trip yet."
+      },
+      "lumi": {
+        "intro": "Lumi is helping you plan \"{title}\". Tell her any time about new plans.",
+        "greeting": "Hi! Want to talk about \"{title}\"? Tell me which cities and how many days, and I'll sketch an itinerary and pick an eSIM.",
+        "composer_placeholder": "Tell Lumi something…",
+        "suggestions": [
+          "Add two more days in London",
+          "Show me eSIM options",
+          "How much EUR should I exchange?"
+        ],
+        "error_prefix": "Lumi can't reply right now: ",
+        "itinerary_title": "Suggested itinerary",
+        "esim_cta_fallback": "See eSIM plans"
       }
     }
   }

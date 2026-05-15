@@ -504,6 +504,7 @@
       },
       "tabs": {
         "overview": "概覽",
+        "lumi": "Lumi",
         "checklist": "清單"
       },
       "detail": {
@@ -520,6 +521,19 @@
         "done": "已完成",
         "shop_cta": "打開",
         "empty": "這個行程還沒有任務。"
+      },
+      "lumi": {
+        "intro": "Lumi 在幫你管理這趟「{title}」。任何時候都可以跟她說新計畫。",
+        "greeting": "嗨！想跟我聊聊「{title}」嗎？告訴我你想去哪幾個地方、待幾天，我幫你排行程跟挑 eSIM。",
+        "composer_placeholder": "跟 Lumi 說點什麼…",
+        "suggestions": [
+          "我想多待倫敦兩天",
+          "幫我看 eSIM 方案",
+          "兌換多少歐元夠？"
+        ],
+        "error_prefix": "Lumi 暫時無法回覆：",
+        "itinerary_title": "建議行程",
+        "esim_cta_fallback": "看 eSIM 方案"
       }
     }
   }
