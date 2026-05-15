@@ -86,7 +86,10 @@ function DesktopRail({
   pathname: string;
 }) {
   return (
-    <aside className="hidden md:flex w-[220px] shrink-0 flex-col gap-1.5 border-r border-divider bg-surface px-3.5 py-5">
+    <aside
+      className="hidden md:flex w-[220px] shrink-0 flex-col gap-1.5 border-r border-divider bg-surface px-3.5 py-5"
+      style={{ viewTransitionName: "storefront-shell-rail" }}
+    >
       <Link
         href={`/${lang}`}
         className="mb-4 flex items-center gap-2.5 px-2 py-2 text-sm font-semibold tracking-tight"
@@ -140,6 +143,7 @@ function MobileBottomNav({
       style={{
         background: "rgba(255,255,255,0.92)",
         paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
+        viewTransitionName: "storefront-shell-nav",
       }}
     >
       {tabs.map((tab) => {

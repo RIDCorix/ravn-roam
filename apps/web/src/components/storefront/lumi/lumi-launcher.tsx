@@ -6,7 +6,7 @@
 // trips from the mock catalog and detects the currently-viewed trip via
 // pathname, so a question like "what's my next trip?" works on any page.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sparkles, X } from "lucide-react";
 
@@ -40,6 +40,8 @@ export interface LumiLauncherCopy {
   esimCtaFallback: string;
 }
 
+type SheetPhase = "closed" | "open" | "closing";
+
 export function LumiLauncher({
   lang,
   copy,
@@ -47,29 +49,48 @@ export function LumiLauncher({
   lang: string;
   copy: LumiLauncherCopy;
 }) {
-  const [open, setOpen] = useState(false);
+  const [phase, setPhase] = useState<SheetPhase>("closed");
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname() ?? "";
   const currentTrip = findCurrentTrip(pathname, lang, TRIPS);
+  const visible = phase !== "closed";
 
-  // Close on Escape.
+  const open = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setPhase("open");
+  };
+  const close = () => {
+    setPhase("closing");
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    // Match the longest exit animation in globals.css (.lumi-sheet[data-state=closed]).
+    closeTimer.current = setTimeout(() => setPhase("closed"), 260);
+  };
+
   useEffect(() => {
-    if (!open) return;
+    return () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, []);
+
+  // Close on Escape while the sheet is mounted.
+  useEffect(() => {
+    if (!visible) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [visible]);
 
-  // Lock background scroll while the sheet is open.
+  // Lock background scroll while the sheet is mounted.
   useEffect(() => {
-    if (!open) return;
+    if (!visible) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [open]);
+  }, [visible]);
 
   const intro = currentTrip
     ? copy.introTripTemplate.replace("{title}", currentTrip.title)
@@ -90,13 +111,16 @@ export function LumiLauncher({
     esimCtaFallback: copy.esimCtaFallback,
   };
 
+  const dataState = phase === "open" ? "open" : "closed";
+
   return (
     <>
       <button
         type="button"
         aria-label={copy.launcherLabel}
-        onClick={() => setOpen(true)}
+        onClick={open}
         className={cn(
+          "lumi-launcher-fab",
           "fixed z-30 inline-flex h-14 w-14 items-center justify-center rounded-full text-white",
           "right-4 md:right-6",
           // On mobile the bottom nav reserves ~64px; sit above it. On desktop
@@ -113,12 +137,13 @@ export function LumiLauncher({
         <Sparkles className="h-6 w-6" />
       </button>
 
-      {open && (
+      {visible && (
         <LumiSheet
           title={copy.sheetTitle}
           subtitle={copy.sheetSubtitle}
           closeLabel={copy.close}
-          onClose={() => setOpen(false)}
+          state={dataState}
+          onClose={close}
         >
           <LumiChat
             trips={TRIPS}
@@ -137,12 +162,14 @@ function LumiSheet({
   title,
   subtitle,
   closeLabel,
+  state,
   onClose,
   children,
 }: {
   title: string;
   subtitle: string;
   closeLabel: string;
+  state: "open" | "closed";
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -157,18 +184,20 @@ function LumiSheet({
         type="button"
         aria-label={closeLabel}
         onClick={onClose}
-        className="absolute inset-0 cursor-default"
+        className="lumi-backdrop absolute inset-0 cursor-default"
+        data-state={state}
         style={{ background: "rgba(15,17,23,0.45)" }}
       />
 
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden bg-bg shadow-2xl",
+          "lumi-sheet relative flex flex-col overflow-hidden bg-bg shadow-2xl",
           // Mobile: slide up, take ~85vh from the bottom.
           "mt-auto h-[85vh] w-full rounded-t-2xl",
           // Desktop: anchor to the right, full height.
           "md:mt-0 md:h-full md:w-[420px] md:rounded-none md:rounded-l-2xl",
         )}
+        data-state={state}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center gap-3 border-b border-divider px-4 py-3">

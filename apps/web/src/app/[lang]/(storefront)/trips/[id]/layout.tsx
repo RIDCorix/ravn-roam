@@ -1,7 +1,9 @@
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
+import { TabCrossfade } from "@/components/storefront/trips/tab-crossfade";
 import { TripDetailTabBar } from "@/components/storefront/trips/trip-detail-tabs";
 import { TRIPS } from "@/lib/mock/consumer";
 
@@ -48,9 +50,11 @@ export default async function TripDetailLayout({
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[19px] font-semibold tracking-[-0.015em]">
-            {trip.title}
-          </h1>
+          <ViewTransition name={`trip-title-${trip.id}`}>
+            <h1 className="truncate text-[19px] font-semibold tracking-[-0.015em]">
+              {trip.title}
+            </h1>
+          </ViewTransition>
           <div className="whitespace-nowrap text-[12px] text-fg-muted">
             {trip.start} → {trip.end}
             {trip.days.length > 0
@@ -70,7 +74,9 @@ export default async function TripDetailLayout({
         pendingCount={pendingCount}
       />
 
-      <div className="px-5 pb-6 pt-4">{children}</div>
+      <div className="px-5 pb-6 pt-4">
+        <TabCrossfade>{children}</TabCrossfade>
+      </div>
     </div>
   );
 }

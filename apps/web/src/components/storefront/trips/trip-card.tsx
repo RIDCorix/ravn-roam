@@ -1,6 +1,7 @@
 // Trip list row card. Ports design/app/components/Trips.jsx → TripRow.
 // Server component — only navigation, no state.
 
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -35,12 +36,16 @@ export function TripCard({
       )}
       style={{ background: "var(--surface)", boxShadow: "var(--shadow-xs)" }}
     >
-      <CoverBadge cover={trip.cover} status={trip.status} />
+      <ViewTransition name={`trip-cover-${trip.id}`}>
+        <CoverBadge cover={trip.cover} status={trip.status} />
+      </ViewTransition>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-[15px] font-semibold tracking-[-0.01em]">
-            {trip.title}
-          </span>
+          <ViewTransition name={`trip-title-${trip.id}`}>
+            <span className="truncate text-[15px] font-semibold tracking-[-0.01em]">
+              {trip.title}
+            </span>
+          </ViewTransition>
           {trip.status === "active" && (
             <ActivePill label={activeBadgeLabel} />
           )}
