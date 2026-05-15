@@ -59,27 +59,32 @@ export class FastmoveAdapter implements SupplierAdapter {
 
   async *listPlans(): AsyncIterable<RawPlan> {
     const response = await this.queryAll();
-    for (const item of response.quoteList) {
+    for (const item of response.prodList) {
       yield mapFastmoveQuoteToRawPlan(item);
     }
   }
 
   async getPlan(externalId: string): Promise<RawPlan | null> {
     const response = await this.queryAll();
-    const hit = response.quoteList.find((q) => q.wmproductId === externalId);
+    const hit = response.prodList.find((q) => q.wmproductId === externalId);
     return hit ? mapFastmoveQuoteToRawPlan(hit) : null;
   }
 
   /**
-   * Single-shot call to `myQueryAll`. The envelope-only signing order
-   * (`merchantId + deptId`) is the spec's default for endpoints without
-   * additional request fields; if Phase 4 finds a per-endpoint reordering
-   * in the v2.0.3 PDF, this is the seam to adjust.
+   * Single-shot call to `myQueryAll`.
+   *
+   * Per spec v2.0.3 §1: body is {merchantId, encStr} — NOT the generic
+   * three-field envelope. encStr signs only `merchantId + token`; including
+   * deptId in either the body or the encStr plaintext makes the server
+   * return a generic 500 (Fastmove uses 500, not 401, for auth failures).
+   *
+   * deptId is still pulled out of config because future endpoints need it;
+   * the Phase 1 implementation incorrectly assumed every endpoint did.
    */
   private async queryAll(): Promise<QuoteMgMyQueryAllResponse> {
-    const { baseUrl, merchantId, deptId, merchantKey } = this.config;
-    const encStr = signEncStr(merchantId + deptId, merchantKey);
-    const body: QuoteMgMyQueryAllRequest = { merchantId, deptId, encStr };
+    const { baseUrl, merchantId, merchantKey } = this.config;
+    const encStr = signEncStr(merchantId, merchantKey);
+    const body: QuoteMgMyQueryAllRequest = { merchantId, encStr };
     const url = `${baseUrl.replace(/\/+$/, "")}/Api/QuoteMg/myQueryAll`;
 
     let res: Response;
@@ -113,9 +118,9 @@ export class FastmoveAdapter implements SupplierAdapter {
     }
 
     const json = (await res.json()) as QuoteMgMyQueryAllResponse;
-    if (!Array.isArray(json.quoteList)) {
+    if (!Array.isArray(json.prodList)) {
       throw new FastmoveUpstreamError(
-        "Fastmove response missing `quoteList`",
+        "Fastmove response missing `prodList`",
         res.status,
       );
     }

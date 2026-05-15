@@ -33,26 +33,56 @@ export interface FastmoveBaseResponse {
   resultMessage?: string;
 }
 
+/**
+ * v2.0.3 envelope used by myQueryAll (and possibly others — Phase 4 to
+ * confirm per-endpoint). The Phase 1 stub assumed every endpoint shared
+ * `FastmoveBaseResponse`; production traffic shows myQueryAll uses this
+ * `code` / `msg` shape instead.
+ */
+export interface FastmoveCodeMsgResponse {
+  code: number;
+  msg: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // 1. POST /Api/QuoteMg/myQueryAll  —  我的報價查詢 (sync, weekly cadence)
+//
+// NOTE: per spec v2.0.3 §1, this endpoint's body is *only* { merchantId,
+// encStr } — no deptId. encStr = SHA-1(merchantId + Token). It does NOT
+// follow the generic FastmoveAuthEnvelope shape; deptId at this endpoint
+// gets the request rejected with a 500.
 // ---------------------------------------------------------------------------
 
-export type QuoteMgMyQueryAllRequest = FastmoveAuthEnvelope;
+export interface QuoteMgMyQueryAllRequest {
+  merchantId: string;
+  encStr: string;
+}
 
 export interface QuoteMgQuoteItem {
   wmproductId: string;
   productId?: string;
   productName?: string;
+  productNamelang?: string | null;
+  /** Free-form region label, e.g. "Japan", "China, Hong Kong & Macao", "非洲". */
+  productRegion?: string;
+  /** 0: 虛擬卡(eSIM) / 1: SIM 卡 / 2: 充值 SIM 卡 — see spec §1 table. */
+  productType?: number;
   productPrice: number;
   productcPrice?: number;
-  csight?: boolean;
+  csight?: number | boolean;
   leSIM?: boolean;
   // ...full shape per PDF appendix; left open for Phase 4 alignment.
   [extra: string]: unknown;
 }
 
-export interface QuoteMgMyQueryAllResponse extends FastmoveBaseResponse {
-  quoteList: QuoteMgQuoteItem[];
+/**
+ * Per spec §1: response is `{code, msg, prodList}` — NOT
+ * `{resultCode, quoteList}`. Phase 1 stub used the wrong field name; that
+ * mismatch surfaced as `Fastmove response missing 'quoteList'` once auth
+ * finally went through against the production endpoint.
+ */
+export interface QuoteMgMyQueryAllResponse extends FastmoveCodeMsgResponse {
+  prodList: QuoteMgQuoteItem[];
 }
 
 // ---------------------------------------------------------------------------

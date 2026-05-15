@@ -24,8 +24,9 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function fakeOkResponse(): QuoteMgMyQueryAllResponse {
   return {
-    resultCode: "0000",
-    quoteList: [
+    code: 0,
+    msg: null,
+    prodList: [
       {
         wmproductId: "WM-JP-7D",
         productName: "Japan 7-day 3GB",
@@ -82,8 +83,12 @@ describe("FastmoveAdapter", () => {
       "https://tfmshippingsys.fastmove.test/Api/QuoteMg/myQueryAll",
     );
     const body = JSON.parse(String(init?.body));
-    expect(body).toMatchObject({ merchantId: "M-TEST", deptId: "D-TEST" });
-    expect(typeof body.encStr).toBe("string");
+    // Spec v2.0.3 §1: body is {merchantId, encStr}; deptId is NOT sent on
+    // this endpoint (server returns 500 if it's present).
+    expect(body).toEqual({
+      merchantId: "M-TEST",
+      encStr: expect.any(String),
+    });
     expect(body.encStr).toHaveLength(40); // SHA-1 hex
   });
 
@@ -126,9 +131,9 @@ describe("FastmoveAdapter", () => {
     }
   });
 
-  test("malformed body (no quoteList) surfaces as FastmoveUpstreamError", async () => {
+  test("malformed body (no prodList) surfaces as FastmoveUpstreamError", async () => {
     const fetchImpl: typeof fetch = vi.fn(async () =>
-      jsonResponse({ resultCode: "0000" }),
+      jsonResponse({ code: 0, msg: null }),
     );
     const adapter = new FastmoveAdapter({ ...CONFIG, fetchImpl });
 
