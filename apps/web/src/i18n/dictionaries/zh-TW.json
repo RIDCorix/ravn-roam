@@ -521,6 +521,30 @@
         "shop_cta": "打開",
         "empty": "這個行程還沒有任務。"
       }
+    },
+    "lumi": {
+      "launcher_label": "問 Lumi",
+      "sheet_title": "Lumi",
+      "sheet_subtitle": "你的旅行助手",
+      "close": "關閉",
+      "intro_default": "我已經看到你規劃中的行程，任何時候跟我說新想法都可以。",
+      "intro_trip": "Lumi 正在幫你管理這趟「{title}」。",
+      "greeting_default": "嗨！想規劃下一趟，還是聊聊現有的行程？告訴我目的地跟天數，我幫你排行程、挑 eSIM。",
+      "greeting_trip": "嗨！想跟我聊聊「{title}」嗎？告訴我想加哪幾天、去哪幾個地方，我幫你調整。",
+      "composer_placeholder": "跟 Lumi 說點什麼…",
+      "suggestions_default": [
+        "我的下一趟是？",
+        "幫我看 eSIM 方案",
+        "幫我規劃一趟東京 5 天"
+      ],
+      "suggestions_trip": [
+        "幫我加倫敦兩天",
+        "幫我看 eSIM 方案",
+        "兌換多少歐元夠？"
+      ],
+      "error_prefix": "Lumi 暫時無法回覆：",
+      "itinerary_title": "建議行程",
+      "esim_cta_fallback": "看 eSIM 方案"
     }
   }
 }
