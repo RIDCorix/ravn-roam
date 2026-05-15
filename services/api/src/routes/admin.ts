@@ -30,6 +30,7 @@ import {
   FASTMOVE_CODE,
   FastmoveAdapter,
 } from "../suppliers/index.js";
+import { recordAudit } from "./audit.js";
 
 /** Just the slice of repository methods the admin routes use. Wider than
  *  the orchestrator's SyncRepository because we also need the read-side
@@ -49,6 +50,15 @@ export interface AdminRouterDeps {
   buildRepository?: () => DrizzleSyncRepository;
   /** Override for tests; defaults to `env.ADMIN_API_TOKEN`. */
   adminToken?: string | null;
+  /** Override for tests; defaults to writing through `getDb()`. */
+  recordAudit?: (entry: {
+    actor: string;
+    action: "supplier.sync";
+    targetType: "supplier";
+    targetId: string;
+    before?: Record<string, unknown> | null;
+    after?: Record<string, unknown> | null;
+  }) => Promise<void>;
 }
 
 export function createAdminRouter(deps: AdminRouterDeps = {}): Hono {
@@ -58,6 +68,11 @@ export function createAdminRouter(deps: AdminRouterDeps = {}): Hono {
     deps.adminToken !== undefined ? deps.adminToken : env.ADMIN_API_TOKEN ?? null;
   const buildRepository =
     deps.buildRepository ?? (() => new DrizzleSyncRepository(getDb()));
+  const auditWriter =
+    deps.recordAudit ??
+    (async (entry) => {
+      await recordAudit(getDb(), entry);
+    });
 
   router.use("/admin/*", async (c, next) => {
     if (!tokenSource) {
@@ -96,6 +111,28 @@ export function createAdminRouter(deps: AdminRouterDeps = {}): Hono {
         trigger: "admin",
         triggeredBy,
       });
+      try {
+        const supplierId = await repository.getSupplierIdByCode(code);
+        if (supplierId) {
+          await auditWriter({
+            actor: triggeredBy ?? "anonymous",
+            action: "supplier.sync",
+            targetType: "supplier",
+            targetId: supplierId,
+            before: null,
+            after: {
+              logId: result.logId,
+              summary: result.summary,
+              status: result.status,
+            },
+          });
+        }
+      } catch (auditErr) {
+        // Audit failures must not break a successful sync. The sync_log
+        // row already records the run; audit is for the cross-cutting
+        // "who did what" stream.
+        console.error("[admin.sync] audit write failed:", auditErr);
+      }
       return c.json({ ok: true, ...result });
     } catch (err) {
       if (err instanceof SyncRunFailedError) {

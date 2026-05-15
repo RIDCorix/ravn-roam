@@ -154,7 +154,12 @@
       "filters": {
         "country": "Country (ISO-2)",
         "search_placeholder": "Search name or external id…",
-        "available_only": "Available only"
+        "available_only": "Available only",
+        "supplier": "Supplier",
+        "min_data_mb": "Min data (MB)",
+        "min_validity_days": "Min validity (days)",
+        "max_validity_days": "Max validity (days)",
+        "admin_enabled": "Admin enabled"
       },
       "columns": {
         "supplier": "Supplier",
@@ -166,9 +171,108 @@
         "activation_policy": "Activation",
         "delivery_model": "Delivery",
         "cost": "Cost",
-        "available": "Available"
+        "available": "Available",
+        "admin_enabled": "Enabled"
       },
-      "row_action_create_product": "Use as primary →"
+      "row_action_create_product": "Use as primary →",
+      "row_action_detail": "Detail",
+      "detail": {
+        "title": "Supplier plan",
+        "intro": "Sync-owned row — cost, destinations, data, validity, and activation policy may not be edited from the UI.",
+        "section_summary": "Summary",
+        "section_payload": "Raw upstream payload",
+        "field_supplier": "Supplier",
+        "field_external_id": "External ID",
+        "field_destinations": "Destinations",
+        "field_data": "Data",
+        "field_validity": "Validity",
+        "field_activation_policy": "Activation policy",
+        "field_delivery_model": "Delivery model",
+        "field_cost": "Cost",
+        "field_available": "Upstream available",
+        "field_admin_enabled": "Admin enabled",
+        "field_inventory_hint": "Inventory hint",
+        "field_last_synced_at": "Last synced",
+        "field_created_at": "Created",
+        "field_updated_at": "Updated",
+        "toggle_enable": "Enable plan",
+        "toggle_disable": "Disable plan",
+        "locked_notice": "Numeric and inclusion fields are owned by the sync job and cannot be edited from the UI."
+      }
+    },
+    "suppliers": {
+      "title": "Suppliers",
+      "create": "New supplier",
+      "back": "Back to suppliers",
+      "filters": {
+        "status": "Status",
+        "search_placeholder": "Search by code or display name…"
+      },
+      "columns": {
+        "code": "Code",
+        "display_name": "Display name",
+        "status": "Status",
+        "integration_type": "Integration",
+        "default_currency": "Currency",
+        "updated_at": "Updated"
+      },
+      "statuses": {
+        "active": "Active",
+        "paused": "Paused",
+        "terminated": "Terminated"
+      },
+      "integration_types": {
+        "api": "API",
+        "manual_csv": "Manual CSV"
+      },
+      "form": {
+        "code": "Code",
+        "code_hint": "Internal short code (lowercase letters, digits, underscores, hyphens). Used to route the supplier adapter.",
+        "display_name": "Display name",
+        "status": "Status",
+        "integration_type": "Integration type",
+        "default_currency": "Default currency (ISO 4217)",
+        "credentials_ref": "Credentials pointer",
+        "credentials_ref_hint": "Secret-store reference. Never paste a credential here.",
+        "contact_json": "Contact (JSON)",
+        "contact_json_hint": "Free-form contact / SLA notes. Must be a JSON object."
+      },
+      "detail": {
+        "summary": "Summary",
+        "sync_log": "Recent sync runs",
+        "sync_log_empty": "No sync runs yet.",
+        "manual_sync": "Trigger manual sync",
+        "manual_sync_in_progress": "Syncing…",
+        "pause": "Pause supplier",
+        "resume": "Resume supplier",
+        "terminated_notice": "This supplier is terminated and cannot be reactivated.",
+        "edit": "Edit supplier",
+        "view_plans": "View this supplier's plans"
+      },
+      "sync_log_columns": {
+        "started_at": "Started",
+        "trigger": "Trigger",
+        "triggered_by": "Actor",
+        "status": "Status",
+        "plan_count": "Plans",
+        "duration": "Duration",
+        "error": "Error"
+      },
+      "sync_triggers": {
+        "cron": "Cron",
+        "admin": "Admin",
+        "system": "System"
+      },
+      "sync_statuses": {
+        "success": "Success",
+        "partial": "Partial",
+        "failed": "Failed"
+      },
+      "errors": {
+        "code_conflict": "A supplier with this code already exists.",
+        "contact_json_invalid": "Contact must be valid JSON.",
+        "supplier_terminated": "Cannot change status of a terminated supplier."
+      }
     },
     "preview": {
       "title": "Storefront preview",

@@ -14,15 +14,24 @@ import {
   productUpdateSchema,
   mappingUpsertSchema,
   mappingReorderSchema,
+  supplierCreateSchema,
+  supplierPauseSchema,
+  supplierPlanAdminPatchSchema,
+  supplierUpdateSchema,
 } from "@roam/catalog";
 
 import {
   ApiError,
   createProduct,
+  createSupplier,
   patchProduct,
+  patchSupplier,
+  patchSupplierPlan,
+  pauseSupplier,
   publicationAction,
   removeMapping,
   reorderMappings,
+  triggerSupplierSync,
   upsertMapping,
 } from "./api";
 
@@ -126,6 +135,90 @@ export async function publicationActionRunner(
     await publicationAction(productId, raw.action);
     revalidatePath(`/${lang}/admin/products`);
     revalidatePath(`/${lang}/admin/products/${productId}/edit`);
+    return { ok: true };
+  } catch (err) {
+    return toResult(err);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Supplier actions (ROA-60)
+// ──────────────────────────────────────────────────────────────────────
+
+export async function createSupplierAction(
+  lang: string,
+  raw: z.infer<typeof supplierCreateSchema>,
+): Promise<ActionResult & { id?: string }> {
+  try {
+    const parsed = supplierCreateSchema.parse(raw);
+    const supplier = await createSupplier(parsed);
+    revalidatePath(`/${lang}/admin/suppliers`);
+    redirect(`/${lang}/admin/suppliers/${supplier.id}`);
+  } catch (err) {
+    if (err && typeof err === "object" && "digest" in err) throw err;
+    return toResult(err);
+  }
+  return { ok: true };
+}
+
+export async function updateSupplierAction(
+  lang: string,
+  id: string,
+  raw: z.infer<typeof supplierUpdateSchema>,
+): Promise<ActionResult> {
+  try {
+    const parsed = supplierUpdateSchema.parse(raw);
+    await patchSupplier(id, parsed);
+    revalidatePath(`/${lang}/admin/suppliers`);
+    revalidatePath(`/${lang}/admin/suppliers/${id}`);
+    revalidatePath(`/${lang}/admin/suppliers/${id}/edit`);
+    return { ok: true };
+  } catch (err) {
+    return toResult(err);
+  }
+}
+
+export async function pauseSupplierAction(
+  lang: string,
+  id: string,
+  raw: z.infer<typeof supplierPauseSchema>,
+): Promise<ActionResult> {
+  try {
+    const parsed = supplierPauseSchema.parse(raw);
+    await pauseSupplier(id, parsed.status);
+    revalidatePath(`/${lang}/admin/suppliers`);
+    revalidatePath(`/${lang}/admin/suppliers/${id}`);
+    return { ok: true };
+  } catch (err) {
+    return toResult(err);
+  }
+}
+
+export async function triggerSupplierSyncAction(
+  lang: string,
+  supplierId: string,
+  code: string,
+): Promise<ActionResult & { logId?: string }> {
+  try {
+    const result = await triggerSupplierSync(code);
+    revalidatePath(`/${lang}/admin/suppliers/${supplierId}`);
+    revalidatePath(`/${lang}/admin/supplier-plans`);
+    return { ok: result.ok, logId: result.logId };
+  } catch (err) {
+    return toResult(err);
+  }
+}
+
+export async function toggleSupplierPlanAction(
+  lang: string,
+  planId: string,
+  raw: z.infer<typeof supplierPlanAdminPatchSchema>,
+): Promise<ActionResult> {
+  try {
+    const parsed = supplierPlanAdminPatchSchema.parse(raw);
+    await patchSupplierPlan(planId, parsed);
+    revalidatePath(`/${lang}/admin/supplier-plans`);
+    revalidatePath(`/${lang}/admin/supplier-plans/${planId}`);
     return { ok: true };
   } catch (err) {
     return toResult(err);

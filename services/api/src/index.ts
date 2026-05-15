@@ -5,6 +5,7 @@ import { env } from "./env.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { productsRouter } from "./routes/products.js";
 import { supplierPlansRouter } from "./routes/supplier-plans.js";
+import { suppliersRouter } from "./routes/suppliers.js";
 
 const app = new Hono();
 
@@ -16,6 +17,7 @@ app.get("/healthz", (c) => c.json({ ok: true, sha: env.GIT_SHA ?? null }));
 // also intercept these UI endpoints.
 app.route("/admin/products", productsRouter);
 app.route("/admin/supplier-plans", supplierPlansRouter);
+app.route("/admin/suppliers", suppliersRouter);
 
 // Supplier-plan sync trigger — token-gated; see routes/admin.ts.
 app.route("/", createAdminRouter());

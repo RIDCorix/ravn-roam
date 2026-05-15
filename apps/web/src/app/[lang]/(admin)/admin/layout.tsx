@@ -30,6 +30,10 @@ export default async function AdminLayout({
             label={dict.admin.nav.products}
           />
           <NavItem
+            href={`/${lang}/admin/suppliers`}
+            label={dict.admin.nav.suppliers}
+          />
+          <NavItem
             href={`/${lang}/admin/supplier-plans`}
             label={dict.admin.nav.supplier_plans}
           />

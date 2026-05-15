@@ -7,18 +7,25 @@ import type {
   ProductMappingWithPlan,
   ProductSupplierMapping,
   ProductWithMappings,
+  Supplier,
   SupplierPlan,
+  SupplierPlanDetail,
+  SupplierPlanSyncLog,
 } from "@roam/catalog";
 
 import type {
   product,
   productSupplierMapping,
+  supplier,
   supplierPlan,
+  supplierPlanSyncLog,
 } from "../db/schema/index.js";
 
 type ProductRow = typeof product.$inferSelect;
 type MappingRow = typeof productSupplierMapping.$inferSelect;
 type PlanRow = typeof supplierPlan.$inferSelect;
+type SupplierRow = typeof supplier.$inferSelect;
+type SyncLogRow = typeof supplierPlanSyncLog.$inferSelect;
 
 export function rowToProduct(row: ProductRow): Product {
   return {
@@ -62,8 +69,49 @@ export function rowToPlan(row: PlanRow): SupplierPlan {
     cost_amount: Number(row.costAmount),
     cost_currency: row.costCurrency,
     available: row.available,
+    admin_enabled: row.adminEnabled,
     inventory_hint: row.inventoryHint,
     last_synced_at: row.lastSyncedAt?.toISOString() ?? null,
+  };
+}
+
+export function rowToPlanDetail(row: PlanRow): SupplierPlanDetail {
+  return {
+    ...rowToPlan(row),
+    network_operators: (row.networkOperators ?? {}) as Record<string, unknown>,
+    raw_payload: (row.rawPayload ?? {}) as Record<string, unknown>,
+    created_at: row.createdAt.toISOString(),
+    updated_at: row.updatedAt.toISOString(),
+  };
+}
+
+export function rowToSupplier(row: SupplierRow): Supplier {
+  return {
+    id: row.id,
+    code: row.code,
+    display_name: row.displayName,
+    status: row.status,
+    integration_type: row.integrationType,
+    default_currency: row.defaultCurrency,
+    contact: (row.contact ?? {}) as Record<string, unknown>,
+    credentials_ref: row.credentialsRef,
+    created_at: row.createdAt.toISOString(),
+    updated_at: row.updatedAt.toISOString(),
+  };
+}
+
+export function rowToSyncLog(row: SyncLogRow): SupplierPlanSyncLog {
+  return {
+    id: row.id,
+    supplier_id: row.supplierId,
+    trigger: row.trigger,
+    triggered_by: row.triggeredBy,
+    started_at: row.startedAt.toISOString(),
+    finished_at: row.finishedAt?.toISOString() ?? null,
+    status: row.status,
+    summary: (row.summary ?? {}) as Record<string, unknown>,
+    error_message: row.errorMessage,
+    plan_count: row.planCount,
   };
 }
 

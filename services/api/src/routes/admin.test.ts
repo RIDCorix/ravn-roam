@@ -12,7 +12,10 @@ import type { RawPlan, SupplierAdapter } from "../suppliers/adapter.js";
 import { AdapterRegistry } from "../suppliers/adapter.js";
 import { InMemorySyncRepository } from "../jobs/in-memory-sync-repository.js";
 import type { DrizzleSyncRepository } from "../jobs/drizzle-sync-repository.js";
-import { createAdminRouter } from "./admin.js";
+import { createAdminRouter, type AdminRouterDeps } from "./admin.js";
+
+type RecordAuditFn = NonNullable<AdminRouterDeps["recordAudit"]>;
+type RecordAuditEntry = Parameters<RecordAuditFn>[0];
 
 const TOKEN = "test-token-1234567890abcdef";
 const SUPPLIER_CODE = "fastmove";
@@ -75,6 +78,7 @@ function buildApp(opts: {
   adapter: SupplierAdapter;
   repo: InMemorySyncRepository;
   token?: string | null;
+  recordAudit?: RecordAuditFn;
 }): Hono {
   const registry = new AdapterRegistry();
   registry.register(opts.adapter);
@@ -84,6 +88,7 @@ function buildApp(opts: {
     buildRegistry: () => registry,
     buildRepository: () => adminRepo,
     adminToken: opts.token === undefined ? TOKEN : opts.token,
+    recordAudit: opts.recordAudit ?? (async () => {}),
   });
 
   const app = new Hono();
@@ -161,6 +166,32 @@ describe("createAdminRouter — POST /admin/suppliers/:code/sync", () => {
     expect(repo.logs).toHaveLength(1);
     expect(repo.logs[0]?.trigger).toBe("admin");
     expect(repo.logs[0]?.triggeredBy).toBe("ridcorix");
+  });
+
+  test("appends an audit entry tagged with the actor and target supplier", async () => {
+    const repo = new InMemorySyncRepository();
+    const supplierId = repo.seedSupplier(SUPPLIER_CODE);
+    const auditEntries: RecordAuditEntry[] = [];
+    const app = buildApp({
+      adapter: stubAdapter([planFixture("WM-1")]),
+      repo,
+      recordAudit: async (entry: RecordAuditEntry) => {
+        auditEntries.push(entry);
+      },
+    });
+
+    const res = await app.request(`/admin/suppliers/${SUPPLIER_CODE}/sync`, {
+      method: "POST",
+      headers: { "x-admin-token": TOKEN, "x-admin-user": "ridcorix" },
+    });
+    expect(res.status).toBe(200);
+    expect(auditEntries).toHaveLength(1);
+    expect(auditEntries[0]).toMatchObject({
+      actor: "ridcorix",
+      action: "supplier.sync",
+      targetType: "supplier",
+      targetId: supplierId,
+    });
   });
 
   test("returns 404 when adapter code is unknown", async () => {
