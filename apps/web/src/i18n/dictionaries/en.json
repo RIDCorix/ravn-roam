@@ -485,6 +485,42 @@
       "tasks_placeholder": "Phase C-3: cross-trip task aggregation coming soon.",
       "shop_placeholder": "Phase C-4: eSIM shop coming soon.",
       "me_placeholder": "Phase C-5: profile + settings coming soon."
+    },
+    "trips": {
+      "list": {
+        "title": "Trips",
+        "subtitle": "{count} active or upcoming",
+        "empty": "No trips planned yet."
+      },
+      "groups": {
+        "active": "Active",
+        "upcoming": "Upcoming",
+        "past": "Past"
+      },
+      "card": {
+        "tasks_label": "tasks",
+        "days_unit": "days",
+        "active_badge": "Active"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "checklist": "Checklist"
+      },
+      "detail": {
+        "back": "Back to trips",
+        "not_found": "Trip not found",
+        "day_unit": "days",
+        "day_label": "Day {n}",
+        "timeline_section": "Daily itinerary",
+        "today": "Today"
+      },
+      "checklist": {
+        "suggested": "Lumi suggests",
+        "pending": "To do",
+        "done": "Done",
+        "shop_cta": "Open",
+        "empty": "No tasks for this trip yet."
+      }
     }
   }
 }

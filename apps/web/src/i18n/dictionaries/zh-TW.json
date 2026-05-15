@@ -485,6 +485,42 @@
       "tasks_placeholder": "Phase C-3：跨行程任務聚合即將推出。",
       "shop_placeholder": "Phase C-4：eSIM 商店即將推出。",
       "me_placeholder": "Phase C-5：個人頁與設定即將推出。"
+    },
+    "trips": {
+      "list": {
+        "title": "行程",
+        "subtitle": "{count} 個進行中或即將開始",
+        "empty": "還沒有規劃中的行程。"
+      },
+      "groups": {
+        "active": "進行中",
+        "upcoming": "即將開始",
+        "past": "已結束"
+      },
+      "card": {
+        "tasks_label": "任務",
+        "days_unit": "天",
+        "active_badge": "進行中"
+      },
+      "tabs": {
+        "overview": "概覽",
+        "checklist": "清單"
+      },
+      "detail": {
+        "back": "回到行程",
+        "not_found": "找不到行程",
+        "day_unit": "天",
+        "day_label": "第 {n} 天",
+        "timeline_section": "每日行程",
+        "today": "今天"
+      },
+      "checklist": {
+        "suggested": "Lumi 建議",
+        "pending": "待辦",
+        "done": "已完成",
+        "shop_cta": "打開",
+        "empty": "這個行程還沒有任務。"
+      }
     }
   }
 }
