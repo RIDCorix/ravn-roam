@@ -7,9 +7,11 @@
     "heading": "Admin",
     "tagline": "Operator console placeholder.",
     "nav": {
+      "orders": "Orders",
       "products": "Products",
       "supplier_plans": "Supplier plans",
-      "suppliers": "Suppliers"
+      "suppliers": "Suppliers",
+      "vendors": "Vendors"
     },
     "common": {
       "save": "Save",
@@ -148,6 +150,141 @@
         },
         "preview": "Preview"
       }
+    },
+    "orders": {
+      "title": "Orders",
+      "subtitle": "Orders across every channel with margin",
+      "create": "Create order",
+      "filters": {
+        "search_placeholder": "Search order number or customer email…",
+        "status": "Status",
+        "vendor": "Vendor",
+        "since": "From",
+        "until": "To"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "fulfilled": "Fulfilled",
+        "cancelled": "Cancelled",
+        "refunded": "Refunded"
+      },
+      "columns": {
+        "order_number": "Order #",
+        "vendor": "Vendor",
+        "customer": "Customer",
+        "status": "Status",
+        "total": "Total",
+        "cost": "Cost",
+        "margin": "Margin",
+        "created_at": "Created"
+      },
+      "summary": {
+        "today_revenue": "Today",
+        "month_revenue": "This month",
+        "pending": "Pending",
+        "refunded": "Refunded"
+      },
+      "no_orders": "No orders yet.",
+      "actions": {
+        "mark_paid": "Mark as paid",
+        "mark_fulfilled": "Mark as fulfilled",
+        "cancel": "Cancel order",
+        "refund": "Refund"
+      },
+      "detail": {
+        "title": "Order detail",
+        "items": "Items",
+        "metadata": "Metadata"
+      }
+    },
+    "vendors": {
+      "title": "Vendors",
+      "subtitle": "Resellers, OTAs, travel agencies",
+      "create": "New vendor",
+      "filters": {
+        "search_placeholder": "Search code or name…",
+        "status": "Status",
+        "tier": "Tier",
+        "grade": "Grade"
+      },
+      "tiers": {
+        "platform": "Platform",
+        "tier1": "Tier-1",
+        "tier2": "Tier-2"
+      },
+      "statuses": {
+        "active": "Active",
+        "paused": "Paused",
+        "terminated": "Terminated"
+      },
+      "grades": {
+        "A": "Grade A",
+        "B": "Grade B",
+        "C": "Grade C"
+      },
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "tier": "Tier",
+        "grade": "Grade",
+        "commission": "Commission",
+        "status": "Status",
+        "contact": "Contact",
+        "updated_at": "Updated"
+      },
+      "no_vendors": "No vendors yet.",
+      "form": {
+        "code": "Code",
+        "code_hint": "Short, unique, immutable",
+        "display_name": "Display name",
+        "tier": "Tier",
+        "status": "Status",
+        "grade": "Grade",
+        "contact_email": "Contact email",
+        "commission_rate": "Commission rate",
+        "commission_rate_hint": "0–1 decimal, e.g. 0.12 = 12%",
+        "notes": "Notes"
+      }
+    },
+    "dashboard": {
+      "title": "Sales dashboard",
+      "subtitle": "Live view of revenue, cost, and orders",
+      "ranges": {
+        "today": "Today",
+        "7d": "7d",
+        "30d": "30d",
+        "90d": "90d"
+      },
+      "kpi": {
+        "revenue": "Revenue",
+        "cost": "Cost",
+        "margin": "Margin",
+        "orders": "Orders"
+      },
+      "sections": {
+        "top_vendors": "Top vendors",
+        "supplier_cost": "Supplier cost share",
+        "recent_orders": "Recent orders",
+        "order_status": "Order status"
+      },
+      "empty": {
+        "no_data": "No data yet",
+        "no_data_hint": "Create your first order and the dashboard fills with real numbers."
+      }
+    },
+    "tweaks": {
+      "title": "Tweaks",
+      "appearance": "Appearance",
+      "accent": "Accent",
+      "ambient": "Ambient bloom",
+      "density": "Density",
+      "density_options": {
+        "comfortable": "Comfortable",
+        "compact": "Compact"
+      },
+      "display": "Display",
+      "currency": "Currency"
     },
     "supplier_plans": {
       "title": "Supplier plans",

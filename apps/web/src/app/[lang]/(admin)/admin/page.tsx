@@ -1,29 +1,38 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Package, PackageSearch, Plus } from "lucide-react";
-
-import { type Product, pickI18n } from "@roam/catalog";
+import { ArrowRight } from "lucide-react";
 
 import { getDictionary, hasLocale } from "../../dictionaries";
 
-import {
-  OperationalStateBadge,
-  PublicationStateBadge,
-} from "@/components/admin/state-badge";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ApiError, listProducts } from "@/lib/api";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import {
+  ApiError,
+  getDashboardAggregates,
+  listVendors,
+  type DashboardAggregates,
+  type Vendor,
+} from "@/lib/api";
+import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+function formatMoney(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${Math.round(amount)} ${currency}`;
+  }
+}
 
 export default async function AdminPage({
   params,
@@ -34,10 +43,14 @@ export default async function AdminPage({
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
 
-  let products: Product[] = [];
+  let agg: DashboardAggregates | null = null;
+  let vendors: Vendor[] = [];
   let apiError: string | null = null;
   try {
-    products = await listProducts({});
+    [agg, vendors] = await Promise.all([
+      getDashboardAggregates(),
+      listVendors(),
+    ]);
   } catch (err) {
     apiError =
       err instanceof ApiError
@@ -45,22 +58,18 @@ export default async function AdminPage({
         : (err as Error).message;
   }
 
-  const counts = {
-    draft: products.filter((p) => p.publication_state === "draft").length,
-    in_review: products.filter((p) => p.publication_state === "in_review").length,
-    published: products.filter((p) => p.publication_state === "published").length,
-    archived: products.filter((p) => p.publication_state === "archived").length,
-  };
-
-  const recent = products.slice(0, 6);
+  const vendorById = new Map(vendors.map((v) => [v.id, v]));
+  const currency = agg?.recent_orders[0]?.currency ?? "TWD";
+  const totals = agg?.totals;
+  const empty = totals && totals.orders === 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {dict.admin.heading}
-        </h1>
-        <p className="mt-1 text-sm text-fg-secondary">{dict.admin.tagline}</p>
+        <h1 className="t-h3">{dict.admin.dashboard.title}</h1>
+        <p className="t-body-sm text-fg-secondary mt-1">
+          {dict.admin.dashboard.subtitle}
+        </p>
       </header>
 
       {apiError ? (
@@ -69,185 +78,268 @@ export default async function AdminPage({
         </div>
       ) : null}
 
-      {/* Quick actions ------------------------------------------------- */}
-      <section>
-        <h2 className="text-xs font-medium uppercase tracking-wider text-fg-muted mb-3">
-          Quick actions
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <ActionCard
-            href={`/${lang}/admin/products/new`}
-            icon={<Plus className="h-4 w-4" />}
-            title={dict.admin.products.create}
-            subtitle="Build a product from scratch."
-          />
-          <ActionCard
-            href={`/${lang}/admin/supplier-plans`}
-            icon={<PackageSearch className="h-4 w-4" />}
-            title={dict.admin.products.create_from_plan}
-            subtitle="Browse supplier plans, prefill from one."
-          />
-          <ActionCard
-            href={`/${lang}/admin/products`}
-            icon={<Package className="h-4 w-4" />}
-            title={dict.admin.products.title}
-            subtitle="All products + filters."
-          />
-        </div>
-      </section>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KPI
+          label={dict.admin.dashboard.kpi.revenue}
+          value={
+            totals ? formatMoney(totals.revenue, currency) : "—"
+          }
+        />
+        <KPI
+          label={dict.admin.dashboard.kpi.cost}
+          value={
+            totals ? formatMoney(totals.cost, currency) : "—"
+          }
+          subtle
+        />
+        <KPI
+          label={dict.admin.dashboard.kpi.margin}
+          value={
+            totals ? `${(totals.margin * 100).toFixed(1)}%` : "—"
+          }
+          accent={totals?.margin}
+        />
+        <KPI
+          label={dict.admin.dashboard.kpi.orders}
+          value={totals ? String(totals.orders) : "—"}
+        />
+      </div>
 
-      {/* Publication state overview ------------------------------------ */}
-      <section>
-        <h2 className="text-xs font-medium uppercase tracking-wider text-fg-muted mb-3">
-          {dict.admin.products.filters.publication_state}
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-4">
-          {(["draft", "in_review", "published", "archived"] as const).map(
-            (state) => (
-              <Card key={state} className="border-border">
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">
-                    {dict.admin.products.states[state]}
-                  </CardDescription>
-                  <CardTitle className="text-3xl font-semibold tabular-nums">
-                    {counts[state]}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-0 text-xs text-fg-secondary hover:text-accent"
-                  >
-                    <Link href={`/${lang}/admin/products?state=${state}`}>
-                      View →
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ),
-          )}
-        </div>
-      </section>
+      {empty ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <h2 className="t-h5">{dict.admin.dashboard.empty.no_data}</h2>
+            <p className="t-body-sm text-fg-secondary mt-2 max-w-md mx-auto">
+              {dict.admin.dashboard.empty.no_data_hint}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <Separator />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="t-h5">
+              {dict.admin.dashboard.sections.top_vendors}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!agg || agg.top_vendors.length === 0 ? (
+              <p className="text-sm text-fg-muted py-4">—</p>
+            ) : (
+              <ul className="space-y-2">
+                {agg.top_vendors.map((v) => {
+                  const max = agg!.top_vendors[0]!.revenue || 1;
+                  const pct = v.revenue / max;
+                  return (
+                    <li key={v.vendor_id}>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <Link
+                          href={`/${lang}/admin/vendors/${v.vendor_id}`}
+                          className="truncate hover:text-accent flex-1"
+                        >
+                          {v.vendor_name}
+                        </Link>
+                        <span className="t-mono tabular-nums whitespace-nowrap">
+                          {formatMoney(v.revenue, currency)}
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
+                        <div
+                          className="h-full bg-accent"
+                          style={{ width: `${pct * 100}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Recent products ---------------------------------------------- */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-fg-muted">
-            Recent products
-          </h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="t-h5">
+              {dict.admin.dashboard.sections.supplier_cost}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!agg || agg.supplier_cost_share.length === 0 ? (
+              <p className="text-sm text-fg-muted py-4">—</p>
+            ) : (
+              <ul className="space-y-2">
+                {agg.supplier_cost_share.map((s) => {
+                  const max = agg!.supplier_cost_share[0]!.cost || 1;
+                  const pct = s.cost / max;
+                  return (
+                    <li key={s.supplier_id}>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <Link
+                          href={`/${lang}/admin/suppliers/${s.supplier_id}`}
+                          className="truncate hover:text-accent flex-1"
+                        >
+                          {s.supplier_name}
+                        </Link>
+                        <span className="t-mono tabular-nums text-fg-secondary whitespace-nowrap">
+                          {formatMoney(s.cost, currency)}
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
+                        <div
+                          className="h-full bg-fg/30"
+                          style={{ width: `${pct * 100}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="t-h5">
+            {dict.admin.dashboard.sections.recent_orders}
+          </CardTitle>
           <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-            <Link href={`/${lang}/admin/products`}>
-              See all <ArrowRight className="ml-1 h-3 w-3" />
+            <Link href={`/${lang}/admin/orders`}>
+              {dict.admin.orders.title}
+              <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
           </Button>
-        </div>
-        {recent.length === 0 ? (
-          <p className="text-sm text-fg-secondary">
-            {apiError
-              ? "—"
-              : "No products yet. Create one or import from a supplier plan."}
-          </p>
-        ) : (
-          <div className="grid gap-2">
-            {recent.map((product) => (
-              <Link
-                key={product.id}
-                href={`/${lang}/admin/products/${product.id}/edit`}
-                className="group flex items-center gap-3 rounded-md border border-border bg-surface px-4 py-3 hover:border-border-strong transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium truncate">
-                      {pickI18n(product.display_name_i18n, lang) || product.slug}
-                    </span>
-                    <PublicationStateBadge
-                      state={product.publication_state}
-                      label={
-                        dict.admin.products.states[product.publication_state]
-                      }
-                    />
-                    {product.operational_state !== "ok" ? (
-                      <OperationalStateBadge
-                        state={product.operational_state}
-                        label={
-                          dict.admin.products.operational_states[
-                            product.operational_state
-                          ]
-                        }
-                      />
-                    ) : null}
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-3 text-xs text-fg-secondary">
-                    <span className="font-mono">{product.slug}</span>
-                    <span>·</span>
-                    <span>
-                      {dict.admin.products.categories[product.category]}
-                    </span>
-                    {product.marketing_destinations.length > 0 ? (
-                      <>
-                        <span>·</span>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {product.marketing_destinations
-                            .slice(0, 3)
-                            .join(", ")}
-                          {product.marketing_destinations.length > 3
-                            ? ` +${product.marketing_destinations.length - 3}`
-                            : ""}
-                        </Badge>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  {product.pricing?.retail ? (
-                    <div className="text-sm font-medium tabular-nums">
-                      {formatMoney(
-                        product.pricing.retail,
-                        product.pricing.currency,
-                      )}
-                    </div>
-                  ) : null}
-                  <div className="text-[11px] text-fg-muted">
-                    {formatDateTime(product.updated_at)}
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-fg-muted group-hover:text-accent shrink-0" />
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+        </CardHeader>
+        <CardContent className="px-0">
+          {!agg || agg.recent_orders.length === 0 ? (
+            <p className="text-sm text-fg-muted py-4 px-6">—</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-fg-secondary border-b border-divider">
+                  <tr>
+                    <Th>{dict.admin.orders.columns.order_number}</Th>
+                    <Th>{dict.admin.orders.columns.vendor}</Th>
+                    <Th>{dict.admin.orders.columns.status}</Th>
+                    <Th className="text-right">
+                      {dict.admin.orders.columns.total}
+                    </Th>
+                    <Th>{dict.admin.orders.columns.created_at}</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agg.recent_orders.map((o) => {
+                    const vendor = vendorById.get(o.vendor_id);
+                    return (
+                      <tr
+                        key={o.id}
+                        className="border-b border-divider last:border-b-0 hover:bg-surface-sunken transition-colors"
+                      >
+                        <Td>
+                          <Link
+                            href={`/${lang}/admin/orders/${o.id}`}
+                            className="t-mono text-xs hover:text-accent"
+                          >
+                            {o.order_number}
+                          </Link>
+                        </Td>
+                        <Td>
+                          {vendor ? (
+                            <Link
+                              href={`/${lang}/admin/vendors/${vendor.id}`}
+                              className="hover:text-accent"
+                            >
+                              {vendor.display_name}
+                            </Link>
+                          ) : (
+                            <span className="text-fg-muted">—</span>
+                          )}
+                        </Td>
+                        <Td>
+                          <span className="text-xs">
+                            {dict.admin.orders.statuses[o.status]}
+                          </span>
+                        </Td>
+                        <Td className="text-right t-mono tabular-nums">
+                          {formatMoney(o.total_amount, o.currency)}
+                        </Td>
+                        <Td>
+                          <span className="t-mono text-xs text-fg-secondary">
+                            {formatDateTime(o.created_at)}
+                          </span>
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function ActionCard({
-  href,
-  icon,
-  title,
-  subtitle,
+function Th({
+  children,
+  className = "",
 }: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="group rounded-md border border-border bg-surface px-4 py-4 hover:border-accent hover:shadow-[var(--shadow-sm)] transition-all"
+    <th
+      className={`px-4 py-2 font-medium whitespace-nowrap ${className}`}
     >
-      <div className="flex items-center gap-2 text-fg">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-accent-soft text-accent">
-          {icon}
-        </span>
-        <span className="font-medium">{title}</span>
-      </div>
-      <p className="mt-2 text-xs text-fg-secondary">{subtitle}</p>
-    </Link>
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <td className={`px-4 py-2 whitespace-nowrap ${className}`}>{children}</td>
+  );
+}
+
+function KPI({
+  label,
+  value,
+  subtle,
+  accent,
+}: {
+  label: string;
+  value: string;
+  subtle?: boolean;
+  accent?: number;
+}) {
+  return (
+    <Card>
+      <CardContent className="py-5">
+        <p className="t-eyebrow text-fg-muted whitespace-nowrap">{label}</p>
+        <p
+          className={`mt-2 text-3xl font-semibold tracking-tight tabular-nums whitespace-nowrap ${
+            subtle ? "text-fg-secondary" : ""
+          } ${
+            accent != null && accent >= 0.2
+              ? "text-success"
+              : accent != null && accent < 0
+              ? "text-error"
+              : ""
+          }`}
+        >
+          {value}
+        </p>
+      </CardContent>
+    </Card>
   );
 }

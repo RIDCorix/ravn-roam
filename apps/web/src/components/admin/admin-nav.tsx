@@ -10,9 +10,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
+  Handshake,
   LayoutDashboard,
   Package,
   PackageSearch,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,9 +33,11 @@ interface NavGroup {
 
 export interface AdminNavLabels {
   dashboard: string;
+  orders: string;
   products: string;
   suppliers: string;
   supplier_plans: string;
+  vendors: string;
 }
 
 export function AdminNav({
@@ -56,6 +60,16 @@ export function AdminNav({
       ],
     },
     {
+      label: "Operations",
+      items: [
+        {
+          href: `/${lang}/admin/orders`,
+          label: labels.orders,
+          Icon: ShoppingBag,
+        },
+      ],
+    },
+    {
       label: "Catalog",
       items: [
         {
@@ -72,6 +86,16 @@ export function AdminNav({
           href: `/${lang}/admin/supplier-plans`,
           label: labels.supplier_plans,
           Icon: PackageSearch,
+        },
+      ],
+    },
+    {
+      label: "Channels",
+      items: [
+        {
+          href: `/${lang}/admin/vendors`,
+          label: labels.vendors,
+          Icon: Handshake,
         },
       ],
     },

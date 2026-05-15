@@ -57,3 +57,48 @@ export const productOperationalState = roamPoc.enum(
   "product_operational_state",
   ["ok", "sold_out", "suspended", "out_of_window"],
 );
+
+// vendor.tier — Phase 3 RBAC scaffolding (ROA-100 admin redesign).
+//   platform — Roam itself, the placeholder owner for all Phase 2 products.
+//   tier1    — direct partner (OTA, reseller, travel agency) we sign a
+//              contract with and pay commission to.
+//   tier2    — sub-agent under a tier1 (out of scope for the PoC but the
+//              enum value is reserved so a downgrade isn't a schema change).
+export const vendorTier = roamPoc.enum("vendor_tier", [
+  "platform",
+  "tier1",
+  "tier2",
+]);
+
+// vendor.status — operational state for a tier-1 partner. Mirrors the
+// supplier_status semantics so the admin badges and filters can share the
+// same colour ramp without a value mapping.
+export const vendorStatus = roamPoc.enum("vendor_status", [
+  "active",
+  "paused",
+  "terminated",
+]);
+
+// vendor.grade — operational quality score the ops team assigns (A best,
+// C worst). Drives downstream commission tier and feature flags later.
+export const vendorGrade = roamPoc.enum("vendor_grade", ["A", "B", "C"]);
+
+// order.status — top-level order lifecycle. Money state lives in the same
+// enum as fulfilment state until we split them in Phase 4.
+export const orderStatus = roamPoc.enum("order_status", [
+  "pending",
+  "paid",
+  "fulfilled",
+  "cancelled",
+  "refunded",
+]);
+
+// order_item.status — per-item delivery state. An order can be `paid` while
+// some items are still `pending_fulfilment` (the upstream supplier hasn't
+// produced an eSIM profile yet).
+export const orderItemStatus = roamPoc.enum("order_item_status", [
+  "pending_fulfilment",
+  "fulfilled",
+  "failed",
+  "refunded",
+]);
