@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 
 import { getDictionary, hasLocale, LOCALES } from "../../dictionaries";
 
+import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs";
+import { AdminNav } from "@/components/admin/admin-nav";
 import { LocaleSwitcher } from "@/components/admin/locale-switcher";
+import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default async function AdminLayout({
   children,
@@ -17,45 +21,42 @@ export default async function AdminLayout({
   const dict = await getDictionary(lang);
 
   return (
-    <div className="min-h-screen flex bg-bg text-fg">
-      <aside className="w-56 shrink-0 border-r border-border bg-surface-muted">
-        <div className="px-5 py-5 border-b border-border">
-          <Link href={`/${lang}/admin`} className="font-semibold text-fg">
-            Roam · {dict.admin.heading}
-          </Link>
-        </div>
-        <nav className="px-2 py-3 space-y-1">
-          <NavItem
-            href={`/${lang}/admin/products`}
-            label={dict.admin.nav.products}
+    <TooltipProvider delayDuration={200}>
+      <div className="min-h-screen flex bg-bg text-fg">
+        <aside className="w-60 shrink-0 border-r border-divider bg-sidebar flex flex-col">
+          <div className="px-5 h-14 flex items-center border-b border-divider">
+            <Link
+              href={`/${lang}/admin`}
+              className="font-semibold tracking-tight text-fg flex items-center gap-2"
+            >
+              <span className="inline-block h-6 w-6 rounded-md bg-accent" />
+              Roam
+            </Link>
+          </div>
+          <AdminNav
+            lang={lang}
+            labels={{
+              dashboard: dict.admin.heading,
+              products: dict.admin.nav.products,
+              suppliers: dict.admin.nav.suppliers,
+              supplier_plans: dict.admin.nav.supplier_plans,
+            }}
           />
-          <NavItem
-            href={`/${lang}/admin/suppliers`}
-            label={dict.admin.nav.suppliers}
-          />
-          <NavItem
-            href={`/${lang}/admin/supplier-plans`}
-            label={dict.admin.nav.supplier_plans}
-          />
-        </nav>
-      </aside>
-      <main className="flex-1 min-w-0">
-        <header className="flex items-center justify-end gap-3 px-6 py-3 border-b border-border bg-surface">
-          <LocaleSwitcher currentLang={lang} locales={LOCALES as readonly string[]} />
-        </header>
-        <div className="px-6 py-6">{children}</div>
-      </main>
-    </div>
-  );
-}
-
-function NavItem({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="block rounded-md px-3 py-2 text-sm text-fg hover:bg-surface"
-    >
-      {label}
-    </Link>
+        </aside>
+        <main className="flex-1 min-w-0 flex flex-col">
+          <header className="h-14 flex items-center gap-3 px-6 border-b border-divider bg-surface">
+            <AdminBreadcrumbs />
+            <div className="ml-auto flex items-center gap-3">
+              <LocaleSwitcher
+                currentLang={lang}
+                locales={LOCALES as readonly string[]}
+              />
+            </div>
+          </header>
+          <div className="flex-1 px-6 py-6">{children}</div>
+        </main>
+        <Toaster richColors position="bottom-right" />
+      </div>
+    </TooltipProvider>
   );
 }
