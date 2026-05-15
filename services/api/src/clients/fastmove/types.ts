@@ -35,9 +35,17 @@ export interface FastmoveBaseResponse {
 
 // ---------------------------------------------------------------------------
 // 1. POST /Api/QuoteMg/myQueryAll  —  我的報價查詢 (sync, weekly cadence)
+//
+// NOTE: per spec v2.0.3 §1, this endpoint's body is *only* { merchantId,
+// encStr } — no deptId. encStr = SHA-1(merchantId + Token). It does NOT
+// follow the generic FastmoveAuthEnvelope shape; deptId at this endpoint
+// gets the request rejected with a 500.
 // ---------------------------------------------------------------------------
 
-export type QuoteMgMyQueryAllRequest = FastmoveAuthEnvelope;
+export interface QuoteMgMyQueryAllRequest {
+  merchantId: string;
+  encStr: string;
+}
 
 export interface QuoteMgQuoteItem {
   wmproductId: string;

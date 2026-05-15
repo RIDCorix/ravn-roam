@@ -82,8 +82,12 @@ describe("FastmoveAdapter", () => {
       "https://tfmshippingsys.fastmove.test/Api/QuoteMg/myQueryAll",
     );
     const body = JSON.parse(String(init?.body));
-    expect(body).toMatchObject({ merchantId: "M-TEST", deptId: "D-TEST" });
-    expect(typeof body.encStr).toBe("string");
+    // Spec v2.0.3 §1: body is {merchantId, encStr}; deptId is NOT sent on
+    // this endpoint (server returns 500 if it's present).
+    expect(body).toEqual({
+      merchantId: "M-TEST",
+      encStr: expect.any(String),
+    });
     expect(body.encStr).toHaveLength(40); // SHA-1 hex
   });
 
