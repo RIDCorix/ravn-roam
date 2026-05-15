@@ -104,15 +104,30 @@ role, **not** a separate Supabase project. See
 
 ## 3. Env vars
 
-| Variable                        | Where it runs    | Required | Hub secret path                                     |
-| ------------------------------- | ---------------- | -------- | --------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Browser + server | Yes      | `supabase.shared.url`                               |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server | Yes      | `supabase.shared.anon_key`                          |
-| `DATABASE_URL`                  | Server only      | When DB  | `supabase.shared.poc_roles.roam_poc.connection_url` |
-| `NEXT_PUBLIC_SITE_URL`          | Browser + server | Yes      | (n/a — env-specific literal)                        |
+| Variable                        | App(s)                         | Where it runs    | Required        | Hub secret path                                     |
+| ------------------------------- | ------------------------------ | ---------------- | --------------- | --------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `apps/landing`, `apps/web`     | Browser + server | Yes             | `supabase.shared.url`                               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `apps/landing`, `apps/web`     | Browser + server | Yes             | `supabase.shared.anon_key`                          |
+| `DATABASE_URL`                  | `services/api`                 | Server only      | Yes (for DB)    | `supabase.shared.poc_roles.roam_poc.connection_url` |
+| `NEXT_PUBLIC_SITE_URL`          | `apps/landing`, `apps/web`     | Browser + server | Yes             | (n/a — env-specific literal)                        |
+| `ROAM_API_URL`                  | `apps/web`                     | Server only      | Yes (in prod)   | (n/a — points at `infra.railway.roam_api.public_url`) |
+| `ADMIN_API_TOKEN`               | `apps/web`, `services/api`     | Server only      | Yes (for sync)  | `roam.admin_api_token` (TEC-22)                     |
+| `ROAM_ADMIN_USER`               | `apps/web`                     | Server only      | No (default "admin") | (n/a)                                          |
+| `FASTMOVE_BASE_URL`             | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.base_url`                             |
+| `FASTMOVE_MERCHANT_ID`          | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.merchant_id`                          |
+| `FASTMOVE_DEPT_ID`              | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.dept_id`                              |
+| `FASTMOVE_MERCHANT_KEY`         | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.merchant_key`                         |
 
-A local template lives at `.env.example`. Copy to `.env.local` and fill
-values; `.env.local` is gitignored.
+> **`ROAM_API_URL` and `ADMIN_API_TOKEN` are not optional in production.**
+> Without `ROAM_API_URL` the admin pages SSR-fetch `http://localhost:3001`
+> and surface "API unreachable" banners; without `ADMIN_API_TOKEN` the
+> `/admin/suppliers/:code/sync` route on `services/api` returns 503 and the
+> manual-sync button in the admin UI never lights up.
+
+A local template lives at `.env.example` (one per app:
+`apps/landing/.env.example`, `apps/web/.env.example`,
+`services/api/.env.example`). Copy to `.env.local` (or `.env` for
+`services/api`) and fill values; all `.env*` are gitignored.
 
 > Next.js 16 reads `.env*` from the **project root only** — keep them
 > next to `package.json`, not inside `/src`.
