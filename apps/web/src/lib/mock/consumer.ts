@@ -146,6 +146,37 @@ export const TRIPS: Trip[] = [
       { id: "eu7", text: "訂旅平險 + 海外不便險", done: false, kind: "insurance" },
     ],
   },
+  {
+    id: "trip_seoul",
+    title: "首爾跨年",
+    cover: "KR",
+    start: "2025-12-29",
+    end: "2026-01-03",
+    status: "upcoming",
+    days: [
+      { d: "2025-12-29", city: "首爾", note: "抵達仁川 + 弘大" },
+      { d: "2025-12-30", city: "首爾", note: "景福宮 + 北村" },
+      { d: "2025-12-31", city: "首爾", note: "南山塔跨年" },
+      { d: "2026-01-01", city: "首爾", note: "明洞 + 東大門" },
+      { d: "2026-01-02", city: "首爾", note: "汝矣島" },
+      { d: "2026-01-03", city: "台北", note: "回程 17:20" },
+    ],
+    checklist: [
+      { id: "kr1", text: "購買韓國 7 日無限 eSIM", done: false, kind: "esim", shortcut: "shop", shopFilter: { country: "KR", days: 7 } },
+      { id: "kr2", text: "訂明洞住宿", done: false, kind: "stay" },
+      { id: "kr3", text: "辦 K-ETA", done: false, kind: "visa" },
+    ],
+  },
+  {
+    id: "trip_okinawa_past",
+    title: "沖繩家族行",
+    cover: "JP",
+    start: "2025-06-12",
+    end: "2025-06-16",
+    status: "past",
+    days: [],
+    checklist: [],
+  },
 ];
 
 export function getActiveTrip(): Trip | undefined {
