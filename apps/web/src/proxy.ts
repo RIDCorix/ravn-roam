@@ -2,8 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export const LOCALES = ["en", "zh-TW"] as const;
 export const DEFAULT_LOCALE = "en";
+const LOCALE_COOKIE = "NEXT_LOCALE";
 
 export type Locale = (typeof LOCALES)[number];
+
+function isLocale(value: string | undefined): value is Locale {
+  return value != null && (LOCALES as readonly string[]).includes(value);
+}
 
 function pickLocale(acceptLanguage: string | null): Locale {
   if (!acceptLanguage) return DEFAULT_LOCALE;
@@ -27,7 +32,13 @@ export function proxy(request: NextRequest) {
   );
   if (hasLocale) return;
 
-  const locale = pickLocale(request.headers.get("accept-language"));
+  // Cookie wins over Accept-Language so the user's explicit /me choice
+  // sticks across visits.
+  const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
+  const locale = isLocale(cookieLocale)
+    ? cookieLocale
+    : pickLocale(request.headers.get("accept-language"));
+
   const url = request.nextUrl.clone();
   url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
   return NextResponse.redirect(url);

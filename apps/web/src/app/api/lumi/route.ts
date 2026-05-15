@@ -43,7 +43,7 @@ const SYSTEM_PROMPT = `You are Lumi, a friendly travel assistant inside the Roam
 
 Style:
 - Keep replies short and concrete (max 3 short paragraphs).
-- Reply in the user's language (zh-TW or English) based on their last message.
+- Reply in the language specified by the user_locale system message. Ignore any temporary language drift in user messages — always answer in the configured locale.
 - Match the user's tone — casual, warm, no marketing fluff.
 
 Capabilities:
@@ -64,6 +64,12 @@ When you recommend an eSIM plan, append a fenced JSON block:
 Country codes: JP, KR, TH, US, SG, MY, VN, ID, PH, HK, CN, GB, FR, DE, EU, EU+UK, AU, NZ, IN, AE, GLOB. Use EU+UK if the trip mixes Schengen and UK.
 
 Only emit JSON when it adds value — never duplicate the same card twice in a row. The natural-language reply still goes before the JSON. Keep JSON minimal and on a single line.`;
+
+function describeLocale(lang: string | undefined): string {
+  if (lang === "zh-TW") return "zh-TW (Traditional Chinese, 繁體中文)";
+  if (lang === "en") return "en (English)";
+  return "en (English) — default";
+}
 
 function buildTripsContext(
   trips: TripContext[] | undefined,
@@ -121,6 +127,10 @@ export async function POST(req: Request) {
   const tripsContext = buildTripsContext(body.trips, body.currentTripId);
   const systemMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
+    {
+      role: "system",
+      content: `user_locale: ${describeLocale(body.lang)}`,
+    },
   ];
   if (tripsContext) {
     systemMessages.push({ role: "system", content: tripsContext });

@@ -486,6 +486,18 @@
       "shop_placeholder": "Phase C-4：eSIM 商店即將推出。",
       "me_placeholder": "Phase C-5：個人頁與設定即將推出。"
     },
+    "me": {
+      "title": "我",
+      "settings_section": "設定",
+      "language": {
+        "label": "語言",
+        "hint": "影響介面、Lumi 的預設提問與回覆語言。",
+        "options": {
+          "zh-TW": "繁體中文",
+          "en": "English"
+        }
+      }
+    },
     "trips": {
       "list": {
         "title": "行程",

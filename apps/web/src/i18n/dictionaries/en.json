@@ -486,6 +486,18 @@
       "shop_placeholder": "Phase C-4: eSIM shop coming soon.",
       "me_placeholder": "Phase C-5: profile + settings coming soon."
     },
+    "me": {
+      "title": "Me",
+      "settings_section": "Settings",
+      "language": {
+        "label": "Language",
+        "hint": "Affects the UI, Lumi's suggested prompts, and Lumi's replies.",
+        "options": {
+          "zh-TW": "繁體中文",
+          "en": "English"
+        }
+      }
+    },
     "trips": {
       "list": {
         "title": "Trips",
