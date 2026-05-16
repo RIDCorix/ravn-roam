@@ -98,39 +98,56 @@ export function AiCopilot({ dict }: { dict: AiDict }) {
 
 type ChatDict = AiDict["chat"];
 
-/* Choreographed chat — cycles through `dict.conversations`:
-   t=0      stage 0 (empty)
-   t=550    stage 1 (user bubble)
-   t=1500   stage 2 (typing dots)
-   t=2800   stage 3 (Lumi reply)
-   t=6700   stage 0 (bubbles fade out)
-   t=7300   advance to next pair (effect re-runs)
-   → 7.3s per pair × N pairs, then loops. */
+/* Choreographed 4-message conversation per pair:
+   step 0  empty
+   step 1  msg[0] user
+   step 2  msg[0] + typing (waiting on Lumi)
+   step 3  msg[0..1] (Lumi replies)
+   step 4  msg[0..2] (user follows up)
+   step 5  msg[0..2] + typing
+   step 6  msg[0..3] (Lumi closes)
+   step 7  all clear, advance to next pair */
 function LumiChatMock({ dict }: { dict: ChatDict }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
-  const [stage, setStage] = useState(0);
+  const [step, setStep] = useState(0);
   const [pairIndex, setPairIndex] = useState(0);
 
   const conversations = dict.conversations;
   const current = conversations[pairIndex];
-  const userText = current.messages.find((m) => m.role === "user")?.text ?? "";
-  const lumiText = current.messages.find((m) => m.role === "lumi")?.text ?? "";
+  const messages = current.messages;
 
   useEffect(() => {
     if (!inView) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    timers.push(setTimeout(() => setStage(1), 550));
-    timers.push(setTimeout(() => setStage(2), 1500));
-    timers.push(setTimeout(() => setStage(3), 2800));
-    timers.push(setTimeout(() => setStage(0), 6700));
+    timers.push(setTimeout(() => setStep(1), 550));
+    timers.push(setTimeout(() => setStep(2), 1500));
+    timers.push(setTimeout(() => setStep(3), 2700));
+    timers.push(setTimeout(() => setStep(4), 5000));
+    timers.push(setTimeout(() => setStep(5), 5900));
+    timers.push(setTimeout(() => setStep(6), 7000));
+    timers.push(setTimeout(() => setStep(7), 10500));
     timers.push(
       setTimeout(() => {
         setPairIndex((i) => (i + 1) % conversations.length);
-      }, 7300),
+      }, 11100),
     );
     return () => timers.forEach(clearTimeout);
   }, [inView, pairIndex, conversations.length]);
+
+  /* Visible message count derived from current step. Typing indicator is
+     a separate ephemeral row that only renders during step 2 and 5. */
+  const visibleCount =
+    step === 1 || step === 2
+      ? 1
+      : step === 3
+        ? 2
+        : step === 4 || step === 5
+          ? 3
+          : step === 6
+            ? 4
+            : 0;
+  const showTyping = step === 2 || step === 5;
 
   return (
     <div
@@ -147,7 +164,7 @@ function LumiChatMock({ dict }: { dict: ChatDict }) {
         display: "flex",
         flexDirection: "column",
         gap: 14,
-        minHeight: 380,
+        minHeight: 440,
       }}
     >
       {/* header — compact chat-app style: avatar left, name+tag right */}
@@ -208,32 +225,54 @@ function LumiChatMock({ dict }: { dict: ChatDict }) {
         }}
       >
         <AnimatePresence mode="popLayout">
-          {stage >= 1 && (
-            <m.div
-              key={`user-${pairIndex}`}
-              initial={{ opacity: 0, y: 14, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ duration: 0.4, ease: ENTER_EASE }}
-              style={{
-                alignSelf: "flex-end",
-                maxWidth: "82%",
-                padding: "10px 13px",
-                borderRadius: 16,
-                borderBottomRightRadius: 6,
-                background: "var(--fg)",
-                color: "#fff",
-                fontSize: 13.5,
-                lineHeight: 1.45,
-              }}
-            >
-              {userText}
-            </m.div>
-          )}
+          {messages.slice(0, visibleCount).map((msg, i) => {
+            const isUser = msg.role === "user";
+            return (
+              <m.div
+                key={`${pairIndex}-msg-${i}`}
+                initial={{ opacity: 0, y: 14, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{
+                  duration: isUser ? 0.4 : 0.45,
+                  ease: ENTER_EASE,
+                }}
+                style={
+                  isUser
+                    ? {
+                        alignSelf: "flex-end",
+                        maxWidth: "82%",
+                        padding: "10px 13px",
+                        borderRadius: 16,
+                        borderBottomRightRadius: 6,
+                        background: "var(--fg)",
+                        color: "#fff",
+                        fontSize: 13.5,
+                        lineHeight: 1.45,
+                      }
+                    : {
+                        alignSelf: "flex-start",
+                        maxWidth: "88%",
+                        padding: "11px 14px",
+                        borderRadius: 16,
+                        borderBottomLeftRadius: 6,
+                        background: "var(--accent-soft)",
+                        color: "var(--fg)",
+                        fontSize: 13.5,
+                        lineHeight: 1.5,
+                        boxShadow:
+                          "inset 0 0 0 1px rgba(15,184,180,0.18)",
+                      }
+                }
+              >
+                {msg.text}
+              </m.div>
+            );
+          })}
 
-          {stage === 2 && (
+          {showTyping && (
             <m.div
-              key={`typing-${pairIndex}`}
+              key={`${pairIndex}-typing-${step}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
@@ -253,30 +292,6 @@ function LumiChatMock({ dict }: { dict: ChatDict }) {
             >
               <TypingDots />
               <span>{dict.typingHint}</span>
-            </m.div>
-          )}
-
-          {stage >= 3 && (
-            <m.div
-              key={`lumi-${pairIndex}`}
-              initial={{ opacity: 0, y: 14, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ duration: 0.45, ease: ENTER_EASE }}
-              style={{
-                alignSelf: "flex-start",
-                maxWidth: "88%",
-                padding: "11px 14px",
-                borderRadius: 16,
-                borderBottomLeftRadius: 6,
-                background: "var(--accent-soft)",
-                color: "var(--fg)",
-                fontSize: 13.5,
-                lineHeight: 1.5,
-                boxShadow: "inset 0 0 0 1px rgba(15,184,180,0.18)",
-              }}
-            >
-              {lumiText}
             </m.div>
           )}
         </AnimatePresence>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, m, useReducedMotion, type Transition } from "motion/react";
+import { AnimatePresence, m, type Transition } from "motion/react";
 
 import { Icon, RoamLogo } from "./icons";
 import type { Dictionary } from "@/app/[lang]/dictionaries";
@@ -42,15 +42,15 @@ const POSE_SPRING: Transition = {
 
 export function PhoneDemo({ dict }: { dict: DemoDict }) {
   const [step, setStep] = useState(0);
-  const reducedMotion = useReducedMotion();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    /* Respect `prefers-reduced-motion`: keep the first frame visible instead
-       of auto-cycling. Also pause when the tab is hidden so we stop burning
-       CPU (INP / battery / Core Web Vitals). */
-    if (reducedMotion) return;
-
+    /* Always cycle the step, regardless of `prefers-reduced-motion`. iOS
+       enables Reduce Motion by default for many users — gating the whole
+       step machine on that flag froze the hero on mobile. Motion children
+       still tone down their own transforms when reduced-motion is set; we
+       only need to keep the content advancing. Visibility-change still
+       pauses the interval when the tab is hidden, for INP / battery. */
     const start = () => {
       if (intervalRef.current) return;
       intervalRef.current = setInterval(() => {
@@ -74,7 +74,7 @@ export function PhoneDemo({ dict }: { dict: DemoDict }) {
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [reducedMotion]);
+  }, []);
 
   const labels = useMemo(
     () => [
