@@ -6,9 +6,10 @@
 // itinerary, she calls router.refresh() and the new trip.days arrive as
 // fresh props here.
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
-import type { ChecklistItem, Trip, TripDay } from "@/lib/mock/consumer";
+import type { ChecklistItem, Trip, TripDay, TripStop } from "@/lib/mock/consumer";
 import { cn } from "@/lib/utils";
 
 import type { ApiCompanion } from "@/lib/trips-api";
@@ -16,6 +17,18 @@ import type { ApiCompanion } from "@/lib/trips-api";
 import { ChecklistRow } from "./checklist-row";
 import { DailyTimeline } from "./daily-timeline";
 import type { TripMapCity } from "./trip-map";
+
+/* Same dynamic import path as DailyTimeline → Next.js dedupes the chunk,
+   so the Day-N map shares one bundle with the overview map. */
+const TripMap = dynamic(() => import("./trip-map").then((m) => m.TripMap), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="h-40 rounded-2xl"
+      style={{ background: "linear-gradient(135deg, #DCF4F3 0%, #ECF0FE 100%)" }}
+    />
+  ),
+});
 
 type TabId = "overview" | "checklist" | `day:${number}`;
 
@@ -92,12 +105,13 @@ export function TripDetailTabs({
             label={labels.tabs.checklist}
             count={pendingCount}
           />
-          {trip.days.map((_, i) => (
+          {trip.days.map((d, i) => (
             <TabButton
               key={i}
               active={tab === `day:${i}`}
               onClick={() => setTab(`day:${i}`)}
               label={dayShortTemplate.replace("{n}", String(i + 1))}
+              count={d.stops?.length ?? 0}
               tone="compact"
             />
           ))}
@@ -124,8 +138,10 @@ export function TripDetailTabs({
         ) : (
           <DayView
             day={trip.days[dayIndexFromTab(tab) ?? 0]}
+            prevDay={trip.days[(dayIndexFromTab(tab) ?? 0) - 1]}
             index={dayIndexFromTab(tab) ?? 0}
             dayLabelTemplate={dayShortTemplate}
+            cities={cities}
           />
         )}
       </div>
@@ -137,12 +153,18 @@ export function TripDetailTabs({
 
 function DayView({
   day,
+  prevDay,
   index,
   dayLabelTemplate,
+  cities,
 }: {
   day: TripDay | undefined;
+  /* Previous day in the itinerary, if any. Used to draw "today's move"
+     as a solid segment on the map when prevDay.city !== day.city. */
+  prevDay: TripDay | undefined;
   index: number;
   dayLabelTemplate: string;
+  cities: TripMapCity[];
 }) {
   if (!day) {
     return (
@@ -151,24 +173,134 @@ function DayView({
       </div>
     );
   }
+  /* Materialize the day's stops for the map. The API always seeds at least
+     one stop named after `city` (see migration 0009), but legacy mock data
+     might still have undefined — fall back to the city as a single stop. */
+  const stops: TripStop[] =
+    day.stops && day.stops.length > 0
+      ? day.stops
+      : [{ name: day.city, kind: "other", lat: null, lng: null }];
+  const dayStops: TripMapCity[] = stops.map((s) => ({
+    name: s.name,
+    lat: s.lat ?? null,
+    lng: s.lng ?? null,
+  }));
+
   return (
-    <div className="flex flex-col gap-2 px-1">
-      <div
-        className="text-[11px] font-medium uppercase tracking-[0.06em] text-fg-muted"
-        style={{ fontFamily: "var(--font-mono)" }}
-      >
-        {dayLabelTemplate.replace("{n}", String(index + 1))} · {day.d.slice(5)}
-      </div>
-      <div className="text-[22px] font-semibold tracking-[-0.01em] text-fg">
-        {day.city}
-      </div>
-      {day.note && (
-        <div className="text-[14px] leading-relaxed text-fg-secondary">
-          {day.note}
+    <div className="flex flex-col gap-4">
+      <TripMap
+        cities={cities}
+        activeCity={day.city}
+        activeLegFrom={prevDay?.city ?? null}
+        dayStops={dayStops}
+      />
+      <div className="flex flex-col gap-3 px-1">
+        <div
+          className="text-[11px] font-medium uppercase tracking-[0.06em] text-fg-muted"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          {dayLabelTemplate.replace("{n}", String(index + 1))} · {day.d.slice(5)}
         </div>
-      )}
+        <div className="text-[22px] font-semibold tracking-[-0.01em] text-fg">
+          {day.city}
+        </div>
+        {day.note && (
+          <div className="text-[14px] leading-relaxed text-fg-secondary">
+            {day.note}
+          </div>
+        )}
+        {day.stops && day.stops.length > 0 && (
+          <StopsTimeline stops={day.stops} />
+        )}
+      </div>
     </div>
   );
+}
+
+/* Vertical timeline of stops within a day. Each row: time/kind chip,
+   numbered rail bullet, name + duration + note. Mirrors the visual
+   language of the trip-overview DailyTimeline but at stop granularity. */
+function StopsTimeline({
+  stops,
+}: {
+  stops: NonNullable<TripDay["stops"]>;
+}) {
+  return (
+    <ol className="relative mt-2 flex flex-col gap-3">
+      <span className="absolute bottom-2 left-[14px] top-2 w-px bg-divider" />
+      {stops.map((s, i) => (
+        <li key={i} className="relative flex items-start gap-3">
+          <span
+            className="relative z-10 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-semibold text-accent"
+            style={{
+              boxShadow:
+                "inset 0 0 0 1.5px var(--accent), 0 1px 3px rgba(0,0,0,0.06)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            {i + 1}
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className="text-[15px] font-semibold leading-tight text-fg">
+                {s.name}
+              </span>
+              {s.arrival_time ? (
+                <span
+                  className="rounded-full bg-[rgba(15,184,180,0.10)] px-2 py-[1px] text-[10.5px] font-medium text-accent"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {s.arrival_time}
+                </span>
+              ) : null}
+              <KindChip kind={s.kind} />
+              {s.duration_min ? (
+                <span className="text-[11px] text-fg-muted">
+                  · {formatDuration(s.duration_min)}
+                </span>
+              ) : null}
+            </div>
+            {s.note ? (
+              <div className="text-[13px] leading-relaxed text-fg-secondary">
+                {s.note}
+              </div>
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+const KIND_LABELS: Record<string, { label: string; color: string }> = {
+  sight: { label: "景點", color: "#2563eb" },
+  meal: { label: "用餐", color: "#d97706" },
+  transit: { label: "交通", color: "#6b7280" },
+  stay: { label: "住宿", color: "#7c3aed" },
+  shop: { label: "購物", color: "#db2777" },
+  other: { label: "其他", color: "#0fb8b4" },
+};
+
+function KindChip({ kind }: { kind: string }) {
+  const meta = KIND_LABELS[kind] ?? KIND_LABELS.other!;
+  return (
+    <span
+      className="rounded-full px-2 py-[1px] text-[10px] font-medium"
+      style={{
+        background: `${meta.color}15`,
+        color: meta.color,
+      }}
+    >
+      {meta.label}
+    </span>
+  );
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} 分鐘`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} 小時` : `${h} 小時 ${m} 分`;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────

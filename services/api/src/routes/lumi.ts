@@ -2,7 +2,7 @@
 // delete conversations). Writes go through POST /trips/:id/lumi which
 // already runs the OpenAI turn and persists alongside it.
 
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -229,11 +229,47 @@ lumiRouter.post("/chat", async (c) => {
     content: parsed.data.prompt,
   });
 
+  /* Reconstruct conversation history from DB rather than trusting the
+     client's text-only memory. For assistant turns we rebuild the JSON
+     envelope from `metadata` (saved on each insert) so the model can
+     see its OWN past structured outputs, not just summary prose. Caps
+     at 12 turns to match the previous client-side window. */
+  const historyRows = await db
+    .select()
+    .from(schema.lumiMessage)
+    .where(eq(schema.lumiMessage.conversationId, conversationId))
+    .orderBy(asc(schema.lumiMessage.createdAt));
+  // Drop the just-inserted user prompt — runLumiTurn re-adds it as the
+  // final user message.
+  const trimmedRows = historyRows.slice(0, -1).slice(-12);
+  const history = trimmedRows.map((row) => {
+    if (row.role === "assistant") {
+      const meta = (row.metadata ?? null) as {
+        days?: unknown;
+        companions?: unknown;
+        trip_draft?: unknown;
+      } | null;
+      /* Reconstruct the envelope this assistant turn actually returned,
+         so the model can tell "I already shipped days[] last turn" from
+         "I only acknowledged". Falls back to plain text if metadata is
+         missing (older rows pre-this-fix). */
+      const envelope: Record<string, unknown> = { summary: row.content };
+      if (meta?.days) envelope.days = meta.days;
+      if (meta?.companions) envelope.companions = meta.companions;
+      if (meta?.trip_draft) envelope.trip_draft = meta.trip_draft;
+      return {
+        role: "assistant" as const,
+        content: JSON.stringify(envelope),
+      };
+    }
+    return { role: "user" as const, content: row.content };
+  });
+
   let result;
   try {
     result = await runLumiTurn({
       prompt: parsed.data.prompt,
-      history: parsed.data.history,
+      history,
       editableTrip: editableTrip
         ? {
             title: editableTrip.title,
@@ -271,16 +307,53 @@ lumiRouter.post("/chat", async (c) => {
   if (result.days && editableTrip) {
     const tripId = editableTrip.tripId;
     await db.transaction(async (tx) => {
+      /* trip_day_stop has ON DELETE CASCADE from trip_day, so wiping
+         days clears stops too. Then re-insert days with `.returning`
+         and bulk-insert their stops keyed by sort_order. Mirrors the
+         shape in services/api/src/routes/trips.ts so the two write
+         paths stay consistent. */
       await tx.delete(schema.tripDay).where(eq(schema.tripDay.tripId, tripId));
-      await tx.insert(schema.tripDay).values(
-        result.days!.map((d, i) => ({
-          tripId,
-          sortOrder: i,
-          dayDate: d.day_date,
-          city: d.city,
-          note: d.note,
-        })),
-      );
+      const insertedDays = await tx
+        .insert(schema.tripDay)
+        .values(
+          result.days!.map((d, i) => ({
+            tripId,
+            sortOrder: i,
+            dayDate: d.day_date,
+            city: d.city,
+            note: d.note,
+          })),
+        )
+        .returning({
+          id: schema.tripDay.id,
+          sortOrder: schema.tripDay.sortOrder,
+        });
+
+      const stopRows = result.days!.flatMap((d, i) => {
+        const dayRow = insertedDays.find((r) => r.sortOrder === i);
+        if (!dayRow) return [];
+        /* Lumi may omit stops for a placeholder/rest day. Seed one
+           stop named after `city` so the day still pins on the map. */
+        const effective =
+          d.stops && d.stops.length > 0
+            ? d.stops
+            : [{ name: d.city, kind: "other", note: "" }];
+        return effective.map((s, j) => ({
+          dayId: dayRow.id,
+          sortOrder: j,
+          name: s.name,
+          kind: s.kind ?? "other",
+          arrivalTime: s.arrival_time ?? null,
+          durationMin: s.duration_min ?? null,
+          note: s.note ?? "",
+          lat: null,
+          lng: null,
+        }));
+      });
+      if (stopRows.length > 0) {
+        await tx.insert(schema.tripDayStop).values(stopRows);
+      }
+
       await tx
         .update(schema.trip)
         .set({
@@ -369,10 +442,20 @@ lumiRouter.post("/chat", async (c) => {
     }
   }
 
+  /* Persist the FULL response payload in `metadata` so future turns can
+     reconstruct what Lumi actually output, not just what she said. Without
+     this, gpt-4o-mini drifts across turns — it sees only its prior
+     summary text and treats acknowledgments ("我將為您規劃") as if they
+     already shipped the structured days[]. Mirrors the LumiResult shape. */
   await db.insert(schema.lumiMessage).values({
     conversationId,
     role: "assistant",
     content: result.summary,
+    metadata: {
+      days: result.days ?? null,
+      companions: result.companions ?? null,
+      trip_draft: result.trip_draft ?? null,
+    },
   });
   await db
     .update(schema.lumiConversation)
@@ -418,7 +501,21 @@ interface LoadedEditableTrip {
   title: string;
   start_date: string;
   end_date: string;
-  days: { day_date: string; city: string; note: string }[];
+  days: {
+    day_date: string;
+    city: string;
+    note: string;
+    /* Stops as currently stored. Empty array = day is unplanned, the
+       model should treat that as "needs filling". Non-empty = already
+       planned, model should preserve unless asked to rewrite. */
+    stops: {
+      name: string;
+      kind: string;
+      arrival_time: string | null;
+      duration_min: number | null;
+      note: string;
+    }[];
+  }[];
   cities: {
     name: string;
     lat: number | null;
@@ -451,6 +548,28 @@ async function loadEditableTrip(
     .from(schema.tripDay)
     .where(eq(schema.tripDay.tripId, tripId))
     .orderBy(asc(schema.tripDay.sortOrder));
+
+  /* Pull every day's stops in one batch + group by day. Empty arrays
+     are valid (placeholder days). The model uses this to tell "already
+     planned" from "still needs filling". */
+  const stops = days.length
+    ? await db
+        .select()
+        .from(schema.tripDayStop)
+        .where(
+          inArray(
+            schema.tripDayStop.dayId,
+            days.map((d) => d.id),
+          ),
+        )
+        .orderBy(asc(schema.tripDayStop.sortOrder))
+    : [];
+  const stopsByDay = new Map<string, typeof stops>();
+  for (const s of stops) {
+    const arr = stopsByDay.get(s.dayId);
+    if (arr) arr.push(s);
+    else stopsByDay.set(s.dayId, [s]);
+  }
 
   const orderedCities: string[] = [];
   const seen = new Set<string>();
@@ -487,6 +606,13 @@ async function loadEditableTrip(
       day_date: d.dayDate,
       city: d.city,
       note: d.note,
+      stops: (stopsByDay.get(d.id) ?? []).map((s) => ({
+        name: s.name,
+        kind: s.kind,
+        arrival_time: s.arrivalTime,
+        duration_min: s.durationMin,
+        note: s.note,
+      })),
     })),
     cities,
     companions: companions.map((c) => ({

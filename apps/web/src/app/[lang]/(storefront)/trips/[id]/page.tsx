@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
-import { CompanionsSection } from "@/components/storefront/trips/companions-section";
+import { CompanionsMenu } from "@/components/storefront/trips/companions-menu";
 import {
   TripDetailTabs,
   type TripDetailLabels,
@@ -86,24 +86,24 @@ export default async function TripDetailPage({
               : ""}
           </div>
         </div>
+        <CompanionsMenu
+          tripId={trip.id}
+          companions={companions}
+          labels={{
+            manage_title: t.companions.manage_title,
+            manage_aria: t.companions.manage_aria,
+            add: t.companions.add,
+            rename_placeholder: t.companions.rename_placeholder,
+            copy_invite: t.companions.copy_invite,
+            copied: t.companions.copied,
+            link_only: t.companions.link_only,
+            joined: t.companions.joined,
+            delete: t.companions.delete,
+            pick_friend: t.companions.pick_friend,
+            pick_friend_soon: t.companions.pick_friend_soon,
+          }}
+        />
       </header>
-
-      <CompanionsSection
-        tripId={trip.id}
-        companions={companions}
-        labels={{
-          section_title: t.companions.section_title,
-          add: t.companions.add,
-          rename_placeholder: t.companions.rename_placeholder,
-          save: t.companions.save,
-          cancel: t.companions.cancel,
-          copy_invite: t.companions.copy_invite,
-          copied: t.companions.copied,
-          link_only: t.companions.link_only,
-          joined: t.companions.joined,
-          delete: t.companions.delete,
-        }}
-      />
 
       <TripDetailTabs
         trip={trip}

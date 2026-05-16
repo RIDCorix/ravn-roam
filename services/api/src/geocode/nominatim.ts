@@ -100,7 +100,20 @@ function dominantCountry(
   return best?.code ?? null;
 }
 
-export async function geocodeCities(rawNames: string[]): Promise<Geocoded[]> {
+export interface GeocodeOptions {
+  /* When set, EVERY query is constrained to this country code and the
+     no-hint fallback is disabled. Used for stop-level geocoding where
+     the day's city already pins the right country — falling back
+     globally would cross-language-match foreign names onto unrelated
+     places (e.g. "米蘭時尚區" with country=IT falls back to a Chinese
+     place in CN). Prefer null lat/lng over a wrong-country pin. */
+  strictCountry?: string | null;
+}
+
+export async function geocodeCities(
+  rawNames: string[],
+  opts: GeocodeOptions = {},
+): Promise<Geocoded[]> {
   const unique = Array.from(
     new Map(rawNames.map((n) => [normalize(n), n] as const)).values(),
   );
@@ -128,22 +141,45 @@ export async function geocodeCities(rawNames: string[]): Promise<Geocoded[]> {
     });
   }
 
-  // Pass 1: pick up cached hits. Compute the dominant country among them
-  // and use it as the hint for both (a) uncached names and (b) cached rows
-  // whose country disagrees and likely landed there because of a no-hint
-  // first call (e.g. 近郊 → CN instead of JP).
-  let hint = dominantCountry(Array.from(byKey.values()).map((g) => g.country_code));
+  /* In strict mode the caller already knows the country (e.g. stops on a
+     trip in IT); otherwise infer from cached hits and let the loop refine
+     the dominant country as more names resolve. */
+  let hint = opts.strictCountry
+    ? opts.strictCountry
+    : dominantCountry(Array.from(byKey.values()).map((g) => g.country_code));
+
+  /* In strict mode, drop any cached rows whose country disagrees with
+     the required one — they likely landed wrong on a prior batch and
+     shouldn't poison the current call. */
+  if (opts.strictCountry) {
+    for (const [k, g] of byKey) {
+      if (g.country_code && g.country_code !== opts.strictCountry) {
+        byKey.delete(k);
+      }
+    }
+  }
 
   const misses = unique.filter((n) => !byKey.has(normalize(n)));
   // Geocode misses first — they may bring more country evidence.
   for (const name of misses) {
     let result = await rateLimited(() => callNominatim(name, hint));
-    // If the hinted lookup returned nothing, retry without the hint so
-    // multi-country trips (Paris → Amsterdam → Berlin) don't drop cities.
-    if (!result && hint) {
+    /* No-hint fallback is helpful for multi-country trips
+       (Paris → Amsterdam → Berlin) but catastrophic for stops where the
+       country is fixed — Chinese-script foreign place names cross-match
+       to Asian cities. Skip the fallback in strict mode. */
+    if (!result && hint && !opts.strictCountry) {
       result = await rateLimited(() => callNominatim(name, null));
     }
     if (!result) continue;
+    /* Strict mode + result lands in the wrong country (rare — nominatim
+       respects countrycodes) → reject. */
+    if (
+      opts.strictCountry &&
+      result.country_code &&
+      result.country_code !== opts.strictCountry
+    ) {
+      continue;
+    }
     byKey.set(normalize(name), { ...result, name });
     if (!hint && result.country_code) hint = result.country_code;
     try {

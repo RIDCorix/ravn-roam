@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 async function forward(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> },
+  { params }: { params: Promise<{ path?: string[] }> },
 ) {
   const { path } = await params;
   const supabase = await createSupabaseServerClient();
@@ -23,7 +23,11 @@ async function forward(
 
   const apiBase = process.env.ROAM_API_URL ?? "http://localhost:4000";
   const search = request.nextUrl.search ?? "";
-  const target = `${apiBase}/trips/${path.join("/")}${search}`;
+  /* `path` is `undefined` when the request hits `/api/trips` with no
+     extra segment (which happens on POST /api/trips for trip creation).
+     Treat that as the empty tail so we forward to `<api>/trips`. */
+  const tail = (path ?? []).join("/");
+  const target = `${apiBase}/trips${tail ? `/${tail}` : ""}${search}`;
   const init: RequestInit = {
     method: request.method,
     headers: {
@@ -38,9 +42,13 @@ async function forward(
   }
   const res = await fetch(target, init);
   const text = await res.text();
+  /* Preserve the upstream content-type — when the backend returns an
+     HTML error page (e.g. Railway 502), labelling it as JSON makes the
+     client misparse and surface the raw HTML in the UI. */
+  const contentType = res.headers.get("content-type") ?? "application/json";
   return new NextResponse(text, {
     status: res.status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": contentType },
   });
 }
 

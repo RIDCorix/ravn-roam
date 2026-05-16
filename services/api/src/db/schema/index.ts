@@ -24,7 +24,7 @@ import { productSupplierMapping } from "./product-supplier-mapping";
 import { supplier } from "./supplier";
 import { supplierPlan } from "./supplier-plan";
 import { supplierPlanSyncLog } from "./supplier-plan-sync-log";
-import { trip, tripChecklistItem, tripDay } from "./trip";
+import { trip, tripChecklistItem, tripDay, tripDayStop } from "./trip";
 import { tripCompanion } from "./trip-companion";
 import { vendor } from "./vendor";
 
@@ -40,6 +40,7 @@ export const schema = {
   orderItem,
   trip,
   tripDay,
+  tripDayStop,
   tripChecklistItem,
   tripCompanion,
   cityGeocode,

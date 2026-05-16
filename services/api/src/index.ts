@@ -53,9 +53,79 @@ app.route("/", createAdminRouter());
 
 if (process.env.NODE_ENV !== "test") {
   const port = env.PORT ?? 3001;
-  serve({ fetch: app.fetch, port }, (info) => {
-    console.log(`[@roam/api] listening on http://localhost:${info.port}`);
+
+  /* Bind with retry. `tsx watch` on file change can spawn the new
+     process before the old one fully releases the port — even with a
+     SIGTERM handler. Instead of failing, we just wait and retry. */
+  type ServerLike = ReturnType<typeof serve>;
+  let currentServer: ServerLike | null = null;
+
+  const listenWithRetry = (
+    retriesLeft: number,
+    delayMs: number,
+  ): Promise<ServerLike> =>
+    new Promise((resolve, reject) => {
+      const s = serve({ fetch: app.fetch, port }, (info) => {
+        console.log(
+          `[@roam/api] listening on http://localhost:${info.port}`,
+        );
+      }) as ServerLike & { on?: (e: string, cb: (err: Error) => void) => void };
+
+      let settled = false;
+      s.on?.("error", (err: NodeJS.ErrnoException) => {
+        if (settled) return;
+        settled = true;
+        if (err.code === "EADDRINUSE" && retriesLeft > 0) {
+          console.warn(
+            `[@roam/api] port ${port} still busy, retry in ${delayMs}ms (${retriesLeft} left)`,
+          );
+          setTimeout(() => {
+            listenWithRetry(retriesLeft - 1, delayMs).then(resolve, reject);
+          }, delayMs);
+          return;
+        }
+        reject(err);
+      });
+      s.on?.("listening", () => {
+        if (settled) return;
+        settled = true;
+        currentServer = s;
+        resolve(s);
+      });
+    });
+
+  void listenWithRetry(15, 200).then((s) => {
+    currentServer = s;
+  }).catch((err) => {
+    console.error("[@roam/api] failed to bind", err);
+    process.exit(1);
   });
+
+  /* `tsx watch` sends SIGTERM on file change. Best effort: close
+     idle connections + http server, then exit. The new process has
+     a retry loop above as a backstop, so even if the close is slow
+     (or signal arrives mid-bind), the next start eventually succeeds. */
+  let shuttingDown = false;
+  const shutdown = (signal: NodeJS.Signals) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[@roam/api] received ${signal}, closing`);
+    const s = currentServer;
+    if (!s) {
+      process.exit(0);
+      return;
+    }
+    try {
+      (s as unknown as { closeAllConnections?: () => void }).closeAllConnections?.();
+    } catch {
+      /* older runtime, fall through */
+    }
+    s.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 800).unref();
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+  process.on("SIGHUP", shutdown);
 }
 
 export { app };

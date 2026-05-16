@@ -527,7 +527,9 @@
       },
       "companions": {
         "section_title": "旅伴",
-        "add": "新增",
+        "manage_title": "管理旅伴",
+        "manage_aria": "管理旅伴",
+        "add": "新增旅伴",
         "rename_placeholder": "輸入名稱",
         "save": "儲存",
         "cancel": "取消",
@@ -535,7 +537,9 @@
         "copied": "已複製",
         "link_only": "等待邀請",
         "joined": "已加入",
-        "delete": "刪除旅伴"
+        "delete": "刪除旅伴",
+        "pick_friend": "從朋友選",
+        "pick_friend_soon": "近期推出"
       },
       "invite": {
         "title_template": "{name} 邀請你加入「{title}」",

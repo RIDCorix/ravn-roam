@@ -30,10 +30,28 @@ export interface ActiveESIM {
 
 export type TripStatus = "active" | "upcoming" | "past";
 
+export interface TripStop {
+  /* Stop's place name — Wanderlog-style place pin label. */
+  name: string;
+  /* sight | meal | transit | stay | shop | other — drives kind chip + icon. */
+  kind: string;
+  /* Free-form ("10:30" / "morning" / "after lunch"); rendered as a label. */
+  arrival_time?: string | null;
+  duration_min?: number | null;
+  note?: string;
+  /* Geocoded coords (null when the cache miss hasn't been backfilled yet). */
+  lat?: number | null;
+  lng?: number | null;
+}
+
 export interface TripDay {
   d: string;
+  /* Macro city label, still rendered as the day's headline. */
   city: string;
   note: string;
+  /* Ordered places visited that day. Empty array (or undefined for legacy
+     mock data) is allowed — the UI falls back to just showing the city. */
+  stops?: TripStop[];
 }
 
 export interface ChecklistItem {

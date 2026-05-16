@@ -46,12 +46,27 @@ export interface LumiAssistantLabels {
   draft_created: string;
 }
 
+interface TripDraftStop {
+  name: string;
+  kind?: string;
+  arrival_time?: string | null;
+  duration_min?: number | null;
+  note?: string;
+}
+
 interface TripDraft {
   title: string;
   start_date: string;
   end_date: string;
   cover?: string | null;
-  days: { day_date: string; city: string; note: string }[];
+  days: {
+    day_date: string;
+    city: string;
+    note: string;
+    /* Lumi may emit a per-day stops list (Wanderlog-style). Optional for
+       backwards compat with older drafter outputs that only set `city`. */
+    stops?: TripDraftStop[];
+  }[];
   checklist?: { text: string; kind: string; suggested?: boolean }[];
 }
 

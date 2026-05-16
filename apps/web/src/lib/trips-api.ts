@@ -17,6 +17,19 @@ export interface ApiTrip {
   updated_at: string;
 }
 
+export interface ApiTripStop {
+  id: string;
+  day_id: string;
+  sort_order: number;
+  name: string;
+  kind: string;
+  arrival_time: string | null;
+  duration_min: number | null;
+  note: string;
+  lat: number | null;
+  lng: number | null;
+}
+
 export interface ApiTripDay {
   id: string;
   trip_id: string;
@@ -24,6 +37,9 @@ export interface ApiTripDay {
   day_date: string;
   city: string;
   note: string;
+  /* Optional for backwards-compat with pre-stops backend responses. New
+     code paths always materialize at least one stop. */
+  stops?: ApiTripStop[];
 }
 
 export interface ApiChecklistItem {

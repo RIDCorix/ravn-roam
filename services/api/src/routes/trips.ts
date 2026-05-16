@@ -12,7 +12,7 @@
 // scope queries by it. The DB has no RLS on these tables yet — the
 // app-layer WHERE user_id = $1 is the only gate.
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -29,10 +29,33 @@ tripsRouter.route("/:tripId/companions", companionsRouter);
 
 // ─── Schemas ───────────────────────────────────────────────────────────
 
+/* A single stop inside a day — Wanderlog-style "place visited". `name` is
+   the only required field; the rest are optional enrichments. */
+const stopInput = z.object({
+  name: z.string().min(1).max(200),
+  /* sight | meal | transit | stay | shop | other. Loose so Lumi can
+     introduce new kinds without a schema change. */
+  kind: z.string().max(40).default("other"),
+  /* Free-form: "10:30", "morning", "after lunch". */
+  arrival_time: z.string().max(40).nullish(),
+  duration_min: z.number().int().min(0).max(2880).nullish(),
+  note: z.string().max(2000).default(""),
+  /* Pre-geocoded coords (e.g., from a user pin-drop). If null, the GET
+     handler fills them via the nominatim cache by name. */
+  lat: z.number().nullish(),
+  lng: z.number().nullish(),
+});
+
 const dayInput = z.object({
   day_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  /* Macro city label — kept for backwards compatibility and as the
+     overview-map pin name. Lumi still emits this. */
   city: z.string().min(1).max(120),
   note: z.string().max(2000).default(""),
+  /* Multi-stop itinerary within this day. Empty array is allowed (e.g.
+     "rest day"); legacy callers that don't send `stops` get an
+     auto-derived single stop named after `city`. */
+  stops: z.array(stopInput).default([]),
 });
 
 const checklistInput = z.object({
@@ -66,10 +89,26 @@ const tripPatch = z.object({
 
 const daysReplace = z.object({ days: z.array(dayInput).min(1) });
 
+/* Legacy callers (and Lumi until the prompt rewrite lands) send days with
+   just a city and no stops. Materialize a single placeholder stop so the
+   day still pins on the map and the timeline isn't empty. */
+function defaultStopFromCity(city: string): z.infer<typeof stopInput> {
+  return {
+    name: city,
+    kind: "other",
+    arrival_time: null,
+    duration_min: null,
+    note: "",
+    lat: null,
+    lng: null,
+  };
+}
+
 // ─── Row → JSON ────────────────────────────────────────────────────────
 
 type TripRow = typeof schema.trip.$inferSelect;
 type TripDayRow = typeof schema.tripDay.$inferSelect;
+type TripDayStopRow = typeof schema.tripDayStop.$inferSelect;
 type ChecklistRow = typeof schema.tripChecklistItem.$inferSelect;
 
 function rowToTrip(row: TripRow) {
@@ -87,7 +126,32 @@ function rowToTrip(row: TripRow) {
   };
 }
 
-function rowToDay(row: TripDayRow) {
+/* Serialize a stop row, optionally enriching lat/lng from the nominatim
+   cache if the stored values are null. */
+function rowToStop(
+  row: TripDayStopRow,
+  coordsByName: Map<string, { lat: number; lng: number }>,
+) {
+  const cached = coordsByName.get(row.name.trim().toLowerCase());
+  return {
+    id: row.id,
+    day_id: row.dayId,
+    sort_order: row.sortOrder,
+    name: row.name,
+    kind: row.kind,
+    arrival_time: row.arrivalTime,
+    duration_min: row.durationMin,
+    note: row.note,
+    lat: row.lat ?? cached?.lat ?? null,
+    lng: row.lng ?? cached?.lng ?? null,
+  };
+}
+
+function rowToDay(
+  row: TripDayRow,
+  stops: TripDayStopRow[],
+  coordsByName: Map<string, { lat: number; lng: number }>,
+) {
   return {
     id: row.id,
     trip_id: row.tripId,
@@ -95,6 +159,7 @@ function rowToDay(row: TripDayRow) {
     day_date: row.dayDate,
     city: row.city,
     note: row.note,
+    stops: stops.map((s) => rowToStop(s, coordsByName)),
   };
 }
 
@@ -178,33 +243,92 @@ tripsRouter.get("/:id", async (c) => {
       .orderBy(asc(schema.tripCompanion.sortOrder));
   }
 
-  // Build the de-duplicated, in-itinerary-order city list and geocode it.
-  // The map renderer wants both: order (for the route polyline) and coords.
-  const orderedCities: string[] = [];
-  const seen = new Set<string>();
+  // Fetch all stops for these days in one batch query, then group by day.
+  const stops = days.length
+    ? await db
+        .select()
+        .from(schema.tripDayStop)
+        .where(
+          inArray(
+            schema.tripDayStop.dayId,
+            days.map((d) => d.id),
+          ),
+        )
+        .orderBy(asc(schema.tripDayStop.sortOrder))
+    : [];
+  const stopsByDay = new Map<string, TripDayStopRow[]>();
+  for (const s of stops) {
+    const arr = stopsByDay.get(s.dayId);
+    if (arr) arr.push(s);
+    else stopsByDay.set(s.dayId, [s]);
+  }
+
+  /* Two-pass geocoding. Pass 1 resolves the macro cities with the
+     default (multi-country-friendly) logic. Pass 2 resolves each stop
+     STRICTLY constrained to its day's city's country — so Chinese-
+     script place names on a Milan trip can't cross-language-match to
+     Chinese cities (the "米蘭時尚區 → Shanghai" bug). Stops without a
+     matchable hit return null lat/lng → no pin > wrong pin. */
+  const cityList: string[] = [];
+  const citySeen = new Set<string>();
   for (const d of days) {
     const key = d.city.trim();
-    if (!seen.has(key)) {
-      seen.add(key);
-      orderedCities.push(key);
+    if (!citySeen.has(key.toLowerCase())) {
+      citySeen.add(key.toLowerCase());
+      cityList.push(key);
     }
   }
-  const geocoded = await geocodeCities(orderedCities).catch(() => []);
-  const coordByName = new Map(
-    geocoded.map((g) => [g.name.trim().toLowerCase(), g]),
+  const cityGeocoded = await geocodeCities(cityList).catch(() => []);
+  const cityCountryByName = new Map(
+    cityGeocoded.map((g) => [
+      g.name.trim().toLowerCase(),
+      g.country_code,
+    ]),
   );
-  const cities = orderedCities.map((name) => {
+
+  /* Group stop names by the country they SHOULD live in (taken from
+     their day's city). One geocodeCities call per country, each in
+     strict mode. */
+  const stopsByCountry = new Map<string | null, Set<string>>();
+  for (const d of days) {
+    const cc =
+      cityCountryByName.get(d.city.trim().toLowerCase()) ?? null;
+    for (const s of stopsByDay.get(d.id) ?? []) {
+      const set = stopsByCountry.get(cc) ?? new Set<string>();
+      set.add(s.name.trim());
+      stopsByCountry.set(cc, set);
+    }
+  }
+  const stopGeocoded: Awaited<ReturnType<typeof geocodeCities>> = [];
+  for (const [cc, names] of stopsByCountry) {
+    if (names.size === 0) continue;
+    /* Without a city country we can't reliably constrain — skip,
+       leaving stops unpinned rather than risking a wrong-country hit. */
+    if (!cc) continue;
+    const batch = await geocodeCities(Array.from(names), {
+      strictCountry: cc,
+    }).catch(() => []);
+    stopGeocoded.push(...batch);
+  }
+
+  const coordByName = new Map<string, { lat: number; lng: number }>();
+  for (const g of [...cityGeocoded, ...stopGeocoded]) {
+    coordByName.set(g.name.trim().toLowerCase(), { lat: g.lat, lng: g.lng });
+  }
+
+  /* `cities` is the macro overview-map data (one pin per city in
+     itinerary order). Days/stops carry their own coords for the
+     day-level map. */
+  const cities = cityList.map((name) => {
     const c = coordByName.get(name.toLowerCase());
-    return {
-      name,
-      lat: c?.lat ?? null,
-      lng: c?.lng ?? null,
-    };
+    return { name, lat: c?.lat ?? null, lng: c?.lng ?? null };
   });
 
   return c.json({
     trip: rowToTrip(trip),
-    days: days.map(rowToDay),
+    days: days.map((d) =>
+      rowToDay(d, stopsByDay.get(d.id) ?? [], coordByName),
+    ),
     checklist: checklist.map(rowToChecklist),
     cities,
     companions: companions.map((c) => ({
@@ -243,15 +367,40 @@ tripsRouter.post("/", async (c) => {
     .returning();
 
   if (parsed.data.days.length > 0) {
-    await db.insert(schema.tripDay).values(
-      parsed.data.days.map((d, i) => ({
-        tripId: trip!.id,
-        sortOrder: i,
-        dayDate: d.day_date,
-        city: d.city,
-        note: d.note,
-      })),
-    );
+    const insertedDays = await db
+      .insert(schema.tripDay)
+      .values(
+        parsed.data.days.map((d, i) => ({
+          tripId: trip!.id,
+          sortOrder: i,
+          dayDate: d.day_date,
+          city: d.city,
+          note: d.note,
+        })),
+      )
+      .returning({ id: schema.tripDay.id, sortOrder: schema.tripDay.sortOrder });
+
+    /* Build stop rows for every day. If the caller didn't supply stops[],
+       seed one stop named after `city` so the day still pins on the map. */
+    const stopRows = parsed.data.days.flatMap((d, i) => {
+      const dayRow = insertedDays.find((r) => r.sortOrder === i);
+      if (!dayRow) return [];
+      const effective = d.stops.length > 0 ? d.stops : [defaultStopFromCity(d.city)];
+      return effective.map((s, j) => ({
+        dayId: dayRow.id,
+        sortOrder: j,
+        name: s.name,
+        kind: s.kind,
+        arrivalTime: s.arrival_time ?? null,
+        durationMin: s.duration_min ?? null,
+        note: s.note,
+        lat: s.lat ?? null,
+        lng: s.lng ?? null,
+      }));
+    });
+    if (stopRows.length > 0) {
+      await db.insert(schema.tripDayStop).values(stopRows);
+    }
   }
 
   if (parsed.data.checklist.length > 0) {
@@ -348,16 +497,43 @@ tripsRouter.put("/:id/days", async (c) => {
   if (!trip) return c.json({ error: "not_found" }, 404);
 
   await db.transaction(async (tx) => {
+    /* `trip_day_stop.day_id` has ON DELETE CASCADE, so wiping the old days
+       wipes their stops too. Then re-insert days, capture their new IDs,
+       and bulk-insert stops keyed by day sort_order. */
     await tx.delete(schema.tripDay).where(eq(schema.tripDay.tripId, id));
-    await tx.insert(schema.tripDay).values(
-      parsed.data.days.map((d, i) => ({
-        tripId: id,
-        sortOrder: i,
-        dayDate: d.day_date,
-        city: d.city,
-        note: d.note,
-      })),
-    );
+    const insertedDays = await tx
+      .insert(schema.tripDay)
+      .values(
+        parsed.data.days.map((d, i) => ({
+          tripId: id,
+          sortOrder: i,
+          dayDate: d.day_date,
+          city: d.city,
+          note: d.note,
+        })),
+      )
+      .returning({ id: schema.tripDay.id, sortOrder: schema.tripDay.sortOrder });
+
+    const stopRows = parsed.data.days.flatMap((d, i) => {
+      const dayRow = insertedDays.find((r) => r.sortOrder === i);
+      if (!dayRow) return [];
+      const effective = d.stops.length > 0 ? d.stops : [defaultStopFromCity(d.city)];
+      return effective.map((s, j) => ({
+        dayId: dayRow.id,
+        sortOrder: j,
+        name: s.name,
+        kind: s.kind,
+        arrivalTime: s.arrival_time ?? null,
+        durationMin: s.duration_min ?? null,
+        note: s.note,
+        lat: s.lat ?? null,
+        lng: s.lng ?? null,
+      }));
+    });
+    if (stopRows.length > 0) {
+      await tx.insert(schema.tripDayStop).values(stopRows);
+    }
+
     await tx
       .update(schema.trip)
       .set({
@@ -368,13 +544,37 @@ tripsRouter.put("/:id/days", async (c) => {
       .where(eq(schema.trip.id, id));
   });
 
+  /* Read back days + stops to return the canonical post-update shape.
+     Geocoding happens lazily in the GET /:id path; this response only
+     surfaces the structural change for the caller (Lumi / the editor UI). */
   const days = await db
     .select()
     .from(schema.tripDay)
     .where(eq(schema.tripDay.tripId, id))
     .orderBy(asc(schema.tripDay.sortOrder));
+  const stops = days.length
+    ? await db
+        .select()
+        .from(schema.tripDayStop)
+        .where(
+          inArray(
+            schema.tripDayStop.dayId,
+            days.map((d) => d.id),
+          ),
+        )
+        .orderBy(asc(schema.tripDayStop.sortOrder))
+    : [];
+  const stopsByDay = new Map<string, TripDayStopRow[]>();
+  for (const s of stops) {
+    const arr = stopsByDay.get(s.dayId);
+    if (arr) arr.push(s);
+    else stopsByDay.set(s.dayId, [s]);
+  }
+  const emptyCoords = new Map<string, { lat: number; lng: number }>();
 
-  return c.json({ days: days.map(rowToDay) });
+  return c.json({
+    days: days.map((d) => rowToDay(d, stopsByDay.get(d.id) ?? [], emptyCoords)),
+  });
 });
 
 // ─── CHECKLIST ITEM PATCH ───────────────────────────────────────────────

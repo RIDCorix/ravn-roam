@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -63,6 +64,40 @@ export const tripDay = roamPoc.table(
   (t) => [
     index("trip_day_trip_idx").on(t.tripId, t.sortOrder),
   ],
+);
+
+// Stops within a single day — Wanderlog-style. A day may have 0..N stops
+// in `sortOrder`; geocode happens at the stop level so each pin lands on
+// the actual place, not just the macro "city". Old single-city days are
+// represented as one stop with name = the legacy `trip_day.city` value
+// (see migration 0009 backfill).
+export const tripDayStop = roamPoc.table(
+  "trip_day_stop",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dayId: uuid("day_id")
+      .notNull()
+      .references(() => tripDay.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull(),
+    name: text("name").notNull(),
+    /* sight | meal | transit | stay | shop | other — purely cosmetic, drives
+       the pin icon and the timeline kind chip. Stays loose (text) so Lumi
+       can introduce new kinds without a schema change. */
+    kind: text("kind").notNull().default("other"),
+    /* Free-form so "10:30", "morning", "afternoon" all work. The storefront
+       only renders it as a label; nothing parses time math from it. */
+    arrivalTime: text("arrival_time"),
+    durationMin: integer("duration_min"),
+    note: text("note").notNull().default(""),
+    /* Geocoded lat/lng. Nullable when geocoding hasn't run / failed —
+       the map filters those out instead of pinning at [0,0]. */
+    lat: doublePrecision("lat"),
+    lng: doublePrecision("lng"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [index("trip_day_stop_day_idx").on(t.dayId, t.sortOrder)],
 );
 
 // Pre-trip checklist (eSIM, visa, flight, etc.). Suggestion = Lumi

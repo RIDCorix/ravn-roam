@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 async function forward(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> },
+  { params }: { params: Promise<{ path?: string[] }> },
 ) {
   const { path } = await params;
   const supabase = await createSupabaseServerClient();
@@ -23,7 +23,10 @@ async function forward(
 
   const apiBase = process.env.ROAM_API_URL ?? "http://localhost:4000";
   const search = request.nextUrl.search ?? "";
-  const target = `${apiBase}/lumi/${path.join("/")}${search}`;
+  /* `path` is undefined when the request hits `/api/lumi` with no extra
+     segment. Treat that as the empty tail so we forward to `<api>/lumi`. */
+  const tail = (path ?? []).join("/");
+  const target = `${apiBase}/lumi${tail ? `/${tail}` : ""}${search}`;
   const init: RequestInit = {
     method: request.method,
     headers: {
@@ -38,9 +41,10 @@ async function forward(
   }
   const res = await fetch(target, init);
   const text = await res.text();
+  const contentType = res.headers.get("content-type") ?? "application/json";
   return new NextResponse(text, {
     status: res.status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": contentType },
   });
 }
 

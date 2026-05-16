@@ -527,7 +527,9 @@
       },
       "companions": {
         "section_title": "Companions",
-        "add": "Add",
+        "manage_title": "Companions",
+        "manage_aria": "Manage companions",
+        "add": "Add companion",
         "rename_placeholder": "Name",
         "save": "Save",
         "cancel": "Cancel",
@@ -535,7 +537,9 @@
         "copied": "Copied",
         "link_only": "Awaiting invite",
         "joined": "Joined",
-        "delete": "Remove companion"
+        "delete": "Remove companion",
+        "pick_friend": "Pick from friends",
+        "pick_friend_soon": "Coming soon"
       },
       "invite": {
         "title_template": "{name} invited you to \"{title}\"",

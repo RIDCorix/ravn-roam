@@ -2,11 +2,12 @@
 // `Trip` UI shape the storefront components already render. Lets us swap
 // data sources without rewriting trip-card, daily-timeline, etc.
 
-import type { ChecklistItem, Trip } from "@/lib/mock/consumer";
+import type { ChecklistItem, Trip, TripStop } from "@/lib/mock/consumer";
 import type {
   ApiChecklistItem,
   ApiTrip,
   ApiTripDay,
+  ApiTripStop,
   TripDetailPayload,
 } from "@/lib/trips-api";
 
@@ -24,8 +25,25 @@ export function apiToTrip(
     status: trip.status === "cancelled" ? "past" : trip.status,
     days: [...days]
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map((d) => ({ d: d.day_date, city: d.city, note: d.note })),
+      .map((d) => ({
+        d: d.day_date,
+        city: d.city,
+        note: d.note,
+        stops: (d.stops ?? []).map(apiToStop),
+      })),
     checklist: checklist.map(apiToChecklist),
+  };
+}
+
+function apiToStop(s: ApiTripStop): TripStop {
+  return {
+    name: s.name,
+    kind: s.kind,
+    arrival_time: s.arrival_time,
+    duration_min: s.duration_min,
+    note: s.note,
+    lat: s.lat,
+    lng: s.lng,
   };
 }
 

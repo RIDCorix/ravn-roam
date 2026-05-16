@@ -14,10 +14,25 @@ import { z } from "zod";
 
 import { env } from "../env.js";
 
+export interface LumiStop {
+  name: string;
+  /* sight | meal | transit | stay | shop | other */
+  kind?: string;
+  arrival_time?: string | null;
+  duration_min?: number | null;
+  note?: string;
+}
+
 export interface LumiDay {
   day_date: string;
+  /* Macro city label, kept for the overview map pin. */
   city: string;
   note: string;
+  /* Multi-stop itinerary within this day. Lumi emits this when planning a
+     trip with concrete places ("築地市場" "晴空塔" "Bar Track"). Empty or
+     omitted means "rest day in this city" — the API auto-seeds a single
+     placeholder stop named after `city` so the map still renders. */
+  stops?: LumiStop[];
 }
 
 export interface LumiTurn {
@@ -131,58 +146,64 @@ export interface LumiResult {
   trip_draft?: LumiTripDraft;
 }
 
+/* One stop inside a day. `name` is the only required field; everything
+   else is optional enrichment. Loose `kind` so Lumi can introduce new
+   categories without a schema rev. */
+const stopSchema = z.object({
+  name: z.string().min(1).max(200),
+  kind: z.string().max(40).default("other"),
+  arrival_time: z.string().max(40).nullish(),
+  duration_min: z.number().int().min(0).max(2880).nullish(),
+  note: z.string().max(2000).default(""),
+});
+
+/* A day with optional inline stops. `stops` defaults to [] so legacy Lumi
+   replies that only set `city` still validate; the API materializes a
+   single placeholder stop when stops is empty. */
+const daySchema = z.object({
+  day_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  city: z.string().min(1).max(120),
+  note: z.string().max(2000).default(""),
+  stops: z.array(stopSchema).max(40).default([]),
+});
+
+/* All "optional" top-level fields use `.nullish()` so the strict-mode
+   JSON Schema can require them while letting the model emit `null` for
+   "no action this turn". Range / length constraints below still gate
+   the inner contents via post-parse zod validation. */
 const responseSchema = z.object({
   summary: z.string().min(1).max(1500),
-  days: z
-    .array(
-      z.object({
-        day_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        city: z.string().min(1).max(120),
-        note: z.string().max(2000).default(""),
-      }),
-    )
-    .min(1)
-    .max(60)
-    .optional(),
+  days: z.array(daySchema).min(1).max(60).nullish(),
   companions: z
     .array(
       z.object({
-        id: z.string().nullable().optional(),
-        display_name: z.string().min(1).max(80).optional(),
-        color: z.string().max(20).optional(),
-        delete: z.boolean().optional(),
+        id: z.string().nullish(),
+        display_name: z.string().min(1).max(80).nullish(),
+        color: z.string().max(20).nullish(),
+        delete: z.boolean().nullish(),
       }),
     )
     .max(12)
-    .optional(),
+    .nullish(),
   trip_draft: z
     .object({
       title: z.string().min(1).max(200),
       start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       cover: z.string().max(80).nullish(),
-      days: z
-        .array(
-          z.object({
-            day_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-            city: z.string().min(1).max(120),
-            note: z.string().max(2000).default(""),
-          }),
-        )
-        .min(1)
-        .max(60),
+      days: z.array(daySchema).min(1).max(60),
       checklist: z
         .array(
           z.object({
             text: z.string().min(1).max(500),
             kind: z.string().min(1).max(40),
-            suggested: z.boolean().optional(),
+            suggested: z.boolean().nullish(),
           }),
         )
         .max(40)
-        .optional(),
+        .nullish(),
     })
-    .optional(),
+    .nullish(),
 });
 
 // ── Core prompt ────────────────────────────────────────────────────────
@@ -194,13 +215,18 @@ const responseSchema = z.object({
 const CORE_PROMPT = `You are Lumi, a travel assistant inside the Roam eSIM app.
 Reply with strict JSON, no markdown, no commentary.
 
+ALWAYS include a top-level "summary" — a 1-2 sentence reply in the
+user's language (default 繁中). Never omit it, even when emitting a
+trip_draft or days/companions edit. Be honest about what you don't know.
+
 Possible shapes:
   { "summary": string }                              // default — just answer
-  { "summary": ..., "days": [ … ] }                  // edit current trip's days
-  { "summary": ..., "companions": [ … ] }            // CRUD current trip's companions
-  { "summary": ..., "trip_draft": { … } }            // propose a brand-new trip
+  { "summary": string, "days": [ … ] }               // edit current trip's days
+  { "summary": string, "companions": [ … ] }         // CRUD current trip's companions
+  { "summary": string, "trip_draft": { … } }         // propose a brand-new trip
 
-Add keys only when the relevant skill below tells you to. Write "summary" in the user's language (default 繁中, 一兩句話). Be honest about what you don't know.`;
+Field names are case-sensitive and snake_case. Add extra top-level keys
+only when the relevant skill below tells you to.`;
 
 // ── Skills ─────────────────────────────────────────────────────────────
 // Each skill is a focused SOP. selectSkills() picks which to attach to
@@ -208,27 +234,107 @@ Add keys only when the relevant skill below tells you to. Write "summary" in the
 // "esim-troubleshoot", "shop-recommend") goes here without touching the
 // core prompt.
 
-const SKILL_EDITOR = `SKILL · trip-editor
-The user is viewing this trip's detail page right now. You may rewrite
-its days and/or CRUD its companions.
+const SKILL_EDITOR = `SKILL · trip-editor — TAKES PRECEDENCE
+The user is RIGHT NOW viewing this trip's detail page. The trip's
+title, dates, days and companions are in the context block below.
 
-days: chronological { day_date: "YYYY-MM-DD", city, note }[]. Reorder,
-edit notes, add/remove days, change cities. Omit when not editing.
+Any vague trip reference in the user's message refers to THIS trip:
+  • "this trip" / "the trip" / "my trip"
+  • "這趟" / "這個行程" / "這一趟" / "這趟旅程" / "我這趟"
+  • "幫我規劃" / "幫我排" / "排一下" (when no other trip is named)
+
+When the user asks you to plan / fill / 規劃 / 排程 / 安排 this trip,
+or to edit any specific day:
+  → Emit "days" with the trip's entire itinerary, every day filled
+    with concrete stops (3-5 stops per full day; see SKILL · trip-
+    drafter's stop guidance for kind / time / note conventions).
+  → Never re-ask for destination/dates — they're already in context.
+
+DO NOT emit trip_draft in editor mode. Creating a draft would clone
+this trip into a duplicate. The ONLY exception: the user explicitly
+asks for a DIFFERENT, separate trip ("再幫我規劃下個月的京都行", "另
+外開一趟去...", "plan a different trip to ...").
+
+days: chronological array, each entry:
+  {
+    "day_date": "YYYY-MM-DD",
+    "city":     string,                   // macro label, e.g. "東京"
+    "note":     string,                   // can be ""
+    "stops": [                            // ordered places visited THAT day
+      {
+        "name":          string,          // "築地市場" "Bar Track"
+        "kind":          "sight" | "meal" | "transit" | "stay" | "shop" | "other",
+        "arrival_time":  "10:30" | "morning" | null,
+        "duration_min":  90 | null,
+        "note":          string           // can be ""
+      }
+    ]
+  }
+Preserve existing day_date values when filling stops — don't shift
+dates. Include EVERY day in the trip window (start_date..end_date),
+even if some stay as a single placeholder stop.
 
 companions: each row is { id? | display_name | color? | delete? }. Omit
 id to create. Provide existing id to rename or { id, delete: true } to
 remove. Never invent uuids. Omit when not editing.`;
 
-const SKILL_DRAFTER = `SKILL · trip-drafter
+const SKILL_DRAFTER = `SKILL · trip-drafter — DEFER to trip-editor
+If SKILL · trip-editor is loaded above, that one wins for any prompt
+referring to "this trip" / "這趟" / 規劃這趟. Only act on this skill
+when the user is clearly describing a SEPARATE new trip (a different
+destination, a different date range, or "another trip" / "另一趟").
+
 If the user is describing a new trip (destination + when + duration —
 including pastes of flight tickets, e-tickets, hotel confirmations),
-emit trip_draft:
-  { title, start_date: "YYYY-MM-DD", end_date: "YYYY-MM-DD",
-    cover?: 2-letter region tag, days: [...], checklist?: [...] }
+emit trip_draft. Use EXACTLY these field names (snake_case, no aliases):
+
+trip_draft = {
+  "title":      string,
+  "start_date": "YYYY-MM-DD",
+  "end_date":   "YYYY-MM-DD",
+  "cover":      "2-letter region tag",                        // optional
+  "days": [
+    {
+      "day_date": "YYYY-MM-DD",
+      "city":     string,                                     // macro label for the day
+      "note":     string,                                     // "" if nothing extra
+      "stops": [                                              // ordered places that day
+        {
+          "name":          string,
+          "kind":          "sight" | "meal" | "transit" | "stay" | "shop" | "other",
+          "arrival_time":  "10:30" | "morning" | null,
+          "duration_min":  90 | null,
+          "note":          string                             // "" allowed
+        }
+      ]
+    }
+  ],
+  "checklist": [                                              // optional
+    { "text": string, "kind": string, "suggested": true }
+  ]
+}
+
+Per-day stops guidance:
+  • Travel days (flight, train, long transit): emit one stop with
+    kind:"transit" and name = the route ("Taipei → Milan").
+  • Arrival day: stop for hotel check-in (kind:"stay") + maybe a light
+    meal (kind:"meal") nearby.
+  • Full days: 3–5 stops mixing sights / meals / transit, in the order
+    a real day flows (morning sight → lunch → afternoon → dinner).
+  • Rest / unplanned days: a single stop named after the city with
+    kind:"other" is fine. Empty stops[] is allowed but discouraged.
+Use real, recognizable place names when you have confidence; never
+invent fictional landmarks. If unsure, write the neighborhood instead
+("淺草 散策") rather than fabricating a specific attraction.
+
+Do NOT use "date", "place", "location", "task", "item", or Chinese
+keys. Each day MUST have day_date + city; "note" can be "" but the
+key must exist. Each stop MUST have name; other fields optional but
+preferred. Each checklist item MUST have text + kind.
 
 Extract dates from any pasted itinerary silently — outbound = start,
-return = end. Compute duration yourself: (end - start + 1) days.
-Never re-ask what's already in the input.
+return = end. Compute duration yourself: (end - start + 1) days. Emit
+one day object per calendar day, in chronological order.
 
 Only ask one clarifying question when info is genuinely missing (e.g.
 destination but no dates). Otherwise emit trip_draft immediately.
@@ -283,10 +389,22 @@ function formatContext(input: LumiInput): string {
   }
 
   if (input.editableTrip) {
+    /* Surfaced first and loud so the model can't miss it. Any "this trip"
+       reference in the user prompt should resolve to this object. */
+    lines.unshift(
+      `>>> EDITOR MODE — user is on the trip detail page for:`,
+      `  title:      ${input.editableTrip.title}`,
+      `  start_date: ${input.editableTrip.start_date}`,
+      `  end_date:   ${input.editableTrip.end_date}`,
+      `  day_count:  ${input.editableTrip.days.length}`,
+      `When the user says "this trip" / "這趟" / "幫我規劃" with no`,
+      `other trip named, they mean THIS trip. Emit "days" to edit it;`,
+      `do NOT emit "trip_draft" (that would create a duplicate).`,
+      "",
+    );
     lines.push(
       "",
-      "Editable trip — the user is viewing this trip's detail page right now.",
-      "You may rewrite its days. Current day list (ground truth):",
+      "Editable trip — full day list (ground truth, preserve day_date values):",
       JSON.stringify(input.editableTrip.days, null, 2),
       "",
       "Cities currently pinned on the map (geocoded; null means we couldn't",
@@ -311,6 +429,158 @@ function formatContext(input: LumiInput): string {
   return lines.join("\n");
 }
 
+/* Strict JSON Schema sent to OpenAI as `response_format.json_schema`.
+   Mirrors the zod `responseSchema` shape but obeys OpenAI's strict-mode
+   restrictions: every property listed in `required`, `additionalProperties:
+   false` on every object, no `default`/`min`/`max`/`pattern` keywords.
+   Optional-in-zod fields become required-but-nullable via `["type","null"]`.
+   Range / regex constraints still live in zod (post-parse) — this schema
+   only describes the SHAPE so the model can't drift. */
+const STOP_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    name: { type: "string", description: "Place name, e.g. 築地市場" },
+    kind: {
+      type: "string",
+      description: "One of: sight | meal | transit | stay | shop | other",
+    },
+    arrival_time: {
+      type: ["string", "null"],
+      description: 'Free-form: "10:30" / "morning" / null',
+    },
+    duration_min: { type: ["integer", "null"] },
+    note: { type: "string", description: "May be empty string" },
+  },
+  required: ["name", "kind", "arrival_time", "duration_min", "note"],
+} as const;
+
+const DAY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    day_date: { type: "string", description: "YYYY-MM-DD" },
+    city: { type: "string" },
+    note: { type: "string", description: "May be empty string" },
+    stops: { type: "array", items: STOP_SCHEMA },
+  },
+  required: ["day_date", "city", "note", "stops"],
+} as const;
+
+/* When `days` is nullable — default mode for non-editor or off-topic
+   prompts. The model can return `null` to mean "no day edits this turn". */
+const DAYS_NULLABLE = {
+  anyOf: [
+    { type: "null" },
+    { type: "array", items: DAY_SCHEMA },
+  ],
+  description:
+    "Use to rewrite the current trip's days in editor mode. " +
+    "Set null when not editing.",
+} as const;
+
+/* Planning-mode variant — when the user is on a trip page AND their prompt
+   reads as a planning request ("規劃 / 排 / fill / plan ..."), we force
+   `days` to be a non-null array at the OpenAI strict-schema layer. This
+   removes the model's option to acknowledge without action; even
+   gpt-4o-mini can't drift past a structural requirement. */
+const DAYS_REQUIRED = {
+  type: "array",
+  items: DAY_SCHEMA,
+  description:
+    "MUST emit on this turn — the user explicitly asked you to plan or " +
+    "fill this trip. Every calendar day in the trip window with concrete stops.",
+} as const;
+
+const RESPONSE_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    summary: { type: "string" },
+    days: DAYS_NULLABLE,
+    companions: {
+      anyOf: [
+        { type: "null" },
+        {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              id: { type: ["string", "null"] },
+              display_name: { type: ["string", "null"] },
+              color: { type: ["string", "null"] },
+              delete: { type: ["boolean", "null"] },
+            },
+            required: ["id", "display_name", "color", "delete"],
+          },
+        },
+      ],
+    },
+    trip_draft: {
+      anyOf: [
+        { type: "null" },
+        {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            title: { type: "string" },
+            start_date: { type: "string", description: "YYYY-MM-DD" },
+            end_date: { type: "string", description: "YYYY-MM-DD" },
+            cover: { type: ["string", "null"] },
+            days: { type: "array", items: DAY_SCHEMA },
+            checklist: {
+              anyOf: [
+                { type: "null" },
+                {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      text: { type: "string" },
+                      kind: { type: "string" },
+                      suggested: { type: ["boolean", "null"] },
+                    },
+                    required: ["text", "kind", "suggested"],
+                  },
+                },
+              ],
+            },
+          },
+          required: [
+            "title",
+            "start_date",
+            "end_date",
+            "cover",
+            "days",
+            "checklist",
+          ],
+        },
+      ],
+    },
+  },
+  required: ["summary", "days", "companions", "trip_draft"],
+} as const;
+
+/* Planning-mode schema: same shape as the default, but `days` is now a
+   non-null required array. Used when the user is in editor mode AND
+   their prompt signals an explicit planning action. */
+const RESPONSE_JSON_SCHEMA_PLANNING = {
+  ...RESPONSE_JSON_SCHEMA,
+  properties: {
+    ...RESPONSE_JSON_SCHEMA.properties,
+    days: DAYS_REQUIRED,
+  },
+} as const;
+
+const PLANNING_PROMPT_RE =
+  /規劃|排程|排一下|安排|幫我排|幫我規劃|填一下|填滿|plan|schedule|fill|arrange|draft|請規劃|請排/i;
+
+function looksLikePlanningPrompt(prompt: string): boolean {
+  return PLANNING_PROMPT_RE.test(prompt);
+}
+
 export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
   if (!env.OPENAI_API_KEY) {
     throw new Error(
@@ -319,6 +589,23 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
   }
 
   const history = (input.history ?? []).slice(-12);
+
+  /* Compose system prompt from the core SOP plus whichever skill modules
+     this turn needs. `selectSkills` decides based on the input shape (e.g.
+     editor-mode attaches the editor SOP). Joined with blank lines so the
+     model reads them as distinct sections. */
+  const skills = selectSkills(input);
+  const systemPrompt = [CORE_PROMPT, ...skills.prompts].join("\n\n");
+
+  /* Planning mode: when the user is on a trip page AND their prompt
+     reads as a planning action, swap to a schema where `days` MUST be
+     a non-null array. The model can no longer pick `null` to skip the
+     work — strict structured output blocks the response. */
+  const planningMode =
+    !!input.editableTrip && looksLikePlanningPrompt(input.prompt);
+  const activeSchema = planningMode
+    ? RESPONSE_JSON_SCHEMA_PLANNING
+    : RESPONSE_JSON_SCHEMA;
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -329,9 +616,21 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     body: JSON.stringify({
       model: env.OPENAI_MODEL,
       temperature: 0.2,
-      response_format: { type: "json_object" },
+      /* Strict structured output: the model is structurally prevented
+         from emitting keys outside the schema, missing required fields,
+         or returning non-JSON. Requires gpt-4o-2024-08-06+ / gpt-4o-mini.
+         Zod safeParse below is a second guard for range/regex constraints
+         strict mode can't express. */
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "lumi_response",
+          strict: true,
+          schema: activeSchema,
+        },
+      },
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "system", content: formatContext(input) },
         ...history.map((t) => ({ role: t.role, content: t.content })),
         { role: "user", content: input.prompt },
@@ -357,33 +656,43 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     throw new Error(`OpenAI returned non-JSON content: ${content.slice(0, 200)}`);
   }
 
-  const result = responseSchema.safeParse(parsed);
-  if (!result.success) {
+  const parsedResult = responseSchema.safeParse(parsed);
+  if (!parsedResult.success) {
     throw new Error(
-      `OpenAI response failed schema validation: ${result.error.message}`,
+      `OpenAI response failed schema validation: ${parsedResult.error.message}`,
     );
   }
+  const result = parsedResult.data;
 
-  if (result.data.days) {
+  /* Dev visibility — tells us at a glance whether the model actually
+     emitted structured payloads or just summary text. Keep terse so the
+     log line is greppable. */
+  console.log(
+    `[lumi] turn editor=${!!input.editableTrip} planning=${planningMode} ` +
+      `days=${result.days?.length ?? "null"} ` +
+      `companions=${result.companions?.length ?? "null"} ` +
+      `draft=${result.trip_draft ? "yes" : "no"} ` +
+      `summary=${JSON.stringify(result.summary.slice(0, 60))}`,
+  );
+
+  if (result.days) {
     // Safety: editor mode requires an editable trip in the input. If
     // Lumi tries to emit days without it, drop them.
     if (!input.editableTrip) {
-      delete result.data.days;
+      delete result.days;
     } else {
-      for (let i = 1; i < result.data.days.length; i++) {
-        if (
-          result.data.days[i]!.day_date <= result.data.days[i - 1]!.day_date
-        ) {
+      for (let i = 1; i < result.days.length; i++) {
+        if (result.days[i]!.day_date <= result.days[i - 1]!.day_date) {
           throw new Error("OpenAI returned non-chronological day list");
         }
       }
     }
   }
-  if (result.data.companions && !input.editableTrip) {
-    delete result.data.companions;
+  if (result.companions && !input.editableTrip) {
+    delete result.companions;
   }
-  if (result.data.trip_draft) {
-    const draft = result.data.trip_draft;
+  if (result.trip_draft) {
+    const draft = result.trip_draft;
     if (draft.days[0]!.day_date !== draft.start_date) {
       draft.start_date = draft.days[0]!.day_date;
     }
@@ -397,5 +706,13 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     }
   }
 
-  return result.data;
+  /* Strict mode emits `null` for "no action this turn"; collapse to
+     undefined at the caller boundary so LumiResult stays simple
+     (`field?: T` rather than `field?: T | null`). */
+  return {
+    summary: result.summary,
+    days: result.days ?? undefined,
+    companions: (result.companions ?? undefined) as LumiResult["companions"],
+    trip_draft: (result.trip_draft ?? undefined) as LumiResult["trip_draft"],
+  };
 }
