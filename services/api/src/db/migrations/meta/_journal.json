@@ -36,6 +36,34 @@
       "when": 1778846765210,
       "tag": "0004_cultured_trauma",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779100000000,
+      "tag": "0005_consumer_trips",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779200000000,
+      "tag": "0006_city_geocode",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779300000000,
+      "tag": "0007_lumi_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779400000000,
+      "tag": "0008_trip_companions",
+      "breakpoints": true
     }
   ]
 }

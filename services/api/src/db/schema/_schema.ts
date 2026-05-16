@@ -102,3 +102,13 @@ export const orderItemStatus = roamPoc.enum("order_item_status", [
   "failed",
   "refunded",
 ]);
+
+// trip.status — consumer-facing lifecycle. Computed from start/end dates
+// in most read paths, but stored so the admin can pin a trip in a state
+// (e.g., manually mark cancelled).
+export const tripStatus = roamPoc.enum("trip_status", [
+  "upcoming",
+  "active",
+  "past",
+  "cancelled",
+]);

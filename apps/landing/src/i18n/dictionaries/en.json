@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Roam — Make travel freer, wherever you go.",
-    "description": "A quiet eSIM that catches the signal so you don’t have to. One line, 200+ destinations. Wherever you go."
+    "title": "Roam — Travel eSIM for 200+ destinations",
+    "description": "One travel eSIM, 200+ countries — Japan, Korea, Europe, USA. Live data usage, no roaming surprises. Install on iPhone or Pixel in under a minute."
   },
   "nav": {
     "coverage": "Coverage",
@@ -13,14 +13,36 @@
     "cta": "Get an eSIM"
   },
   "hero": {
-    "eyebrowBadge": "New",
-    "eyebrowText": "Make travel freer · wherever you go.",
-    "headlineLead": "Land in a new city,",
-    "headlineAccent": "travel like you know it.",
+    "headlineLead": "Travel eSIM.",
+    "headlineAccent": "Wherever you go.",
     "subtitle": "One eSIM, 200+ destinations. Roam is the quiet companion for the unfamiliar — tap a node for live coverage.",
-    "ctaPrimary": "Install on this phone",
+    "ctaPrimary": "Get an eSIM",
     "ctaSecondary": "See full coverage →",
-    "deviceFootnote": "Works on iPhone XS and newer · Google Pixel 3 and newer."
+    "deviceFootnote": "Works on iPhone XS and newer · Google Pixel 3 and newer.",
+    "demo": {
+      "step1": "Open Roam",
+      "step2": "Pick a plan",
+      "step3": "Download eSIM",
+      "step4": "Board your flight",
+      "step5": "Land in a new city",
+      "step6": "Activate eSIM",
+      "step7": "Connected",
+      "planName": "Japan · 7 days",
+      "planSize": "5 GB",
+      "planPrice": "$12",
+      "buyCta": "Buy",
+      "downloadingLabel": "Installing eSIM",
+      "installedLabel": "eSIM installed",
+      "boardingLabel": "Flight RM 808",
+      "landedLabel": "Welcome to Tokyo",
+      "activatingLabel": "Activating",
+      "connectedLabel": "Connected",
+      "usageLabel": "Data left",
+      "usageRemaining": "3.4 GB",
+      "usageOf": "of 5 GB",
+      "usageDaysLeft": "5 days left",
+      "carrierLabel": "NTT Docomo"
+    }
   },
   "howItWorks": {
     "eyebrow": "How it works",
@@ -41,13 +63,183 @@
       }
     ]
   },
-  "walk": {
-    "eyebrow": "Always on",
-    "title": "Signal slips, Roam catches it.",
-    "subtitle": "When a network goes quiet, Roam hops to another. You keep walking; we hold the line."
+  "ai": {
+    "eyebrow": "AI co-pilot",
+    "titleLead": "Lumi is here,",
+    "titleAccent": "wherever you are.",
+    "subtitle": "Tell Lumi where you've landed — she lines up the next move (meals, transit, weather, currency) over the same data line you just bought. No tab-switching, no signal hunting.",
+    "chat": {
+      "lumiName": "Lumi",
+      "lumiTag": "AI travel co-pilot",
+      "typingHint": "Lumi is thinking…",
+      "conversations": [
+        {
+          "messages": [
+            { "role": "user", "text": "Just landed in Tokyo. Coffee + something open at 2am?" },
+            { "role": "lumi", "text": "Fuglen Asakusa is 8 min on the Asakusa Line — open till 1am. After that, Bar Track in Yoyogi, open till 3." },
+            { "role": "user", "text": "Worth the cab back though?" },
+            { "role": "lumi", "text": "From Yoyogi at 3am, ¥2,800 to your hotel. Trains resume 5:13am — Onibus is a good wait spot." }
+          ]
+        },
+        {
+          "messages": [
+            { "role": "user", "text": "How do I get to Senso-ji from here?" },
+            { "role": "lumi", "text": "Asakusa Line, 12 min, ¥220. Or 18 min walk along the river." },
+            { "role": "user", "text": "Which one's nicer right now?" },
+            { "role": "lumi", "text": "Walk. Sakura just started — the river path is half-empty before 8am." }
+          ]
+        },
+        {
+          "messages": [
+            { "role": "user", "text": "Any decent udon nearby?" },
+            { "role": "lumi", "text": "Daikokuya, 4.6 on Tabelog. 8 min wait, kakiage udon ¥1,100." },
+            { "role": "user", "text": "Cash only?" },
+            { "role": "lumi", "text": "Yes. 7-Eleven ATM is 200m east — takes foreign cards." }
+          ]
+        },
+        {
+          "messages": [
+            { "role": "user", "text": "What's the weather tomorrow?" },
+            { "role": "lumi", "text": "Sunny, 18–24°C, light wind. Cherry blossoms 80% in Ueno." },
+            { "role": "user", "text": "Best time to go?" },
+            { "role": "lumi", "text": "Before 9am. Lines form by 10. Bring a coat — it's 12°C till sunrise." }
+          ]
+        }
+      ]
+    }
   },
-  "pov": {
-    "eyebrow": "From your view"
+  "usage": {
+    "eyebrow": "Live usage",
+    "title": "Know what's left, before you run out.",
+    "subtitle": "Roam refreshes your remaining data the moment a session ends — top up when you want to, not when you're stranded.",
+    "card": {
+      "planLabel": "Japan · 7 days",
+      "remainingNumber": "3.4",
+      "remainingUnit": "GB",
+      "remainingCaption": "remaining",
+      "ofTotal": "of 5.0 GB",
+      "daysLeft": "5 days left",
+      "liveTag": "LIVE",
+      "footnote": "Updates after every session"
+    }
+  },
+  "journey": {
+    "eyebrow": "Traveler progress",
+    "titleLead": "Light up your",
+    "titleAccent": "trail.",
+    "subtitle": "Every connection adds up — countries unlocked, days counted, plans queued for next time. Pick up where you left off, anywhere, any year.",
+    "traveler": {
+      "levelLabel": "LV",
+      "level": "10",
+      "title": "Globe-trotter",
+      "xpLabel": "XP",
+      "xpCurrent": 1840,
+      "xpNext": 2400,
+      "nextLevelHint": "560 to Lv. 11",
+      "stats": [
+        { "value": "12", "label": "countries" },
+        { "value": "47", "label": "days" },
+        { "value": "5.8 GB", "label": "shared" }
+      ]
+    },
+    "map": {
+      "collectedLabel": "Collected",
+      "plannedLabel": "Planned",
+      "collected": [
+        { "city": "Tokyo", "country": "JP" },
+        { "city": "Seoul", "country": "KR" },
+        { "city": "Bangkok", "country": "TH" },
+        { "city": "Singapore", "country": "SG" }
+      ],
+      "planned": [
+        { "city": "Paris", "country": "FR" },
+        { "city": "Lisbon", "country": "PT" },
+        { "city": "New York", "country": "US" },
+        { "city": "Sydney", "country": "AU" }
+      ]
+    }
+  },
+  "plans": {
+    "eyebrow": "Plans",
+    "title": "Pick a plan that fits your trip.",
+    "subtitle": "Per-country day passes, trip bundles, and regional packs. Top up anytime — unused data rolls over for 60 days inside the same region.",
+    "sampleRegionLabel": "Sample prices · Japan",
+    "popularBadge": "POPULAR",
+    "tiers": [
+      {
+        "tag": "Day pass",
+        "title": "1 day",
+        "price": "$4",
+        "subPrice": "per day",
+        "data": "Unlimited",
+        "validity": "24 hours from activation",
+        "features": [
+          "4G/5G where available",
+          "Top up anytime",
+          "Live usage in app",
+          "Single device"
+        ],
+        "popular": false,
+        "cta": "Start a day"
+      },
+      {
+        "tag": "Trip",
+        "title": "7 days",
+        "price": "$12",
+        "subPrice": "$2.40 / GB",
+        "data": "5 GB",
+        "validity": "7 days from activation",
+        "features": [
+          "4G/5G where available",
+          "Hotspot allowed",
+          "Top up anytime",
+          "Live usage in app",
+          "60-day rollover"
+        ],
+        "popular": true,
+        "cta": "Pick this plan"
+      },
+      {
+        "tag": "Regional",
+        "title": "30 days · Asia",
+        "price": "$28",
+        "subPrice": "covers 12 countries",
+        "data": "15 GB",
+        "validity": "30 days from activation",
+        "features": [
+          "Works across 12 Asian countries",
+          "4G/5G where available",
+          "Hotspot allowed",
+          "Top up anytime",
+          "60-day rollover"
+        ],
+        "popular": false,
+        "cta": "Go regional"
+      }
+    ],
+    "compareTitle": "Every plan includes",
+    "compareFeatures": [
+      {
+        "label": "Strongest local signal",
+        "detail": "Roam talks to local carriers and picks the strongest 4G/5G connection automatically."
+      },
+      {
+        "label": "Live remaining data",
+        "detail": "Your balance refreshes the moment a session ends — no bill surprises, top up when you want."
+      },
+      {
+        "label": "Two-tap top-ups",
+        "detail": "Add more data from the Roam app in seconds. New packs stack on top of whatever's left."
+      },
+      {
+        "label": "60-day rollover",
+        "detail": "Unused data in trip and regional plans rolls forward for 60 days inside the same region."
+      }
+    ],
+    "noteTitle": "Real prices show in the app",
+    "noteBody": "Numbers above are sample USD prices for Japan. Open Roam, pick your destination, and the exact local price appears — taxes included, currency-adjusted, no checkout surprises.",
+    "ctaPrimary": "Install Roam",
+    "ctaSecondary": "See full coverage"
   },
   "footer": {
     "headlineLead": "Make travel freer.",
@@ -60,8 +252,8 @@
         "title": "Product",
         "items": [
           { "label": "Coverage map", "href": "/#coverage" },
-          { "label": "Plans", "href": "/#plans" },
-          { "label": "Reviews", "href": "/reviews" },
+          { "label": "Plans", "href": "/plans" },
+          { "label": "Reviews", "href": "/#reviews" },
           { "label": "For travelers", "href": "/#" },
           { "label": "Status", "href": "/#" }
         ]
@@ -104,6 +296,7 @@
   },
   "page": {
     "back": "← Back to home",
+    "home": "Home",
     "lastUpdated": "Last updated"
   },
   "privacy": {

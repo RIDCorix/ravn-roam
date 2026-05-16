@@ -1,7 +1,25 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/page-header";
+import { breadcrumbJsonLd, buildMetadata } from "@/lib/seo";
 import { getDictionary, hasLocale } from "../../dictionaries";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!hasLocale(lang)) return {};
+  const dict = await getDictionary(lang);
+  return buildMetadata({
+    title: dict.privacy.title,
+    description: dict.privacy.subtitle,
+    locale: lang,
+    path: "privacy",
+  });
+}
 
 export default async function PrivacyPage({
   params,
@@ -12,14 +30,22 @@ export default async function PrivacyPage({
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
   const p = dict.privacy;
+  const breadcrumb = breadcrumbJsonLd(lang, [
+    { name: "Home", path: "" },
+    { name: p.title, path: "privacy" },
+  ]);
 
   return (
     <article>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+      />
       <PageHeader
         eyebrow={p.eyebrow}
         title={p.title}
         subtitle={p.subtitle}
-        backLabel={dict.page.back}
+        homeLabel={dict.page.home}
         currentLocale={lang}
       />
       <section style={{ padding: "0 24px 96px" }}>

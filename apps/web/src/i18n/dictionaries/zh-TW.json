@@ -504,7 +504,8 @@
       },
       "tabs": {
         "overview": "概覽",
-        "checklist": "清單"
+        "checklist": "清單",
+        "day_short": "Day {n}"
       },
       "detail": {
         "back": "回到行程",
@@ -519,7 +520,49 @@
         "pending": "待辦",
         "done": "已完成",
         "shop_cta": "打開",
-        "empty": "這個行程還沒有任務。"
+        "empty": "這個行程還沒有任務。",
+        "assign": "指派",
+        "assigned_to": "指派給",
+        "unassigned": "所有人"
+      },
+      "companions": {
+        "section_title": "旅伴",
+        "add": "新增",
+        "rename_placeholder": "輸入名稱",
+        "save": "儲存",
+        "cancel": "取消",
+        "copy_invite": "複製邀請連結",
+        "copied": "已複製",
+        "link_only": "等待邀請",
+        "joined": "已加入",
+        "delete": "刪除旅伴"
+      },
+      "invite": {
+        "title_template": "{name} 邀請你加入「{title}」",
+        "join": "加入這個行程",
+        "joining": "加入中…",
+        "join_must_login": "需要先登入才能加入",
+        "already_joined": "這個位置已經有人接受邀請了",
+        "invalid": "邀請連結無效或已被取消",
+        "joined_done": "加入完成！",
+        "go_to_trip": "看行程"
+      },
+      "lumi": {
+        "name": "Lumi",
+        "placeholder": "想怎麼調整行程？例：把京都排前面",
+        "open": "打開 Lumi 助理",
+        "close": "收起 Lumi 助理",
+        "send": "送出",
+        "thinking": "Lumi 思考中…",
+        "no_trip_hint": "Lumi 需要打開一個行程才能編輯，請從『行程』分頁進入要討論的行程。",
+        "history_title": "對話紀錄",
+        "new_chat": "新對話",
+        "delete_chat": "刪除對話",
+        "empty_history": "還沒有對話紀錄。",
+        "draft_days_unit": "天",
+        "draft_create": "建立行程",
+        "draft_creating": "建立中…",
+        "draft_created": "已建立"
       }
     }
   }

@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Roam 漫旅 — 讓旅行更自由",
-    "description": "你的旅行護身符。一張 eSIM，落地哪裡都連線。Roam 漫旅，wherever you go。"
+    "title": "Roam 漫旅 — 旅遊 eSIM，200+ 目的地",
+    "description": "一張旅遊 eSIM，覆蓋日本、韓國、歐洲、美國等 200+ 國家。即時剩餘流量，落地即用，不怕漫遊帳單爆掉。iPhone、Pixel 一分鐘安裝。"
   },
   "nav": {
     "coverage": "覆蓋範圍",
@@ -13,14 +13,36 @@
     "cta": "取得 eSIM"
   },
   "hero": {
-    "eyebrowBadge": "漫旅",
-    "eyebrowText": "讓旅行更自由 · wherever you go",
-    "headlineLead": "在陌生的城市，",
-    "headlineAccent": "走熟悉的旅人路。",
+    "headlineLead": "旅遊 eSIM。",
+    "headlineAccent": "落地哪裡都連線。",
     "subtitle": "一張 eSIM，落地哪裡都連線。Roam 是你旅行裡安靜的護身符 — 點地圖節點，看 200+ 個目的地的即時涵蓋。",
-    "ctaPrimary": "在這支手機安裝",
+    "ctaPrimary": "取得 eSIM",
     "ctaSecondary": "看完整覆蓋 →",
-    "deviceFootnote": "支援 iPhone XS 以上 · Google Pixel 3 以上。"
+    "deviceFootnote": "支援 iPhone XS 以上 · Google Pixel 3 以上。",
+    "demo": {
+      "step1": "打開 Roam",
+      "step2": "選擇方案",
+      "step3": "下載 eSIM",
+      "step4": "登機",
+      "step5": "抵達目的地",
+      "step6": "啟用 eSIM",
+      "step7": "已連線",
+      "planName": "日本 · 7 天",
+      "planSize": "5 GB",
+      "planPrice": "NT$ 380",
+      "buyCta": "購買",
+      "downloadingLabel": "下載 eSIM 中",
+      "installedLabel": "eSIM 已安裝",
+      "boardingLabel": "航班 RM 808",
+      "landedLabel": "歡迎來到東京",
+      "activatingLabel": "啟用中",
+      "connectedLabel": "已連線",
+      "usageLabel": "剩餘流量",
+      "usageRemaining": "3.4 GB",
+      "usageOf": "／ 5 GB",
+      "usageDaysLeft": "剩 5 天",
+      "carrierLabel": "NTT Docomo"
+    }
   },
   "howItWorks": {
     "eyebrow": "怎麼用",
@@ -41,13 +63,183 @@
       }
     ]
   },
-  "walk": {
-    "eyebrow": "永遠在線",
-    "title": "訊號跑了，Roam 替你接住。",
-    "subtitle": "一條網路靜下來，Roam 自動跳到另一條。你繼續往前走，剩下的我們接。"
+  "usage": {
+    "eyebrow": "即時用量",
+    "title": "斷線前，先掌握剩多少。",
+    "subtitle": "每次連線一結束，Roam 立刻更新剩餘流量。想加值時加值，不是被斷線逼著加值。",
+    "card": {
+      "planLabel": "日本 · 7 天",
+      "remainingNumber": "3.4",
+      "remainingUnit": "GB",
+      "remainingCaption": "剩餘",
+      "ofTotal": "／ 5.0 GB",
+      "daysLeft": "剩 5 天",
+      "liveTag": "即時",
+      "footnote": "每次連線結束即更新"
+    }
   },
-  "pov": {
-    "eyebrow": "從你的視角"
+  "ai": {
+    "eyebrow": "AI 隨身規劃",
+    "titleLead": "Lumi，",
+    "titleAccent": "在哪都能幫助你。",
+    "subtitle": "落地告訴 Lumi 你在哪，她把下一步排好 — 吃飯、交通、天氣、匯率，全部用你剛買的這條網路完成。不必開另一個 app，不必到處找訊號。",
+    "chat": {
+      "lumiName": "Lumi",
+      "lumiTag": "AI 旅遊夥伴",
+      "typingHint": "Lumi 思考中…",
+      "conversations": [
+        {
+          "messages": [
+            { "role": "user", "text": "剛到東京。半夜兩點還能去哪喝咖啡？" },
+            { "role": "lumi", "text": "Fuglen 淺草店搭淺草線 8 分鐘到，營業到凌晨 1 點。之後可以去代代木的 Bar Track，開到凌晨 3 點。" },
+            { "role": "user", "text": "凌晨還叫得到車回來嗎？" },
+            { "role": "lumi", "text": "代代木凌晨 3 點計程車到旅館 ¥2,800。電車 5:13 才開，撐到那時候建議去 Onibus 喝咖啡。" }
+          ]
+        },
+        {
+          "messages": [
+            { "role": "user", "text": "從這裡怎麼去淺草寺？" },
+            { "role": "lumi", "text": "淺草線 12 分鐘 ¥220。或沿河走 18 分鐘。" },
+            { "role": "user", "text": "現在哪個比較好？" },
+            { "role": "lumi", "text": "用走的。櫻花剛開，河邊步道 8 點前人不多。" }
+          ]
+        },
+        {
+          "messages": [
+            { "role": "user", "text": "巷子裡那間烏龍麵店好吃嗎？" },
+            { "role": "lumi", "text": "大黑屋，Tabelog 4.6，現在 8 分鐘候位，炸什錦烏龍 ¥1,100。" },
+            { "role": "user", "text": "只收現金嗎？" },
+            { "role": "lumi", "text": "對。東邊 200 公尺的 7-Eleven ATM 可以用國際卡。" }
+          ]
+        },
+        {
+          "messages": [
+            { "role": "user", "text": "明天天氣？" },
+            { "role": "lumi", "text": "晴天 18–24°C，下午微風。上野櫻花 8 成。" },
+            { "role": "user", "text": "幾點去好？" },
+            { "role": "lumi", "text": "9 點前。10 點開始排隊。日出前還有 12°C，記得帶薄外套。" }
+          ]
+        }
+      ]
+    }
+  },
+  "journey": {
+    "eyebrow": "旅人進度",
+    "titleLead": "點亮你的",
+    "titleAccent": "足跡。",
+    "subtitle": "每次連線都會記著 — 解鎖的國家、累積的天數、下次想去的地方。下次再走，接得上。",
+    "traveler": {
+      "levelLabel": "LV",
+      "level": "10",
+      "title": "環遊世界者",
+      "xpLabel": "XP",
+      "xpCurrent": 1840,
+      "xpNext": 2400,
+      "nextLevelHint": "再 560 升 Lv. 11",
+      "stats": [
+        { "value": "12", "label": "國家" },
+        { "value": "47", "label": "天" },
+        { "value": "5.8 GB", "label": "用量" }
+      ]
+    },
+    "map": {
+      "collectedLabel": "已解鎖",
+      "plannedLabel": "想去",
+      "collected": [
+        { "city": "東京", "country": "JP" },
+        { "city": "首爾", "country": "KR" },
+        { "city": "曼谷", "country": "TH" },
+        { "city": "新加坡", "country": "SG" }
+      ],
+      "planned": [
+        { "city": "巴黎", "country": "FR" },
+        { "city": "里斯本", "country": "PT" },
+        { "city": "紐約", "country": "US" },
+        { "city": "雪梨", "country": "AU" }
+      ]
+    }
+  },
+  "plans": {
+    "eyebrow": "方案",
+    "title": "選一個適合這趟旅程的方案。",
+    "subtitle": "單日方案、旅程包、區域包都有。隨時加值，同區域 60 天內未用完的流量自動延展。",
+    "sampleRegionLabel": "日本參考價",
+    "popularBadge": "熱門",
+    "tiers": [
+      {
+        "tag": "單日",
+        "title": "1 天",
+        "price": "NT$ 130",
+        "subPrice": "每天",
+        "data": "不限量",
+        "validity": "啟用後 24 小時",
+        "features": [
+          "當地 4G/5G",
+          "隨時加值",
+          "App 即時用量",
+          "單一裝置"
+        ],
+        "popular": false,
+        "cta": "啟用單日"
+      },
+      {
+        "tag": "旅程包",
+        "title": "7 天",
+        "price": "NT$ 380",
+        "subPrice": "每 GB NT$ 76",
+        "data": "5 GB",
+        "validity": "啟用後 7 天",
+        "features": [
+          "當地 4G/5G",
+          "可分享熱點",
+          "隨時加值",
+          "App 即時用量",
+          "60 天滾存"
+        ],
+        "popular": true,
+        "cta": "選這個方案"
+      },
+      {
+        "tag": "區域包",
+        "title": "30 天 · 亞洲",
+        "price": "NT$ 880",
+        "subPrice": "12 國通用",
+        "data": "15 GB",
+        "validity": "啟用後 30 天",
+        "features": [
+          "亞洲 12 國通用",
+          "當地 4G/5G",
+          "可分享熱點",
+          "隨時加值",
+          "60 天滾存"
+        ],
+        "popular": false,
+        "cta": "選區域包"
+      }
+    ],
+    "compareTitle": "所有方案都包含",
+    "compareFeatures": [
+      {
+        "label": "自動挑最強訊號",
+        "detail": "Roam 跟當地電信商交涉，自動選 4G/5G 訊號最強的那家。"
+      },
+      {
+        "label": "即時剩餘流量",
+        "detail": "每次連線結束立刻更新餘額，不會被帳單嚇到，想加值再加。"
+      },
+      {
+        "label": "兩 tap 加值",
+        "detail": "從 Roam App 幾秒就完成，新流量疊在現有餘額上。"
+      },
+      {
+        "label": "60 天滾存",
+        "detail": "旅程包與區域包未用完的流量，同區域內自動延展 60 天。"
+      }
+    ],
+    "noteTitle": "真實價格 App 內顯示",
+    "noteBody": "上面是日本的美金參考價。打開 Roam、選好目的地，會顯示你當地的價格 — 含稅、匯率即時、結帳沒驚喜。",
+    "ctaPrimary": "安裝 Roam",
+    "ctaSecondary": "看完整覆蓋"
   },
   "footer": {
     "headlineLead": "讓旅行更自由。",
@@ -60,8 +252,8 @@
         "title": "產品",
         "items": [
           { "label": "覆蓋地圖", "href": "/#coverage" },
-          { "label": "方案", "href": "/#plans" },
-          { "label": "旅人回饋", "href": "/reviews" },
+          { "label": "方案", "href": "/plans" },
+          { "label": "旅人回饋", "href": "/#reviews" },
           { "label": "個人旅客", "href": "/#" },
           { "label": "服務狀態", "href": "/#" }
         ]
@@ -104,6 +296,7 @@
   },
   "page": {
     "back": "← 回首頁",
+    "home": "首頁",
     "lastUpdated": "最後更新"
   },
   "privacy": {

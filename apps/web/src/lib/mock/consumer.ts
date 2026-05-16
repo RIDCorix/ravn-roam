@@ -46,6 +46,7 @@ export interface ChecklistItem {
   due?: string;
   suggested?: boolean;
   suggestedBy?: "Lumi";
+  assignedCompanionId?: string | null;
 }
 
 export interface Trip {

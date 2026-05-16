@@ -1,4 +1,5 @@
 import { Icon, type IconName } from "./icons";
+import { Reveal } from "./reveal";
 import type { Dictionary } from "@/app/[lang]/dictionaries";
 
 const stepIcons: IconName[] = ["map", "qr", "plane"];
@@ -23,44 +24,50 @@ export function HowItWorks({ dict }: { dict: Dictionary["howItWorks"] }) {
           }}
         >
           <div style={{ maxWidth: 620 }}>
-            <div
-              style={{
-                fontSize: 12.5,
-                color: "var(--fg-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontWeight: 500,
-                marginBottom: 14,
-              }}
-            >
-              {dict.eyebrow}
-            </div>
-            <h2
+            <Reveal y={12}>
+              <div
+                style={{
+                  fontSize: 12.5,
+                  color: "var(--fg-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontWeight: 500,
+                  marginBottom: 14,
+                }}
+              >
+                {dict.eyebrow}
+              </div>
+            </Reveal>
+            <Reveal delay={0.08}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "clamp(28px, 4.2vw, 52px)",
+                  fontWeight: 600,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1.04,
+                  color: "var(--fg)",
+                  textWrap: "balance",
+                }}
+              >
+                {dict.title}
+              </h2>
+            </Reveal>
+          </div>
+          <Reveal delay={0.16}>
+            <p
               style={{
                 margin: 0,
-                fontSize: "clamp(28px, 4.2vw, 52px)",
-                fontWeight: 600,
-                letterSpacing: "-0.03em",
-                lineHeight: 1.04,
-                color: "var(--fg)",
-                textWrap: "balance",
+                fontSize: 16,
+                lineHeight: 1.55,
+                color: "var(--fg-secondary)",
+                maxWidth: 360,
+                textWrap: "pretty",
               }}
             >
-              {dict.title}
-            </h2>
-          </div>
-          <p
-            style={{
-              margin: 0,
-              fontSize: 16,
-              lineHeight: 1.55,
-              color: "var(--fg-secondary)",
-              maxWidth: 360,
-              textWrap: "pretty",
-            }}
-          >
-            {dict.subtitle}
-          </p>
+              {dict.subtitle}
+            </p>
+          </Reveal>
         </div>
 
         <div
@@ -75,8 +82,10 @@ export function HowItWorks({ dict }: { dict: Dictionary["howItWorks"] }) {
           {dict.steps.map((s, idx) => {
             const number = String(idx + 1).padStart(2, "0");
             return (
-              <div
+              <Reveal
                 key={number}
+                delay={0.08 + idx * 0.1}
+                y={22}
                 style={{
                   position: "relative",
                   padding: "32px 8px 12px",
@@ -149,7 +158,7 @@ export function HowItWorks({ dict }: { dict: Dictionary["howItWorks"] }) {
                     {s.body}
                   </p>
                 </div>
-              </div>
+              </Reveal>
             );
           })}
         </div>

@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
+import { CompanionsSection } from "@/components/storefront/trips/companions-section";
 import {
   TripDetailTabs,
   type TripDetailLabels,
 } from "@/components/storefront/trips/trip-detail-tabs";
-import { TRIPS } from "@/lib/mock/consumer";
+import { apiDetailToTrip } from "@/lib/trip-mapping";
+import { getTrip, TripApiError, type ApiCompanion } from "@/lib/trips-api";
 
 import { getDictionary, hasLocale } from "../../../dictionaries";
 
@@ -22,15 +24,26 @@ export default async function TripDetailPage({
   const dict = await getDictionary(lang);
   const t = dict.storefront.trips;
 
-  const trip = TRIPS.find((candidate) => candidate.id === id);
-  if (!trip) {
-    return <TripNotFound lang={lang} title={t.detail.not_found} back={t.detail.back} />;
+  let trip;
+  let cities: { name: string; lat: number | null; lng: number | null }[] = [];
+  let companions: ApiCompanion[] = [];
+  try {
+    const detail = await getTrip(id);
+    trip = apiDetailToTrip(detail);
+    cities = detail.cities;
+    companions = detail.companions;
+  } catch (err) {
+    if (err instanceof TripApiError && err.status === 404) {
+      return <TripNotFound lang={lang} title={t.detail.not_found} back={t.detail.back} />;
+    }
+    throw err;
   }
 
   const labels: TripDetailLabels = {
     tabs: {
       overview: t.tabs.overview,
       checklist: t.tabs.checklist,
+      day_short: t.tabs.day_short,
     },
     timelineSection: t.detail.timeline_section,
     todayBadge: t.detail.today,
@@ -42,6 +55,11 @@ export default async function TripDetailPage({
     },
     shopCta: t.checklist.shop_cta,
     emptyChecklist: t.checklist.empty,
+    assigneeLabels: {
+      assign: t.checklist.assign,
+      assigned_to: t.checklist.assigned_to,
+      unassigned: t.checklist.unassigned,
+    },
   };
 
   return (
@@ -70,7 +88,30 @@ export default async function TripDetailPage({
         </div>
       </header>
 
-      <TripDetailTabs trip={trip} lang={lang} labels={labels} />
+      <CompanionsSection
+        tripId={trip.id}
+        companions={companions}
+        labels={{
+          section_title: t.companions.section_title,
+          add: t.companions.add,
+          rename_placeholder: t.companions.rename_placeholder,
+          save: t.companions.save,
+          cancel: t.companions.cancel,
+          copy_invite: t.companions.copy_invite,
+          copied: t.companions.copied,
+          link_only: t.companions.link_only,
+          joined: t.companions.joined,
+          delete: t.companions.delete,
+        }}
+      />
+
+      <TripDetailTabs
+        trip={trip}
+        cities={cities}
+        companions={companions}
+        lang={lang}
+        labels={labels}
+      />
     </div>
   );
 }

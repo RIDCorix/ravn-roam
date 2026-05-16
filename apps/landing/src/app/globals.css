@@ -176,6 +176,32 @@ body {
   .r-footer-card {
     padding: 40px 32px 24px !important;
   }
+  .r-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .r-hero-demo {
+    min-height: 560px !important;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .r-usage-grid,
+  .r-ai-grid,
+  .r-journey-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  /* On mobile, surface the slogan first then the visual */
+  .r-ai-grid > div:first-child {
+    order: 2;
+  }
+  .r-plans-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .r-plans-features {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 720px) {

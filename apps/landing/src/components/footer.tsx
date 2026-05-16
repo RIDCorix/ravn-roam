@@ -1,6 +1,7 @@
 import { Button } from "./button";
 import { Icon } from "./icons";
 import { FooterLink } from "./footer-link";
+import { Reveal } from "./reveal";
 import type { Dictionary, Locale } from "@/app/[lang]/dictionaries";
 import { localized } from "@/lib/href";
 
@@ -99,51 +100,57 @@ export function Footer({
               </span>
             </div>
 
-            <h3
-              style={{
-                margin: 0,
-                fontSize: "clamp(26px, 3vw, 40px)",
-                fontWeight: 600,
-                letterSpacing: "-0.03em",
-                lineHeight: 1.08,
-                maxWidth: 360,
-                textWrap: "balance",
-              }}
-            >
-              {dict.headlineLead}
-              <br />
-              <span
+            <Reveal>
+              <h3
                 style={{
-                  color: "#A6E8E5",
-                  fontStyle: "italic",
-                  fontWeight: 500,
+                  margin: 0,
+                  fontSize: "clamp(26px, 3vw, 40px)",
+                  fontWeight: 600,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1.08,
+                  maxWidth: 360,
+                  textWrap: "balance",
                 }}
               >
-                {dict.headlineAccent}
-              </span>
-            </h3>
-            <p
-              style={{
-                margin: "14px 0 22px",
-                maxWidth: 320,
-                fontSize: 14.5,
-                lineHeight: 1.55,
-                color: "rgba(255,255,255,0.65)",
-              }}
-            >
-              {dict.subtitle}
-            </p>
+                {dict.headlineLead}
+                <br />
+                <span
+                  style={{
+                    color: "#A6E8E5",
+                    fontStyle: "italic",
+                    fontWeight: 500,
+                  }}
+                >
+                  {dict.headlineAccent}
+                </span>
+              </h3>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <p
+                style={{
+                  margin: "14px 0 22px",
+                  maxWidth: 320,
+                  fontSize: 14.5,
+                  lineHeight: 1.55,
+                  color: "rgba(255,255,255,0.65)",
+                }}
+              >
+                {dict.subtitle}
+              </p>
+            </Reveal>
 
-            <div
-              className="r-footer-ctas"
-              style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
-            >
-              <Button size="md" variant="accent">
-                {dict.ctaPrimary}
-                <Icon name="arrowRight" size={13} />
-              </Button>
-              <FooterLink href="#">{dict.ctaSecondary}</FooterLink>
-            </div>
+            <Reveal delay={0.18}>
+              <div
+                className="r-footer-ctas"
+                style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
+              >
+                <Button size="md" variant="accent">
+                  {dict.ctaPrimary}
+                  <Icon name="arrowRight" size={13} />
+                </Button>
+                <FooterLink href="#">{dict.ctaSecondary}</FooterLink>
+              </div>
+            </Reveal>
           </div>
 
           {columns.map((col) => (

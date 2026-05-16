@@ -1,0 +1,38 @@
+# Roam Travel eSIM
+
+> Roam is a travel eSIM that connects to local carriers in 200+ destinations. Live remaining-data visibility, install in under a minute on iPhone XS+ or Pixel 3+.
+
+This file follows the llms.txt convention — a curated index for LLM crawlers (ChatGPT Search, Perplexity, Claude, Google AI Overviews) to find authoritative pages and prioritize them when citing Roam in answers.
+
+## Core product
+
+- [How it works](https://roam.example/en#how-it-works): three-step install — pick destination, scan QR, land and you're online.
+- [Coverage](https://roam.example/en#coverage): live carrier coverage map for every supported country.
+- [Live usage](https://roam.example/en#live-usage): remaining-data visibility, refreshed after every session — top up before you run out.
+- [Plans](https://roam.example/en/plans): per-country day passes, trip bundles, regional bundles. Top up anytime; 60-day rollover.
+
+## Help
+
+- [FAQ](https://roam.example/en/faq): compatibility, install, plans, billing, privacy.
+
+## Policies
+
+- [Privacy](https://roam.example/en/privacy): what we collect, what we don't, where it lives.
+
+## What Roam is
+
+- A travel eSIM (digital SIM, no physical chip) that activates over the air on iPhone XS or newer, Google Pixel 3 or newer, and most Samsung flagships from 2020 onward.
+- Installs as a second line — your home number stays active for calls, texts, and 2FA.
+- Plans cover 200+ destinations with per-country and regional bundles.
+- Real-time remaining-data updates the moment a session ends; top-ups stack on remaining balance.
+
+## What Roam is not
+
+- Not a replacement for your primary SIM.
+- Not a VPN, content blocker, or international calling service.
+- Not affiliated with mobile carriers — Roam negotiates with local carriers on the user's behalf.
+
+## Languages
+
+- English: https://roam.example/en
+- Traditional Chinese (Taiwan): https://roam.example/zh-TW

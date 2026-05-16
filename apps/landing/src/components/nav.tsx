@@ -17,13 +17,13 @@ export function RoamNav({
     href: string;
   }> = [
     { key: "coverage", label: dict.nav.coverage, href: `/${currentLocale}#coverage` },
-    { key: "plans", label: dict.nav.plans, href: `/${currentLocale}#plans` },
+    { key: "plans", label: dict.nav.plans, href: `/${currentLocale}/plans` },
     {
       key: "howItWorks",
       label: dict.nav.howItWorks,
       href: `/${currentLocale}#how-it-works`,
     },
-    { key: "reviews", label: dict.nav.reviews, href: `/${currentLocale}/reviews` },
+    { key: "reviews", label: dict.nav.reviews, href: `/${currentLocale}#reviews` },
     { key: "help", label: dict.nav.help, href: `/${currentLocale}/faq` },
   ];
 

@@ -1,7 +1,29 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/page-header";
+import {
+  breadcrumbJsonLd,
+  buildMetadata,
+  faqJsonLd,
+} from "@/lib/seo";
 import { getDictionary, hasLocale } from "../../dictionaries";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!hasLocale(lang)) return {};
+  const dict = await getDictionary(lang);
+  return buildMetadata({
+    title: dict.faq.title,
+    description: dict.faq.subtitle,
+    locale: lang,
+    path: "faq",
+  });
+}
 
 export default async function FaqPage({
   params,
@@ -12,14 +34,28 @@ export default async function FaqPage({
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
   const f = dict.faq;
+  const allItems = f.groups.flatMap((g) => g.items);
+  const breadcrumb = breadcrumbJsonLd(lang, [
+    { name: "Home", path: "" },
+    { name: f.title, path: "faq" },
+  ]);
+  const faqLd = faqJsonLd(allItems);
 
   return (
     <article>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
       <PageHeader
         eyebrow={f.eyebrow}
         title={f.title}
         subtitle={f.subtitle}
-        backLabel={dict.page.back}
+        homeLabel={dict.page.home}
         currentLocale={lang}
       />
       <section style={{ padding: "0 24px 96px" }}>

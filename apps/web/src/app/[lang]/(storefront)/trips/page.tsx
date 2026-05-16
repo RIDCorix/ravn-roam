@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/storefront/home-sections";
 import { TripCard } from "@/components/storefront/trips/trip-card";
 import type { Trip } from "@/lib/mock/consumer";
-import { TRIPS } from "@/lib/mock/consumer";
+import { ensureSeededTrips } from "@/lib/seed-trips";
+import { apiToTrip } from "@/lib/trip-mapping";
+import { getTrip } from "@/lib/trips-api";
 
 import { getDictionary, hasLocale } from "../../dictionaries";
 
-// Per-user data (mock today, Supabase in Phase D). Opt out of SSG.
+// Per-user data fetched fresh from the API on every request.
 export const dynamic = "force-dynamic";
 
 export default async function TripsPage({
@@ -20,13 +22,23 @@ export default async function TripsPage({
   const dict = await getDictionary(lang);
   const t = dict.storefront.trips;
 
-  const active = TRIPS.filter((trip) => trip.status === "active");
-  const upcoming = TRIPS.filter((trip) => trip.status === "upcoming").sort(
-    (a, b) => a.start.localeCompare(b.start),
+  // Seed the user's account from the design mock on first sign-in, then
+  // hydrate each trip's days + checklist so trip-card can render counts.
+  const summaries = await ensureSeededTrips();
+  const trips: Trip[] = await Promise.all(
+    summaries.map(async (s) => {
+      const detail = await getTrip(s.id);
+      return apiToTrip(detail.trip, detail.days, detail.checklist);
+    }),
   );
-  const past = TRIPS.filter((trip) => trip.status === "past").sort(
-    (a, b) => b.start.localeCompare(a.start),
-  );
+
+  const active = trips.filter((trip) => trip.status === "active");
+  const upcoming = trips
+    .filter((trip) => trip.status === "upcoming")
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const past = trips
+    .filter((trip) => trip.status === "past")
+    .sort((a, b) => b.start.localeCompare(a.start));
 
   const liveCount = active.length + upcoming.length;
   const subtitle = format(t.list.subtitle, { count: String(liveCount) });

@@ -10,6 +10,11 @@ import { usePathname } from "next/navigation";
 import { Home, Map, ListChecks, Store, User, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  LumiAssistant,
+  type LumiAssistantLabels,
+} from "@/components/storefront/trips/lumi-assistant";
+import type { LumiContext } from "@/lib/lumi-context";
 
 export interface StorefrontShellLabels {
   home: string;
@@ -47,10 +52,18 @@ export function StorefrontShell({
   lang,
   labels,
   children,
+  lumiLabels,
+  lumiAvatarId,
+  lumiContext,
 }: {
   lang: string;
   labels: StorefrontShellLabels;
   children: React.ReactNode;
+  // Only set when the user is signed in. When null, the assistant is
+  // hidden — anonymous visitors don't have a Lumi context.
+  lumiLabels: LumiAssistantLabels | null;
+  lumiAvatarId?: string;
+  lumiContext: LumiContext | null;
 }) {
   const pathname = usePathname();
   const tabs = buildTabs(lang);
@@ -70,6 +83,14 @@ export function StorefrontShell({
         {/* Mobile bottom nav */}
         <MobileBottomNav tabs={tabs} labels={labels} pathname={pathname} lang={lang} />
       </div>
+
+      {lumiLabels && (
+        <LumiAssistant
+          labels={lumiLabels}
+          avatarId={lumiAvatarId}
+          context={lumiContext}
+        />
+      )}
     </div>
   );
 }

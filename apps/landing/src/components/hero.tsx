@@ -1,134 +1,129 @@
 import { Icon } from "./icons";
 import { Button } from "./button";
-import { WorldMap } from "./world-map";
-import type { Dictionary } from "@/app/[lang]/dictionaries";
+import { PhoneDemo } from "./phone-demo";
+import { Reveal } from "./reveal";
+import type { Dictionary, Locale } from "@/app/[lang]/dictionaries";
+import { localized } from "@/lib/href";
 
 export function Hero({
   dict,
-  mapDict,
+  currentLocale,
 }: {
   dict: Dictionary["hero"];
-  mapDict: Dictionary["map"];
+  currentLocale: Locale;
 }) {
+  /* Primary CTA goes to the plans page (conversion intent matches the
+     "Get an eSIM" button). Secondary stays on the home anchor for users
+     who want to scan coverage before committing. */
+  const primaryHref = localized("/plans", currentLocale);
+  const secondaryHref = localized("/#coverage", currentLocale);
   return (
     <section
       className="r-hero"
       style={{
         position: "relative",
-        padding: "64px 24px 24px",
+        padding: "56px 24px 80px",
         overflow: "hidden",
       }}
     >
       <div
+        className="r-hero-grid"
         style={{
           position: "relative",
           maxWidth: 1200,
           margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.05fr) minmax(0, 1fr)",
+          gap: 48,
           alignItems: "center",
-          gap: 26,
         }}
       >
-        <span
+        {/* Left: copy + CTAs */}
+        <div
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "6px 14px 6px 8px",
-            fontSize: 12.5,
-            color: "var(--fg-secondary)",
-            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 26,
           }}
         >
-          <span
-            style={{
-              padding: "2px 8px",
-              borderRadius: 999,
-              background: "var(--accent-soft)",
-              color: "var(--accent)",
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: "-0.005em",
-            }}
-          >
-            {dict.eyebrowBadge}
-          </span>
-          {dict.eyebrowText}
-          <Icon name="arrowRight" size={13} color="var(--fg-secondary)" />
-        </span>
 
-        <h1
+          <Reveal inView={false} delay={0.08}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(40px, 5.6vw, 72px)",
+                fontWeight: 700,
+                letterSpacing: "-0.045em",
+                lineHeight: 0.98,
+                color: "var(--fg)",
+                maxWidth: 560,
+                textWrap: "balance",
+              }}
+            >
+              {dict.headlineLead}{" "}
+              <span
+                style={{
+                  fontStyle: "italic",
+                  fontWeight: 500,
+                  color: "var(--accent)",
+                }}
+              >
+                {dict.headlineAccent}
+              </span>
+            </h1>
+          </Reveal>
+
+          <Reveal inView={false} delay={0.18}>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 480,
+                fontSize: 17,
+                lineHeight: 1.55,
+                color: "var(--fg-secondary)",
+                textWrap: "pretty",
+              }}
+            >
+              {dict.subtitle}
+            </p>
+          </Reveal>
+
+          <Reveal inView={false} delay={0.28}>
+            <div
+              className="r-hero-ctas"
+              style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 4 }}
+            >
+              <Button size="lg" href={primaryHref}>
+                {dict.ctaPrimary}
+                <Icon name="arrowRight" size={14} />
+              </Button>
+              <Button size="lg" variant="ghost" href={secondaryHref}>
+                {dict.ctaSecondary}
+              </Button>
+            </div>
+          </Reveal>
+
+          <Reveal inView={false} delay={0.36}>
+            <div style={{ fontSize: 12.5, color: "var(--fg-muted)" }}>
+              {dict.deviceFootnote}
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Right: animated phone demo */}
+        <div
+          className="r-hero-demo"
           style={{
-            margin: 0,
-            textAlign: "center",
-            fontSize: "clamp(40px, 7.6vw, 88px)",
-            fontWeight: 700,
-            letterSpacing: "-0.045em",
-            lineHeight: 0.96,
-            color: "var(--fg)",
-            maxWidth: 820,
-            textWrap: "balance",
+            position: "relative",
+            width: "100%",
+            minHeight: 600,
+            display: "flex",
+            alignItems: "stretch",
           }}
         >
-          {dict.headlineLead}{" "}
-          <span
-            style={{
-              fontStyle: "italic",
-              fontWeight: 500,
-              color: "var(--accent)",
-            }}
-          >
-            {dict.headlineAccent}
-          </span>
-        </h1>
-
-        <p
-          style={{
-            margin: 0,
-            maxWidth: 520,
-            textAlign: "center",
-            fontSize: 18,
-            lineHeight: 1.55,
-            color: "var(--fg-secondary)",
-            textWrap: "pretty",
-          }}
-        >
-          {dict.subtitle}
-        </p>
-
-        <div className="r-hero-ctas" style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <Button size="lg">
-            {dict.ctaPrimary}
-            <Icon name="arrowRight" size={14} />
-          </Button>
-          <Button size="lg" variant="ghost">
-            {dict.ctaSecondary}
-          </Button>
+          <PhoneDemo dict={dict.demo} />
         </div>
-
-        <div style={{ fontSize: 12.5, color: "var(--fg-muted)", textAlign: "center" }}>
-          {dict.deviceFootnote}
-        </div>
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          width: "100vw",
-          maxWidth: "100%",
-          marginLeft: "calc(50% - 50vw)",
-          marginRight: "calc(50% - 50vw)",
-          marginTop: 8,
-          paddingTop: 12,
-        }}
-      >
-        <div className="r-map-scroll">
-          <div className="r-map-inner">
-            <WorldMap dict={mapDict} />
-          </div>
-        </div>
-        <div aria-hidden className="r-map-fade" />
       </div>
     </section>
   );

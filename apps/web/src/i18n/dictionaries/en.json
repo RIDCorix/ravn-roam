@@ -504,7 +504,8 @@
       },
       "tabs": {
         "overview": "Overview",
-        "checklist": "Checklist"
+        "checklist": "Checklist",
+        "day_short": "Day {n}"
       },
       "detail": {
         "back": "Back to trips",
@@ -519,7 +520,49 @@
         "pending": "To do",
         "done": "Done",
         "shop_cta": "Open",
-        "empty": "No tasks for this trip yet."
+        "empty": "No tasks for this trip yet.",
+        "assign": "Assign",
+        "assigned_to": "Assigned to",
+        "unassigned": "Everyone"
+      },
+      "companions": {
+        "section_title": "Companions",
+        "add": "Add",
+        "rename_placeholder": "Name",
+        "save": "Save",
+        "cancel": "Cancel",
+        "copy_invite": "Copy invite link",
+        "copied": "Copied",
+        "link_only": "Awaiting invite",
+        "joined": "Joined",
+        "delete": "Remove companion"
+      },
+      "invite": {
+        "title_template": "{name} invited you to \"{title}\"",
+        "join": "Join this trip",
+        "joining": "Joining…",
+        "join_must_login": "Sign in first to accept",
+        "already_joined": "This slot has already been taken",
+        "invalid": "This invite link is invalid or was reset",
+        "joined_done": "Joined!",
+        "go_to_trip": "View trip"
+      },
+      "lumi": {
+        "name": "Lumi",
+        "placeholder": "How should I tweak the trip? e.g. put Kyoto first",
+        "open": "Open Lumi assistant",
+        "close": "Close Lumi assistant",
+        "send": "Send",
+        "thinking": "Lumi is thinking…",
+        "no_trip_hint": "Lumi needs a trip to edit — open one from the Trips tab.",
+        "history_title": "Chat history",
+        "new_chat": "New chat",
+        "delete_chat": "Delete chat",
+        "empty_history": "No conversations yet.",
+        "draft_days_unit": "days",
+        "draft_create": "Create trip",
+        "draft_creating": "Creating…",
+        "draft_created": "Created"
       }
     }
   }

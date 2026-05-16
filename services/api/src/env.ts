@@ -20,6 +20,15 @@ const schema = z.object({
   // the route refuses to start the sync when this is unset, so we never
   // ship an open trigger to staging by accident.
   ADMIN_API_TOKEN: z.string().min(16).optional(),
+
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+
+  // Supabase project URL + anon key. The /trips/* routes call
+  // `supabase.auth.getUser(bearerToken)` to resolve the caller's user_id
+  // from the JWT the web app forwards in `Authorization: Bearer ...`.
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_ANON_KEY: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof schema>;
