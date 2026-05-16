@@ -6,16 +6,6 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "Roam — Travel eSIM";
 
-export async function generateImageMetadata({
-  params,
-}: {
-  params: Promise<{ lang: string }>;
-}) {
-  const { lang } = await params;
-  if (!hasLocale(lang)) return [];
-  return [{ id: lang, size, contentType, alt }];
-}
-
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }

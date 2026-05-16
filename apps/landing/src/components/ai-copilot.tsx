@@ -114,6 +114,8 @@ function LumiChatMock({ dict }: { dict: ChatDict }) {
 
   const conversations = dict.conversations;
   const current = conversations[pairIndex];
+  const userText = current.messages.find((m) => m.role === "user")?.text ?? "";
+  const lumiText = current.messages.find((m) => m.role === "lumi")?.text ?? "";
 
   useEffect(() => {
     if (!inView) return;
@@ -225,7 +227,7 @@ function LumiChatMock({ dict }: { dict: ChatDict }) {
                 lineHeight: 1.45,
               }}
             >
-              {current.user}
+              {userText}
             </m.div>
           )}
 
@@ -274,7 +276,7 @@ function LumiChatMock({ dict }: { dict: ChatDict }) {
                 boxShadow: "inset 0 0 0 1px rgba(15,184,180,0.18)",
               }}
             >
-              {current.lumi}
+              {lumiText}
             </m.div>
           )}
         </AnimatePresence>
