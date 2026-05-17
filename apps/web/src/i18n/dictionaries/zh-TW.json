@@ -558,6 +558,15 @@
         "close": "收起 Lumi 助理",
         "send": "送出",
         "thinking": "Lumi 思考中…",
+        "thinking_phrases": [
+          "正在翻筆記本…",
+          "讓我想一下…",
+          "查一下地圖…",
+          "對一下行事曆…",
+          "整理思緒中…",
+          "看看天氣預報…",
+          "估一下車程…"
+        ],
         "no_trip_hint": "Lumi 需要打開一個行程才能編輯，請從『行程』分頁進入要討論的行程。",
         "history_title": "對話紀錄",
         "new_chat": "新對話",
@@ -566,7 +575,12 @@
         "draft_days_unit": "天",
         "draft_create": "建立行程",
         "draft_creating": "建立中…",
-        "draft_created": "已建立"
+        "draft_created": "已建立",
+        "change_days": "更新了 {n} 個日期",
+        "change_stops": "共 {n} 個活動",
+        "change_companions": "旅伴 {n} 位",
+        "change_checklist": "新增 {n} 則待辦",
+        "change_draft_days": "草擬了 {n} 天行程"
       }
     }
   }

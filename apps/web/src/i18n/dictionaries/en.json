@@ -558,6 +558,15 @@
         "close": "Close Lumi assistant",
         "send": "Send",
         "thinking": "Lumi is thinking…",
+        "thinking_phrases": [
+          "Flipping through notes…",
+          "Hmm, let me think…",
+          "Checking the map…",
+          "Glancing at the calendar…",
+          "Pulling up the route…",
+          "Peeking at the weather…",
+          "Doing the math…"
+        ],
         "no_trip_hint": "Lumi needs a trip to edit — open one from the Trips tab.",
         "history_title": "Chat history",
         "new_chat": "New chat",
@@ -566,7 +575,12 @@
         "draft_days_unit": "days",
         "draft_create": "Create trip",
         "draft_creating": "Creating…",
-        "draft_created": "Created"
+        "draft_created": "Created",
+        "change_days": "Updated {n} day(s)",
+        "change_stops": "{n} activities in total",
+        "change_companions": "{n} companion(s)",
+        "change_checklist": "Added {n} to-do(s)",
+        "change_draft_days": "Drafted {n}-day trip"
       }
     }
   }

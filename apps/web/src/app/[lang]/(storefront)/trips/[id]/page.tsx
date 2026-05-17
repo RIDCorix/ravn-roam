@@ -1,17 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 
-import { CompanionsMenu } from "@/components/storefront/trips/companions-menu";
-import {
-  TripDetailTabs,
-  type TripDetailLabels,
-} from "@/components/storefront/trips/trip-detail-tabs";
-import { apiDetailToTrip } from "@/lib/trip-mapping";
-import { getTrip, TripApiError, type ApiCompanion } from "@/lib/trips-api";
+import { TripDetailClient } from "@/components/storefront/trips/trip-detail-client";
+import type { TripDetailClientLabels } from "@/components/storefront/trips/trip-detail-client";
+import { getTrip, TripApiError } from "@/lib/trips-api";
 
 import { getDictionary, hasLocale } from "../../../dictionaries";
 
+// Auth gate + initial RSC paint only — every interaction after first
+// load reads from the SWR cache on the client (see TripDetailClient).
+// `force-dynamic` so the auth check + Bearer-forwarded fetch stay
+// per-request; static caching is meaningless for a user's own trips.
 export const dynamic = "force-dynamic";
 
 export default async function TripDetailPage({
@@ -24,22 +23,19 @@ export default async function TripDetailPage({
   const dict = await getDictionary(lang);
   const t = dict.storefront.trips;
 
-  let trip;
-  let cities: { name: string; lat: number | null; lng: number | null }[] = [];
-  let companions: ApiCompanion[] = [];
+  let initialPayload;
   try {
-    const detail = await getTrip(id);
-    trip = apiDetailToTrip(detail);
-    cities = detail.cities;
-    companions = detail.companions;
+    initialPayload = await getTrip(id);
   } catch (err) {
     if (err instanceof TripApiError && err.status === 404) {
-      return <TripNotFound lang={lang} title={t.detail.not_found} back={t.detail.back} />;
+      return (
+        <TripNotFound lang={lang} title={t.detail.not_found} back={t.detail.back} />
+      );
     }
     throw err;
   }
 
-  const labels: TripDetailLabels = {
+  const labels: TripDetailClientLabels = {
     tabs: {
       overview: t.tabs.overview,
       checklist: t.tabs.checklist,
@@ -60,59 +56,30 @@ export default async function TripDetailPage({
       assigned_to: t.checklist.assigned_to,
       unassigned: t.checklist.unassigned,
     },
+    back: t.detail.back,
+    dayUnit: t.detail.day_unit,
+    companions: {
+      manage_title: t.companions.manage_title,
+      manage_aria: t.companions.manage_aria,
+      add: t.companions.add,
+      rename_placeholder: t.companions.rename_placeholder,
+      copy_invite: t.companions.copy_invite,
+      copied: t.companions.copied,
+      link_only: t.companions.link_only,
+      joined: t.companions.joined,
+      delete: t.companions.delete,
+      pick_friend: t.companions.pick_friend,
+      pick_friend_soon: t.companions.pick_friend_soon,
+    },
   };
 
   return (
-    <div>
-      <header
-        className="sticky top-0 z-10 flex items-center gap-2.5 px-5 py-3.5 backdrop-blur-xl backdrop-saturate-150"
-        style={{ background: "rgba(247,247,245,0.85)" }}
-      >
-        <Link
-          href={`/${lang}/trips`}
-          aria-label={t.detail.back}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-fg hover:bg-[rgba(0,0,0,0.04)]"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[19px] font-semibold tracking-[-0.015em]">
-            {trip.title}
-          </h1>
-          <div className="whitespace-nowrap text-[12px] text-fg-muted">
-            {trip.start} → {trip.end}
-            {trip.days.length > 0
-              ? ` · ${trip.days.length} ${t.detail.day_unit}`
-              : ""}
-          </div>
-        </div>
-        <CompanionsMenu
-          tripId={trip.id}
-          companions={companions}
-          labels={{
-            manage_title: t.companions.manage_title,
-            manage_aria: t.companions.manage_aria,
-            add: t.companions.add,
-            rename_placeholder: t.companions.rename_placeholder,
-            copy_invite: t.companions.copy_invite,
-            copied: t.companions.copied,
-            link_only: t.companions.link_only,
-            joined: t.companions.joined,
-            delete: t.companions.delete,
-            pick_friend: t.companions.pick_friend,
-            pick_friend_soon: t.companions.pick_friend_soon,
-          }}
-        />
-      </header>
-
-      <TripDetailTabs
-        trip={trip}
-        cities={cities}
-        companions={companions}
-        lang={lang}
-        labels={labels}
-      />
-    </div>
+    <TripDetailClient
+      tripId={id}
+      lang={lang}
+      initialPayload={initialPayload}
+      labels={labels}
+    />
   );
 }
 

@@ -9,7 +9,7 @@ import { z } from "zod";
 import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
 import { geocodeCities } from "../geocode/nominatim.js";
-import { runLumiTurn } from "../lumi/openai.js";
+import { runLumiTurn, type LumiDay } from "../lumi/openai.js";
 import { getUser, requireAuth } from "./_auth.js";
 
 export const lumiRouter = new Hono();
@@ -304,6 +304,30 @@ lumiRouter.post("/chat", async (c) => {
     lat: number | null;
     lng: number | null;
   }> | null = null;
+  let summary = result.summary;
+  if (result.days && editableTrip && isAttachmentOnlyPrompt(parsed.data.prompt)) {
+    const touched = await applyAttachmentPatch({
+      tripId: editableTrip.tripId,
+      editableTrip,
+      days: result.days,
+    });
+    if (touched) {
+      updatedDays = editableTrip.days;
+      delete result.days;
+      summary = "我已經把需要票券、訂位或上傳資料的行程標記上去了，原本的行程內容有保留下來。";
+    } else {
+      delete result.days;
+      summary =
+        "我先保護原本行程，這次沒有找到可安全對應的活動來標記票券或訂位。請指定活動名稱，我再幫你標上去。";
+    }
+  } else if (result.days && editableTrip) {
+    if (!isSafeFullDayRewrite(parsed.data.prompt, editableTrip, result.days)) {
+      delete result.days;
+      summary =
+        "我先保護原本行程，沒有套用這次會刪減既有活動的更新。如果你真的要重排，請明確說「重新規劃整天」。";
+    }
+  }
+
   if (result.days && editableTrip) {
     const tripId = editableTrip.tripId;
     await db.transaction(async (tx) => {
@@ -329,27 +353,53 @@ lumiRouter.post("/chat", async (c) => {
           sortOrder: schema.tripDay.sortOrder,
         });
 
-      const stopRows = result.days!.flatMap((d, i) => {
+      const stopRows = [];
+      for (let i = 0; i < result.days!.length; i++) {
+        const d = result.days![i]!;
         const dayRow = insertedDays.find((r) => r.sortOrder === i);
-        if (!dayRow) return [];
+        if (!dayRow) continue;
         /* Lumi may omit stops for a placeholder/rest day. Seed one
            stop named after `city` so the day still pins on the map. */
         const effective =
           d.stops && d.stops.length > 0
             ? d.stops
-            : [{ name: d.city, kind: "other", note: "" }];
-        return effective.map((s, j) => ({
-          dayId: dayRow.id,
-          sortOrder: j,
-          name: s.name,
-          kind: s.kind ?? "other",
-          arrivalTime: s.arrival_time ?? null,
-          durationMin: s.duration_min ?? null,
-          note: s.note ?? "",
-          lat: null,
-          lng: null,
-        }));
-      });
+            : [{ name: d.city, kind: "other", note: "", attachments: [] }];
+        for (let j = 0; j < effective.length; j++) {
+          const s = effective[j]!;
+          const attachments = [];
+          for (const a of s.attachments ?? []) {
+            let checklistItemId = a.checklist_item_id ?? null;
+            if (!checklistItemId) {
+              const [item] = await tx
+                .insert(schema.tripChecklistItem)
+                .values({
+                  tripId,
+                  text: a.checklist_text?.trim() || `${s.name}：${a.label}`,
+                  kind: a.checklist_kind ?? fallbackChecklistKind(a.type ?? "ticket"),
+                  done: a.status === "completed" || a.status === "uploaded",
+                  suggested: true,
+                  suggestedBy: "Lumi",
+                  dueDate: d.day_date,
+                })
+                .returning({ id: schema.tripChecklistItem.id });
+              checklistItemId = item?.id ?? null;
+            }
+            attachments.push({ ...a, checklist_item_id: checklistItemId });
+          }
+          stopRows.push({
+            dayId: dayRow.id,
+            sortOrder: j,
+            name: s.name,
+            kind: s.kind ?? "other",
+            arrivalTime: s.arrival_time ?? null,
+            durationMin: s.duration_min ?? null,
+            note: s.note ?? "",
+            attachments,
+            lat: null,
+            lng: null,
+          });
+        }
+      }
       if (stopRows.length > 0) {
         await tx.insert(schema.tripDayStop).values(stopRows);
       }
@@ -450,7 +500,7 @@ lumiRouter.post("/chat", async (c) => {
   await db.insert(schema.lumiMessage).values({
     conversationId,
     role: "assistant",
-    content: result.summary,
+    content: summary,
     metadata: {
       days: result.days ?? null,
       companions: result.companions ?? null,
@@ -487,7 +537,7 @@ lumiRouter.post("/chat", async (c) => {
   }
 
   return c.json({
-    summary: result.summary,
+    summary,
     days: updatedDays,
     cities: updatedCities,
     companions: updatedCompanions,
@@ -509,11 +559,24 @@ interface LoadedEditableTrip {
        model should treat that as "needs filling". Non-empty = already
        planned, model should preserve unless asked to rewrite. */
     stops: {
+      id: string;
       name: string;
       kind: string;
       arrival_time: string | null;
       duration_min: number | null;
       note: string;
+      attachments: {
+        id?: string | null;
+        type?: string;
+        label: string;
+        action_label?: string | null;
+        checklist_text?: string | null;
+        checklist_kind?: string | null;
+        checklist_item_id?: string | null;
+        image_name?: string | null;
+        image_data_url?: string | null;
+        status?: "required" | "completed" | "uploaded";
+      }[];
     }[];
   }[];
   cities: {
@@ -607,11 +670,13 @@ async function loadEditableTrip(
       city: d.city,
       note: d.note,
       stops: (stopsByDay.get(d.id) ?? []).map((s) => ({
+        id: s.id,
         name: s.name,
         kind: s.kind,
         arrival_time: s.arrivalTime,
         duration_min: s.durationMin,
         note: s.note,
+        attachments: normalizeLoadedAttachments(s.attachments),
       })),
     })),
     cities,
@@ -623,4 +688,212 @@ async function loadEditableTrip(
       accepted_at: c.acceptedAt?.toISOString() ?? null,
     })),
   };
+}
+
+function fallbackChecklistKind(type: string): string {
+  if (type === "reservation") return "stay";
+  if (type === "booking" || type === "flight") return "flight";
+  if (type === "upload" || type === "document") return "doc";
+  if (type === "transit") return "transit";
+  return "ticket";
+}
+
+const ATTACHMENT_ONLY_PROMPT_RE =
+  /買票|訂票|門票|票券|定位|訂位|預約|附件|上傳|標記|需要.*票|reservation|reserve|booking|book|ticket|attachment|upload|mark/i;
+
+const REWRITE_SHRINK_OK_RE =
+  /重新規劃|重排|刪|移除|拿掉|減少|精簡|只留|縮短|remove|delete|drop|shorten|simplify|replan|rewrite/i;
+
+function isAttachmentOnlyPrompt(prompt: string): boolean {
+  return (
+    ATTACHMENT_ONLY_PROMPT_RE.test(prompt) &&
+    !/重新規劃|重排|排程|安排|規劃整天|replan|rewrite|reschedule/i.test(prompt)
+  );
+}
+
+function isSafeFullDayRewrite(
+  prompt: string,
+  editableTrip: LoadedEditableTrip,
+  days: LumiDay[],
+): boolean {
+  if (REWRITE_SHRINK_OK_RE.test(prompt)) return true;
+
+  const existingDates = new Set(editableTrip.days.map((d) => d.day_date));
+  const nextDates = new Set(days.map((d) => d.day_date));
+  for (const date of existingDates) {
+    if (!nextDates.has(date)) return false;
+  }
+
+  const existingStopCount = editableTrip.days.reduce(
+    (sum, d) => sum + d.stops.length,
+    0,
+  );
+  const nextStopCount = days.reduce(
+    (sum, d) => sum + (d.stops?.length ?? 0),
+    0,
+  );
+  return existingStopCount === 0 || nextStopCount >= existingStopCount;
+}
+
+async function applyAttachmentPatch({
+  tripId,
+  editableTrip,
+  days,
+}: {
+  tripId: string;
+  editableTrip: LoadedEditableTrip;
+  days: LumiDay[];
+}): Promise<boolean> {
+  const db = getDb();
+  let touched = false;
+
+  await db.transaction(async (tx) => {
+    const existingDayByDate = new Map(
+      editableTrip.days.map((day) => [day.day_date, day]),
+    );
+
+    for (const incomingDay of days) {
+      const existingDay = existingDayByDate.get(incomingDay.day_date);
+      if (!existingDay) continue;
+      for (const incomingStop of incomingDay.stops ?? []) {
+        const incomingAttachments = incomingStop.attachments ?? [];
+        if (incomingAttachments.length === 0) continue;
+        const existingStop = findMatchingStop(existingDay.stops, incomingStop.name);
+        if (!existingStop) continue;
+
+        const merged = [...existingStop.attachments];
+        let stopTouched = false;
+        const seen = new Set(
+          merged.map((a) =>
+            attachmentKey(
+              a.type ?? "ticket",
+              a.checklist_text ?? a.label,
+            ),
+          ),
+        );
+
+        for (const attachment of incomingAttachments) {
+          const label = attachment.label?.trim();
+          if (!label) continue;
+          const type = attachment.type ?? "ticket";
+          const checklistText =
+            attachment.checklist_text?.trim() ||
+            `${existingStop.name}：${label}`;
+          const key = attachmentKey(type, checklistText);
+          if (seen.has(key)) continue;
+
+          let checklistItemId = attachment.checklist_item_id ?? null;
+          if (!checklistItemId) {
+            const [item] = await tx
+              .insert(schema.tripChecklistItem)
+              .values({
+                tripId,
+                text: checklistText,
+                kind: attachment.checklist_kind ?? fallbackChecklistKind(type),
+                done:
+                  attachment.status === "completed" ||
+                  attachment.status === "uploaded",
+                suggested: true,
+                suggestedBy: "Lumi",
+                dueDate: incomingDay.day_date,
+              })
+              .returning({ id: schema.tripChecklistItem.id });
+            checklistItemId = item?.id ?? null;
+          }
+
+          merged.push({
+            id: attachment.id ?? null,
+            type,
+            label,
+            action_label: attachment.action_label ?? null,
+            checklist_text: checklistText,
+            checklist_kind:
+              attachment.checklist_kind ?? fallbackChecklistKind(type),
+            checklist_item_id: checklistItemId,
+            status: attachment.status ?? "required",
+          });
+          seen.add(key);
+          stopTouched = true;
+          touched = true;
+        }
+
+        if (stopTouched) {
+          await tx
+            .update(schema.tripDayStop)
+            .set({ attachments: merged })
+            .where(eq(schema.tripDayStop.id, existingStop.id));
+        }
+      }
+    }
+
+    if (touched) {
+      await tx
+        .update(schema.trip)
+        .set({ updatedAt: new Date() })
+        .where(eq(schema.trip.id, tripId));
+    }
+  });
+
+  return touched;
+}
+
+function findMatchingStop(
+  stops: LoadedEditableTrip["days"][number]["stops"],
+  name: string,
+) {
+  const normalizedName = normalizeMatchText(name);
+  return (
+    stops.find((stop) => normalizeMatchText(stop.name) === normalizedName) ??
+    stops.find((stop) => {
+      const existing = normalizeMatchText(stop.name);
+      return (
+        existing.length >= 4 &&
+        normalizedName.length >= 4 &&
+        (existing.includes(normalizedName) || normalizedName.includes(existing))
+      );
+    })
+  );
+}
+
+function normalizeMatchText(value: string): string {
+  return value.toLowerCase().replace(/[\s:：·・,，。()（）-]/g, "");
+}
+
+function attachmentKey(type: string, text: string): string {
+  return `${type.trim().toLowerCase()}::${normalizeMatchText(text)}`;
+}
+
+function normalizeLoadedAttachments(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const raw = item as Record<string, unknown>;
+    const label = typeof raw.label === "string" ? raw.label : "";
+    if (!label.trim()) return [];
+    const status: "required" | "completed" | "uploaded" =
+      raw.status === "completed" || raw.status === "uploaded"
+        ? raw.status
+        : "required";
+    return [
+      {
+        id: typeof raw.id === "string" ? raw.id : null,
+        type: typeof raw.type === "string" ? raw.type : "ticket",
+        label,
+        action_label:
+          typeof raw.action_label === "string" ? raw.action_label : null,
+        checklist_text:
+          typeof raw.checklist_text === "string" ? raw.checklist_text : null,
+        checklist_kind:
+          typeof raw.checklist_kind === "string" ? raw.checklist_kind : null,
+        checklist_item_id:
+          typeof raw.checklist_item_id === "string"
+            ? raw.checklist_item_id
+            : null,
+        image_name: typeof raw.image_name === "string" ? raw.image_name : null,
+        image_data_url:
+          typeof raw.image_data_url === "string" ? raw.image_data_url : null,
+        status,
+      },
+    ];
+  });
 }

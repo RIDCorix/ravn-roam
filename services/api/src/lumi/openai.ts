@@ -21,6 +21,19 @@ export interface LumiStop {
   arrival_time?: string | null;
   duration_min?: number | null;
   note?: string;
+  attachments?: LumiStopAttachment[];
+}
+
+export interface LumiStopAttachment {
+  id?: string | null;
+  /* ticket | reservation | booking | flight | transit | upload | document */
+  type?: string;
+  label: string;
+  action_label?: string | null;
+  checklist_text?: string | null;
+  checklist_kind?: string | null;
+  checklist_item_id?: string | null;
+  status?: "required" | "completed" | "uploaded";
 }
 
 export interface LumiDay {
@@ -155,6 +168,21 @@ const stopSchema = z.object({
   arrival_time: z.string().max(40).nullish(),
   duration_min: z.number().int().min(0).max(2880).nullish(),
   note: z.string().max(2000).default(""),
+  attachments: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(80).nullish(),
+        type: z.string().min(1).max(40).default("ticket"),
+        label: z.string().min(1).max(120),
+        action_label: z.string().max(80).nullish(),
+        checklist_text: z.string().max(500).nullish(),
+        checklist_kind: z.string().max(40).nullish(),
+        checklist_item_id: z.string().uuid().nullish(),
+        status: z.enum(["required", "completed", "uploaded"]).default("required"),
+      }),
+    )
+    .max(8)
+    .default([]),
 });
 
 /* A day with optional inline stops. `stops` defaults to [] so legacy Lumi
@@ -259,17 +287,77 @@ days: chronological array, each entry:
   {
     "day_date": "YYYY-MM-DD",
     "city":     string,                   // macro label, e.g. "東京"
-    "note":     string,                   // can be ""
+    "note":     string,                   // see "day note" rule below
     "stops": [                            // ordered places visited THAT day
       {
         "name":          string,          // "築地市場" "Bar Track"
         "kind":          "sight" | "meal" | "transit" | "stay" | "shop" | "other",
-        "arrival_time":  "10:30" | "morning" | null,
-        "duration_min":  90 | null,
-        "note":          string           // can be ""
+        "arrival_time":  "09:30",         // 24h "HH:MM" — see time rule below
+        "duration_min":  90,              // how long the stop lasts
+        "note":          string,          // can be ""
+        "attachments": [                  // optional prep items for this stop
+          {
+            "type": "ticket" | "reservation" | "booking" | "flight" | "transit" | "upload" | "document",
+            "label": string,              // "門票" / "訂位" / "機票"
+            "action_label": string | null,// "訂票" / "定位" / "上傳"
+            "checklist_text": string | null,
+            "checklist_kind": string | null,
+            "status": "required"
+          }
+        ]
       }
     ]
   }
+
+Time rule (CRITICAL — the UI renders a real timeline from these):
+  • arrival_time MUST be a concrete 24h "HH:MM" string. Never use
+    "morning" / "afternoon" / "晚上" / null when you know the order.
+    Only use null when the day is genuinely unscheduled (single
+    placeholder stop on a rest day).
+  • duration_min is required when arrival_time is set. Pick a
+    realistic length for the activity type: meals 60-90, sights
+    45-180, shopping 60-120, transit = actual travel time, stay
+    check-in/out 30.
+  • Times must be chronological within a day, AND consecutive stops
+    must not overlap (next arrival >= previous arrival + duration +
+    a small travel buffer of 15-30 min).
+  • Plausible day window: 08:00 – 22:00. Flights / overnight transit
+    are the only exceptions.
+
+Day note rule (CRITICAL — the UI shows this as the day's headline):
+  • When you fill stops for a day, ALSO write a SHORT thematic summary
+    in the day-level "note" — 6 to 16 chars in zh, <= 40 chars in en.
+    It should read like a chapter title, not a paragraph. Examples:
+      "大教堂與艾曼紐二世迴廊"
+      "築地早餐 · 晴空塔夜景"
+      "古城散策"
+      "Old town wander"
+  • This field is what the user sees on the day card; do NOT leave it
+    empty when stops exist, or every day card will just say the city
+    name and look identical.
+  • For pure travel days (only a transit stop) or rest days with no
+    stops, "note" may be "" — the UI falls back to the city.
+
+Attachment rule:
+  • If the user asks "哪些行程需要買票/訂位/標記上去" or any
+    ticket/reservation/upload marking request, this is an enrichment task,
+    NOT a replanning task. Preserve every existing day and every existing
+    stop exactly; only add attachments to the relevant existing stops.
+    Never replace the itinerary with only the stops that need tickets.
+  • When a stop naturally requires proof or an action before travel,
+    add one attachment to that stop AND make it checklist-backed.
+  • Examples: museums / theme parks / popular attractions that need
+    tickets -> type:"ticket"; restaurants that should be reserved ->
+    type:"reservation"; flights / intercity trains -> type:"flight" or
+    "transit"; hotels / visas / documents that need uploaded proof ->
+    type:"upload" or "document".
+  • Use checklist_text as the exact user task, e.g. "購買羅浮宮門票",
+    "預訂 Bar Track 晚餐", "購買台北 → 米蘭機票". Use checklist_kind ∈
+    {flight, stay, ticket, visa, doc, transit}. Leave
+    checklist_item_id null unless the existing context already gives an
+    id. Status is usually "required"; use "completed" only if the user
+    explicitly says it is already bought/reserved/uploaded.
+
 Preserve existing day_date values when filling stops — don't shift
 dates. Include EVERY day in the trip window (start_date..end_date),
 even if some stay as a single placeholder stop.
@@ -302,9 +390,19 @@ trip_draft = {
         {
           "name":          string,
           "kind":          "sight" | "meal" | "transit" | "stay" | "shop" | "other",
-          "arrival_time":  "10:30" | "morning" | null,
-          "duration_min":  90 | null,
+          "arrival_time":  "10:30",                           // 24h HH:MM, never vague words
+          "duration_min":  90,                                // realistic length
           "note":          string                             // "" allowed
+          "attachments": [                                    // can be []
+            {
+              "type": string,
+              "label": string,
+              "action_label": string | null,
+              "checklist_text": string | null,
+              "checklist_kind": string | null,
+              "status": "required" | "completed" | "uploaded"
+            }
+          ]
         }
       ]
     }
@@ -316,13 +414,29 @@ trip_draft = {
 
 Per-day stops guidance:
   • Travel days (flight, train, long transit): emit one stop with
-    kind:"transit" and name = the route ("Taipei → Milan").
-  • Arrival day: stop for hotel check-in (kind:"stay") + maybe a light
-    meal (kind:"meal") nearby.
+    kind:"transit", name = the route ("Taipei → Milan"),
+    arrival_time = actual departure HH:MM, duration_min = actual
+    travel time.
+  • Arrival day: stop for hotel check-in (kind:"stay", typical 15:00,
+    30 min) + maybe a light meal (kind:"meal") nearby.
   • Full days: 3–5 stops mixing sights / meals / transit, in the order
     a real day flows (morning sight → lunch → afternoon → dinner).
   • Rest / unplanned days: a single stop named after the city with
     kind:"other" is fine. Empty stops[] is allowed but discouraged.
+  • Add stop attachments for tickets, reservations, bookings and
+    uploads that the user must complete; every attachment should include
+    checklist_text so it becomes a checklist item. Do not repeat the same
+    checklist_text again in trip_draft.checklist.
+
+Time rule applies here too — every stop on a planned day MUST carry
+a concrete 24h arrival_time and duration_min. Times must be sorted
+and not overlap (with a 15–30 min travel buffer between stops).
+
+Day-level "note" doubles as the day's headline in the UI — write a
+short thematic phrase (6-16 zh chars / <= 40 en chars) like "大教堂
+周邊散策" or "Old town wander" whenever the day has real stops. Leave
+"" only for pure-travel or rest days. Never repeat the city name in
+note — the UI already shows it.
 Use real, recognizable place names when you have confidence; never
 invent fictional landmarks. If unsure, write the neighborhood instead
 ("淺草 散策") rather than fabricating a specific attraction.
@@ -451,8 +565,55 @@ const STOP_SCHEMA = {
     },
     duration_min: { type: ["integer", "null"] },
     note: { type: "string", description: "May be empty string" },
+    attachments: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: { type: ["string", "null"] },
+          type: {
+            type: "string",
+            description:
+              "ticket | reservation | booking | flight | transit | upload | document",
+          },
+          label: { type: "string", description: "Short badge label" },
+          action_label: { type: ["string", "null"] },
+          checklist_text: {
+            type: ["string", "null"],
+            description: "Task text to create/link as a checklist item",
+          },
+          checklist_kind: {
+            type: ["string", "null"],
+            description: "flight | stay | ticket | visa | doc | transit",
+          },
+          checklist_item_id: { type: ["string", "null"] },
+          status: {
+            type: "string",
+            description: "required | completed | uploaded",
+          },
+        },
+        required: [
+          "id",
+          "type",
+          "label",
+          "action_label",
+          "checklist_text",
+          "checklist_kind",
+          "checklist_item_id",
+          "status",
+        ],
+      },
+    },
   },
-  required: ["name", "kind", "arrival_time", "duration_min", "note"],
+  required: [
+    "name",
+    "kind",
+    "arrival_time",
+    "duration_min",
+    "note",
+    "attachments",
+  ],
 } as const;
 
 const DAY_SCHEMA = {

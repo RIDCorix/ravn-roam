@@ -26,6 +26,8 @@ import {
   LumiAvatarChip,
 } from "@/components/storefront/lumi-avatar";
 import type { LumiContext } from "@/lib/lumi-context";
+import { markDaysUnread } from "@/lib/lumi-unread";
+import { refreshTrip } from "@/lib/trip-cache";
 import { cn } from "@/lib/utils";
 
 export interface LumiAssistantLabels {
@@ -35,6 +37,7 @@ export interface LumiAssistantLabels {
   close: string;
   send: string;
   thinking: string;
+  thinking_phrases: string[];
   no_trip_hint: string;
   history_title: string;
   new_chat: string;
@@ -44,6 +47,19 @@ export interface LumiAssistantLabels {
   draft_create: string;
   draft_creating: string;
   draft_created: string;
+  change_days: string;
+  change_stops: string;
+  change_companions: string;
+  change_checklist: string;
+  change_draft_days: string;
+}
+
+interface ChangeSummary {
+  days?: number;
+  stops?: number;
+  companions?: number;
+  checklist?: number;
+  draftDays?: number;
 }
 
 interface TripDraftStop {
@@ -52,6 +68,16 @@ interface TripDraftStop {
   arrival_time?: string | null;
   duration_min?: number | null;
   note?: string;
+  attachments?: {
+    id?: string | null;
+    type?: string;
+    label: string;
+    action_label?: string | null;
+    checklist_text?: string | null;
+    checklist_kind?: string | null;
+    checklist_item_id?: string | null;
+    status?: "required" | "completed" | "uploaded";
+  }[];
 }
 
 interface TripDraft {
@@ -77,6 +103,7 @@ interface Message {
   pending?: boolean;
   trip_draft?: TripDraft;
   trip_draft_created_id?: string | null;
+  changes?: ChangeSummary;
 }
 
 interface Conversation {
@@ -102,7 +129,6 @@ export function LumiAssistant({
   avatarId?: string;
   context: LumiContext | null;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const tripId = pathname?.match(TRIP_PATH)?.[1] ?? null;
   const lang = pathname?.match(/^\/(en|zh-TW)(?:\/|$)/)?.[1] ?? "zh-TW";
@@ -115,6 +141,7 @@ export function LumiAssistant({
   const [expanded, setExpanded] = useState(false);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [thinkingPhrase, setThinkingPhrase] = useState(labels.thinking);
   const composingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -140,6 +167,27 @@ export function LumiAssistant({
     }, 30);
     return () => window.clearTimeout(t);
   }, [expanded, view, messages]);
+
+  /* Cycle through playful "thinking" phrases while a request is in
+     flight. Each phrase is shown in full and its characters bob up and
+     down in a staggered wave (rendered in Bubble). Cycling index-wise
+     (not random) avoids the same phrase repeating back-to-back. */
+  useEffect(() => {
+    if (!busy) {
+      setThinkingPhrase(labels.thinking);
+      return;
+    }
+    const phrases = labels.thinking_phrases?.length
+      ? labels.thinking_phrases
+      : [labels.thinking];
+    let i = Math.floor(Math.random() * phrases.length);
+    setThinkingPhrase(phrases[i] ?? labels.thinking);
+    const interval = window.setInterval(() => {
+      i = (i + 1) % phrases.length;
+      setThinkingPhrase(phrases[i] ?? labels.thinking);
+    }, 2800);
+    return () => window.clearInterval(interval);
+  }, [busy, labels.thinking, labels.thinking_phrases]);
 
   async function loadConversations() {
     const params = tripId ? `?trip_id=${tripId}` : "";
@@ -196,6 +244,8 @@ export function LumiAssistant({
     setMessages((prev) => [
       ...prev,
       { id: userMsgId, role: "user", content: prompt },
+      /* `content` here is a fallback for when rotation isn't running
+         (e.g. busy=false race). The live phrase is injected by Bubble. */
       { id: pendingId, role: "lumi", content: labels.thinking, pending: true },
     ]);
     setValue("");
@@ -232,6 +282,7 @@ export function LumiAssistant({
         payload.message ??
         payload.error ??
         (res.ok ? "✓" : `Lumi 失敗 (HTTP ${res.status})`);
+      const changes = res.ok ? summarizeChanges(payload) : undefined;
       setMessages((prev) =>
         prev.map((m) =>
           m.id === pendingId
@@ -240,6 +291,7 @@ export function LumiAssistant({
                 content: text,
                 pending: false,
                 trip_draft: payload.trip_draft ?? undefined,
+                changes,
               }
             : m,
         ),
@@ -248,10 +300,20 @@ export function LumiAssistant({
         setActiveConversationId(payload.conversation_id);
       }
       if (res.ok && (payload.days || payload.companions)) {
-        // The trip page reads everything from the server — revalidate so
-        // the map / timeline / companion strip pick up Lumi's edits
-        // without a full reload.
-        router.refresh();
+        /* Lumi just changed the active trip's itinerary. Mark every
+           returned day as "unread" so the Day<n> tab shows a yellow
+           dot until the user looks. */
+        if (tripId && Array.isArray(payload.days)) {
+          markDaysUnread(
+            tripId,
+            (payload.days as unknown[]).map((_, i) => i),
+          );
+        }
+        /* SPA-style update: revalidate just the SWR entry for this
+           trip. The trip page subscribes via `useTripDetail` and will
+           re-render with the new days/companions/cities — no RSC
+           re-render, no full-page refresh. */
+        if (tripId) void refreshTrip(tripId);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -383,6 +445,7 @@ export function LumiAssistant({
                   message={m}
                   labels={labels}
                   lang={lang}
+                  pendingPhrase={thinkingPhrase}
                   onCreated={(messageId, newTripId) => {
                     setMessages((prev) =>
                       prev.map((msg) =>
@@ -416,7 +479,7 @@ export function LumiAssistant({
             composingRef.current = false;
           }}
           disabled={busy}
-          placeholder={busy ? labels.thinking : labels.placeholder}
+          placeholder={busy ? thinkingPhrase : labels.placeholder}
           className="min-w-0 flex-1 bg-transparent text-[13.5px] text-fg outline-none placeholder:text-fg-muted disabled:opacity-60"
         />
         <button
@@ -457,14 +520,17 @@ function Bubble({
   message,
   labels,
   lang,
+  pendingPhrase,
   onCreated,
 }: {
   message: Message;
   labels: LumiAssistantLabels;
   lang: string;
+  pendingPhrase: string;
   onCreated: (messageId: string, tripId: string) => void;
 }) {
   const isUser = message.role === "user";
+  const isPending = !isUser && !!message.pending;
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
       <div
@@ -473,11 +539,17 @@ function Bubble({
           isUser
             ? "rounded-br-md bg-accent text-white"
             : "rounded-bl-md bg-[rgba(0,0,0,0.05)] text-fg",
-          message.pending && "animate-pulse",
         )}
       >
-        {message.content}
+        {isPending ? (
+          <BouncingText text={pendingPhrase} />
+        ) : (
+          message.content
+        )}
       </div>
+      {!isUser && message.changes && (
+        <ChangeBadges changes={message.changes} labels={labels} />
+      )}
       {!isUser && message.trip_draft && (
         <TripDraftCard
           messageId={message.id}
@@ -489,6 +561,113 @@ function Bubble({
         />
       )}
     </div>
+  );
+}
+
+function ChangeBadges({
+  changes,
+  labels,
+}: {
+  changes: ChangeSummary;
+  labels: LumiAssistantLabels;
+}) {
+  const entries: { key: string; text: string }[] = [];
+  const tpl = (template: string, n: number) =>
+    template.replace("{n}", String(n));
+  if (changes.draftDays != null) {
+    entries.push({
+      key: "draft",
+      text: tpl(labels.change_draft_days, changes.draftDays),
+    });
+  }
+  if (changes.days != null) {
+    entries.push({ key: "days", text: tpl(labels.change_days, changes.days) });
+  }
+  if (changes.stops != null) {
+    entries.push({ key: "stops", text: tpl(labels.change_stops, changes.stops) });
+  }
+  if (changes.companions != null) {
+    entries.push({
+      key: "comp",
+      text: tpl(labels.change_companions, changes.companions),
+    });
+  }
+  if (changes.checklist != null) {
+    entries.push({
+      key: "list",
+      text: tpl(labels.change_checklist, changes.checklist),
+    });
+  }
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex max-w-[85%] flex-wrap gap-1">
+      {entries.map((e) => (
+        <span
+          key={e.key}
+          className="inline-flex items-center rounded-full bg-[rgba(15,184,180,0.10)] px-2 py-[2px] text-[10.5px] font-medium text-accent"
+        >
+          {e.text}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function summarizeChanges(payload: {
+  days?: unknown;
+  companions?: unknown;
+  trip_draft?: TripDraft | null;
+}): ChangeSummary | undefined {
+  const out: ChangeSummary = {};
+  if (Array.isArray(payload.days)) {
+    out.days = payload.days.length;
+    let stops = 0;
+    for (const d of payload.days as Array<{ stops?: unknown }>) {
+      if (Array.isArray(d?.stops)) stops += d.stops.length;
+    }
+    if (stops > 0) out.stops = stops;
+  }
+  if (Array.isArray(payload.companions)) {
+    out.companions = payload.companions.length;
+  }
+  if (payload.trip_draft && Array.isArray(payload.trip_draft.days)) {
+    out.draftDays = payload.trip_draft.days.length;
+    const checklistLen = payload.trip_draft.checklist?.length ?? 0;
+    if (checklistLen > 0) out.checklist = checklistLen;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/* Each character bobs up and down with a staggered delay so the whole
+   phrase reads as a wave. Re-keying on the phrase string restarts the
+   animation cleanly when the rotation advances. Spaces use a literal
+   non-breaking-space-equivalent ( ) so they preserve width inside
+   the inline-block spans without collapsing. */
+function BouncingText({ text }: { text: string }) {
+  const chars = Array.from(text);
+  return (
+    <span key={text} className="inline-flex" aria-label={text}>
+      {chars.map((ch, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className="inline-block"
+          style={{
+            animation: "roam-lumi-bounce 1.1s ease-in-out infinite",
+            animationDelay: `${i * 80}ms`,
+            whiteSpace: "pre",
+          }}
+        >
+          {ch === " " ? " " : ch}
+        </span>
+      ))}
+      <style>{`
+        @keyframes roam-lumi-bounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-3px); }
+        }
+      `}</style>
+    </span>
   );
 }
 
@@ -555,6 +734,12 @@ function TripDraftCard({
         return;
       }
       const data = (await res.json()) as { trip: { id: string } };
+      /* Brand-new trip — every day is fresh news. Seed the unread set so
+         every Day<n> tab lights up until the user clicks through. */
+      markDaysUnread(
+        data.trip.id,
+        draft.days.map((_, i) => i),
+      );
       onCreated(messageId, data.trip.id);
       router.push(`/${lang}/trips/${data.trip.id}`);
       router.refresh();

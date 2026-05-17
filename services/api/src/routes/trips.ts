@@ -40,6 +40,23 @@ const stopInput = z.object({
   arrival_time: z.string().max(40).nullish(),
   duration_min: z.number().int().min(0).max(2880).nullish(),
   note: z.string().max(2000).default(""),
+  attachments: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(80).nullish(),
+        type: z.string().min(1).max(40).default("ticket"),
+        label: z.string().min(1).max(120),
+        action_label: z.string().max(80).nullish(),
+        checklist_text: z.string().max(500).nullish(),
+        checklist_kind: z.string().max(40).nullish(),
+        checklist_item_id: z.string().uuid().nullish(),
+        image_name: z.string().max(240).nullish(),
+        image_data_url: z.string().max(2_000_000).nullish(),
+        status: z.enum(["required", "completed", "uploaded"]).default("required"),
+      }),
+    )
+    .max(8)
+    .default([]),
   /* Pre-geocoded coords (e.g., from a user pin-drop). If null, the GET
      handler fills them via the nominatim cache by name. */
   lat: z.number().nullish(),
@@ -99,6 +116,7 @@ function defaultStopFromCity(city: string): z.infer<typeof stopInput> {
     arrival_time: null,
     duration_min: null,
     note: "",
+    attachments: [],
     lat: null,
     lng: null,
   };
@@ -110,6 +128,7 @@ type TripRow = typeof schema.trip.$inferSelect;
 type TripDayRow = typeof schema.tripDay.$inferSelect;
 type TripDayStopRow = typeof schema.tripDayStop.$inferSelect;
 type ChecklistRow = typeof schema.tripChecklistItem.$inferSelect;
+type StopAttachmentInput = z.infer<typeof stopInput>["attachments"][number];
 
 function rowToTrip(row: TripRow) {
   return {
@@ -131,6 +150,7 @@ function rowToTrip(row: TripRow) {
 function rowToStop(
   row: TripDayStopRow,
   coordsByName: Map<string, { lat: number; lng: number }>,
+  checklistById: Map<string, ChecklistRow>,
 ) {
   const cached = coordsByName.get(row.name.trim().toLowerCase());
   return {
@@ -142,6 +162,7 @@ function rowToStop(
     arrival_time: row.arrivalTime,
     duration_min: row.durationMin,
     note: row.note,
+    attachments: normalizeStopAttachments(row.attachments, checklistById),
     lat: row.lat ?? cached?.lat ?? null,
     lng: row.lng ?? cached?.lng ?? null,
   };
@@ -151,6 +172,7 @@ function rowToDay(
   row: TripDayRow,
   stops: TripDayStopRow[],
   coordsByName: Map<string, { lat: number; lng: number }>,
+  checklistById: Map<string, ChecklistRow>,
 ) {
   return {
     id: row.id,
@@ -159,7 +181,7 @@ function rowToDay(
     day_date: row.dayDate,
     city: row.city,
     note: row.note,
-    stops: stops.map((s) => rowToStop(s, coordsByName)),
+    stops: stops.map((s) => rowToStop(s, coordsByName, checklistById)),
   };
 }
 
@@ -177,6 +199,65 @@ function rowToChecklist(row: ChecklistRow) {
     due_date: row.dueDate,
     assigned_companion_id: row.assignedCompanionId,
   };
+}
+
+function normalizeStopAttachments(
+  value: unknown,
+  checklistById: Map<string, ChecklistRow>,
+) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const raw = item as Record<string, unknown>;
+    const label = typeof raw.label === "string" ? raw.label : "";
+    if (!label.trim()) return [];
+    const checklistItemId =
+      typeof raw.checklist_item_id === "string" ? raw.checklist_item_id : null;
+    const linked = checklistItemId ? checklistById.get(checklistItemId) : undefined;
+    const status =
+      raw.status === "completed" || raw.status === "uploaded"
+        ? raw.status
+        : "required";
+    return [
+      {
+        id: typeof raw.id === "string" ? raw.id : label,
+        type: typeof raw.type === "string" ? raw.type : "ticket",
+        label,
+        action_label:
+          typeof raw.action_label === "string" ? raw.action_label : null,
+        checklist_item_id: checklistItemId,
+        checklist_text:
+          typeof raw.checklist_text === "string" ? raw.checklist_text : null,
+        checklist_kind:
+          typeof raw.checklist_kind === "string" ? raw.checklist_kind : null,
+        image_name: typeof raw.image_name === "string" ? raw.image_name : null,
+        image_data_url:
+          typeof raw.image_data_url === "string" ? raw.image_data_url : null,
+        status,
+        done:
+          linked?.done ?? (status === "completed" || status === "uploaded"),
+      },
+    ];
+  });
+}
+
+function fallbackChecklistKind(type: string): string {
+  if (type === "reservation") return "stay";
+  if (type === "booking" || type === "flight") return "flight";
+  if (type === "upload" || type === "document") return "doc";
+  if (type === "transit") return "transit";
+  return "ticket";
+}
+
+function attachmentChecklistText(
+  attachment: StopAttachmentInput,
+  stopName: string,
+): string {
+  return attachment.checklist_text?.trim() || `${stopName}：${attachment.label}`;
+}
+
+function checklistKey(text: string, kind: string): string {
+  return `${kind.trim().toLowerCase()}::${text.trim().toLowerCase()}`;
 }
 
 // ─── LIST ──────────────────────────────────────────────────────────────
@@ -223,6 +304,7 @@ tripsRouter.get("/:id", async (c) => {
       .where(eq(schema.tripCompanion.tripId, id))
       .orderBy(asc(schema.tripCompanion.sortOrder)),
   ]);
+  const checklistById = new Map(checklist.map((item) => [item.id, item]));
 
   // Trips seeded before the companion feature shipped have no rows. Lazy
   // backfill so the user sees three placeholders on the next page load.
@@ -327,7 +409,7 @@ tripsRouter.get("/:id", async (c) => {
   return c.json({
     trip: rowToTrip(trip),
     days: days.map((d) =>
-      rowToDay(d, stopsByDay.get(d.id) ?? [], coordByName),
+      rowToDay(d, stopsByDay.get(d.id) ?? [], coordByName, checklistById),
     ),
     checklist: checklist.map(rowToChecklist),
     cities,
@@ -365,6 +447,7 @@ tripsRouter.post("/", async (c) => {
       status: parsed.data.status,
     })
     .returning();
+  const createdChecklistKeys = new Set<string>();
 
   if (parsed.data.days.length > 0) {
     const insertedDays = await db
@@ -382,30 +465,62 @@ tripsRouter.post("/", async (c) => {
 
     /* Build stop rows for every day. If the caller didn't supply stops[],
        seed one stop named after `city` so the day still pins on the map. */
-    const stopRows = parsed.data.days.flatMap((d, i) => {
+    const stopRows = [];
+    for (let i = 0; i < parsed.data.days.length; i++) {
+      const d = parsed.data.days[i]!;
       const dayRow = insertedDays.find((r) => r.sortOrder === i);
-      if (!dayRow) return [];
+      if (!dayRow) continue;
       const effective = d.stops.length > 0 ? d.stops : [defaultStopFromCity(d.city)];
-      return effective.map((s, j) => ({
-        dayId: dayRow.id,
-        sortOrder: j,
-        name: s.name,
-        kind: s.kind,
-        arrivalTime: s.arrival_time ?? null,
-        durationMin: s.duration_min ?? null,
-        note: s.note,
-        lat: s.lat ?? null,
-        lng: s.lng ?? null,
-      }));
-    });
+      for (let j = 0; j < effective.length; j++) {
+        const s = effective[j]!;
+        const attachments = [];
+        for (const a of s.attachments) {
+          let checklistItemId = a.checklist_item_id ?? null;
+          if (!checklistItemId) {
+            const text = attachmentChecklistText(a, s.name);
+            const kind = a.checklist_kind ?? fallbackChecklistKind(a.type);
+            const [item] = await db
+              .insert(schema.tripChecklistItem)
+              .values({
+                tripId: trip!.id,
+                text,
+                kind,
+                done: a.status === "completed" || a.status === "uploaded",
+                suggested: true,
+                suggestedBy: "Lumi",
+                dueDate: d.day_date,
+              })
+              .returning({ id: schema.tripChecklistItem.id });
+            checklistItemId = item?.id ?? null;
+            createdChecklistKeys.add(checklistKey(text, kind));
+          }
+          attachments.push({ ...a, checklist_item_id: checklistItemId });
+        }
+        stopRows.push({
+          dayId: dayRow.id,
+          sortOrder: j,
+          name: s.name,
+          kind: s.kind,
+          arrivalTime: s.arrival_time ?? null,
+          durationMin: s.duration_min ?? null,
+          note: s.note,
+          attachments,
+          lat: s.lat ?? null,
+          lng: s.lng ?? null,
+        });
+      }
+    }
     if (stopRows.length > 0) {
       await db.insert(schema.tripDayStop).values(stopRows);
     }
   }
 
-  if (parsed.data.checklist.length > 0) {
+  const checklistRows = parsed.data.checklist.filter(
+    (c) => !createdChecklistKeys.has(checklistKey(c.text, c.kind)),
+  );
+  if (checklistRows.length > 0) {
     await db.insert(schema.tripChecklistItem).values(
-      parsed.data.checklist.map((c) => ({
+      checklistRows.map((c) => ({
         tripId: trip!.id,
         text: c.text,
         kind: c.kind,
@@ -514,22 +629,48 @@ tripsRouter.put("/:id/days", async (c) => {
       )
       .returning({ id: schema.tripDay.id, sortOrder: schema.tripDay.sortOrder });
 
-    const stopRows = parsed.data.days.flatMap((d, i) => {
+    const stopRows = [];
+    for (let i = 0; i < parsed.data.days.length; i++) {
+      const d = parsed.data.days[i]!;
       const dayRow = insertedDays.find((r) => r.sortOrder === i);
-      if (!dayRow) return [];
+      if (!dayRow) continue;
       const effective = d.stops.length > 0 ? d.stops : [defaultStopFromCity(d.city)];
-      return effective.map((s, j) => ({
-        dayId: dayRow.id,
-        sortOrder: j,
-        name: s.name,
-        kind: s.kind,
-        arrivalTime: s.arrival_time ?? null,
-        durationMin: s.duration_min ?? null,
-        note: s.note,
-        lat: s.lat ?? null,
-        lng: s.lng ?? null,
-      }));
-    });
+      for (let j = 0; j < effective.length; j++) {
+        const s = effective[j]!;
+        const attachments = [];
+        for (const a of s.attachments) {
+          let checklistItemId = a.checklist_item_id ?? null;
+          if (!checklistItemId) {
+            const [item] = await tx
+              .insert(schema.tripChecklistItem)
+              .values({
+                tripId: id,
+                text: attachmentChecklistText(a, s.name),
+                kind: a.checklist_kind ?? fallbackChecklistKind(a.type),
+                done: a.status === "completed" || a.status === "uploaded",
+                suggested: true,
+                suggestedBy: "Lumi",
+                dueDate: d.day_date,
+              })
+              .returning({ id: schema.tripChecklistItem.id });
+            checklistItemId = item?.id ?? null;
+          }
+          attachments.push({ ...a, checklist_item_id: checklistItemId });
+        }
+        stopRows.push({
+          dayId: dayRow.id,
+          sortOrder: j,
+          name: s.name,
+          kind: s.kind,
+          arrivalTime: s.arrival_time ?? null,
+          durationMin: s.duration_min ?? null,
+          note: s.note,
+          attachments,
+          lat: s.lat ?? null,
+          lng: s.lng ?? null,
+        });
+      }
+    }
     if (stopRows.length > 0) {
       await tx.insert(schema.tripDayStop).values(stopRows);
     }
@@ -570,10 +711,17 @@ tripsRouter.put("/:id/days", async (c) => {
     if (arr) arr.push(s);
     else stopsByDay.set(s.dayId, [s]);
   }
+  const checklist = await db
+    .select()
+    .from(schema.tripChecklistItem)
+    .where(eq(schema.tripChecklistItem.tripId, id));
+  const checklistById = new Map(checklist.map((item) => [item.id, item]));
   const emptyCoords = new Map<string, { lat: number; lng: number }>();
 
   return c.json({
-    days: days.map((d) => rowToDay(d, stopsByDay.get(d.id) ?? [], emptyCoords)),
+    days: days.map((d) =>
+      rowToDay(d, stopsByDay.get(d.id) ?? [], emptyCoords, checklistById),
+    ),
   });
 });
 
@@ -586,6 +734,16 @@ const checklistPatch = z.object({
   // null = unassign; uuid = assign to that companion.
   assigned_companion_id: z.string().uuid().nullable().optional(),
   text: z.string().min(1).max(500).optional(),
+});
+
+const attachmentPatch = z.object({
+  status: z.enum(["required", "completed", "uploaded"]).optional(),
+  image_name: z.string().min(1).max(240).optional(),
+  image_data_url: z
+    .string()
+    .startsWith("data:image/")
+    .max(2_000_000)
+    .optional(),
 });
 
 tripsRouter.patch("/:id/checklist/:itemId", async (c) => {
@@ -648,3 +806,87 @@ tripsRouter.patch("/:id/checklist/:itemId", async (c) => {
   });
 });
 
+tripsRouter.patch("/:id/stops/:stopId/attachments/:attachmentId", async (c) => {
+  const user = getUser(c);
+  const id = c.req.param("id");
+  const stopId = c.req.param("stopId");
+  const attachmentId = decodeURIComponent(c.req.param("attachmentId"));
+  const body = await c.req.json();
+  const parsed = attachmentPatch.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "invalid_request", details: parsed.error.flatten() },
+      400,
+    );
+  }
+
+  const db = getDb();
+  const [trip] = await db
+    .select({ id: schema.trip.id })
+    .from(schema.trip)
+    .where(and(eq(schema.trip.id, id), eq(schema.trip.userId, user.id)))
+    .limit(1);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+
+  const [stop] = await db
+    .select({
+      id: schema.tripDayStop.id,
+      attachments: schema.tripDayStop.attachments,
+    })
+    .from(schema.tripDayStop)
+    .innerJoin(schema.tripDay, eq(schema.tripDay.id, schema.tripDayStop.dayId))
+    .where(
+      and(
+        eq(schema.tripDay.tripId, id),
+        eq(schema.tripDayStop.id, stopId),
+      ),
+    )
+    .limit(1);
+  if (!stop) return c.json({ error: "not_found" }, 404);
+
+  const attachments = normalizeStopAttachments(
+    stop.attachments,
+    new Map<string, ChecklistRow>(),
+  );
+  const idx = attachments.findIndex(
+    (a) => a.id === attachmentId || a.label === attachmentId,
+  );
+  if (idx < 0) return c.json({ error: "attachment_not_found" }, 404);
+
+  const nextStatus =
+    parsed.data.status ??
+    (parsed.data.image_data_url ? "uploaded" : attachments[idx]!.status);
+  const updated = {
+    ...attachments[idx]!,
+    status: nextStatus,
+    image_name: parsed.data.image_name ?? attachments[idx]!.image_name,
+    image_data_url:
+      parsed.data.image_data_url ?? attachments[idx]!.image_data_url,
+  };
+  const next = [...attachments];
+  next[idx] = updated;
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(schema.tripDayStop)
+      .set({ attachments: next })
+      .where(eq(schema.tripDayStop.id, stopId));
+    if (updated.checklist_item_id) {
+      await tx
+        .update(schema.tripChecklistItem)
+        .set({ done: nextStatus === "completed" || nextStatus === "uploaded" })
+        .where(
+          and(
+            eq(schema.tripChecklistItem.id, updated.checklist_item_id),
+            eq(schema.tripChecklistItem.tripId, id),
+          ),
+        );
+    }
+    await tx
+      .update(schema.trip)
+      .set({ updatedAt: new Date() })
+      .where(eq(schema.trip.id, id));
+  });
+
+  return c.json({ attachment: { ...updated, done: true } });
+});

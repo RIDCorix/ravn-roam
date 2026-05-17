@@ -26,8 +26,23 @@ export interface ApiTripStop {
   arrival_time: string | null;
   duration_min: number | null;
   note: string;
+  attachments: ApiTripStopAttachment[];
   lat: number | null;
   lng: number | null;
+}
+
+export interface ApiTripStopAttachment {
+  id: string;
+  type: string;
+  label: string;
+  action_label: string | null;
+  checklist_item_id: string | null;
+  checklist_text: string | null;
+  checklist_kind: string | null;
+  image_name: string | null;
+  image_data_url: string | null;
+  status: "required" | "completed" | "uploaded";
+  done: boolean;
 }
 
 export interface ApiTripDay {
@@ -135,7 +150,28 @@ export async function createTrip(input: {
   start_date: string;
   end_date: string;
   status?: ApiTrip["status"];
-  days?: { day_date: string; city: string; note: string }[];
+  days?: {
+    day_date: string;
+    city: string;
+    note: string;
+    stops?: {
+      name: string;
+      kind?: string;
+      arrival_time?: string | null;
+      duration_min?: number | null;
+      note?: string;
+      attachments?: {
+        id?: string | null;
+        type?: string;
+        label: string;
+        action_label?: string | null;
+        checklist_text?: string | null;
+        checklist_kind?: string | null;
+        checklist_item_id?: string | null;
+        status?: "required" | "completed" | "uploaded";
+      }[];
+    }[];
+  }[];
   checklist?: {
     text: string;
     kind: string;

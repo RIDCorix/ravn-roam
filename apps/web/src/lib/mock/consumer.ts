@@ -31,6 +31,7 @@ export interface ActiveESIM {
 export type TripStatus = "active" | "upcoming" | "past";
 
 export interface TripStop {
+  id?: string;
   /* Stop's place name — Wanderlog-style place pin label. */
   name: string;
   /* sight | meal | transit | stay | shop | other — drives kind chip + icon. */
@@ -39,9 +40,24 @@ export interface TripStop {
   arrival_time?: string | null;
   duration_min?: number | null;
   note?: string;
+  attachments?: TripStopAttachment[];
   /* Geocoded coords (null when the cache miss hasn't been backfilled yet). */
   lat?: number | null;
   lng?: number | null;
+}
+
+export interface TripStopAttachment {
+  id: string;
+  type: string;
+  label: string;
+  actionLabel?: string | null;
+  checklistItemId?: string | null;
+  checklistText?: string | null;
+  checklistKind?: string | null;
+  imageName?: string | null;
+  imageDataUrl?: string | null;
+  status: "required" | "completed" | "uploaded";
+  done: boolean;
 }
 
 export interface TripDay {

@@ -35,6 +35,7 @@ export default async function StorefrontLayout({
     close: t.lumi.close,
     send: t.lumi.send,
     thinking: t.lumi.thinking,
+    thinking_phrases: t.lumi.thinking_phrases,
     no_trip_hint: t.lumi.no_trip_hint,
     history_title: t.lumi.history_title,
     new_chat: t.lumi.new_chat,
@@ -44,6 +45,11 @@ export default async function StorefrontLayout({
     draft_create: t.lumi.draft_create,
     draft_creating: t.lumi.draft_creating,
     draft_created: t.lumi.draft_created,
+    change_days: t.lumi.change_days,
+    change_stops: t.lumi.change_stops,
+    change_companions: t.lumi.change_companions,
+    change_checklist: t.lumi.change_checklist,
+    change_draft_days: t.lumi.change_draft_days,
   };
 
   return (

@@ -37,11 +37,25 @@ export function apiToTrip(
 
 function apiToStop(s: ApiTripStop): TripStop {
   return {
+    id: s.id,
     name: s.name,
     kind: s.kind,
     arrival_time: s.arrival_time,
     duration_min: s.duration_min,
     note: s.note,
+    attachments: s.attachments.map((a) => ({
+      id: a.id,
+      type: a.type,
+      label: a.label,
+      actionLabel: a.action_label,
+      checklistItemId: a.checklist_item_id,
+      checklistText: a.checklist_text,
+      checklistKind: a.checklist_kind,
+      imageName: a.image_name,
+      imageDataUrl: a.image_data_url,
+      status: a.status,
+      done: a.done,
+    })),
     lat: s.lat,
     lng: s.lng,
   };

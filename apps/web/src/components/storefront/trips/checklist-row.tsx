@@ -7,7 +7,6 @@
 //     opens a small native <select> to reassign
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   ArrowRight,
@@ -28,6 +27,7 @@ import {
 
 import { Avatar } from "@/components/storefront/trips/companions-section";
 import type { ChecklistItem } from "@/lib/mock/consumer";
+import { refreshTrip } from "@/lib/trip-cache";
 import type { ApiCompanion } from "@/lib/trips-api";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +69,6 @@ export function ChecklistRow({
   const showShopCta =
     !item.done && item.kind === "esim" && item.shortcut === "shop";
 
-  const router = useRouter();
   const [busy, startTransition] = useTransition();
   const [optimistic, setOptimistic] = useState<{
     done?: boolean;
@@ -89,7 +88,7 @@ export function ChecklistRow({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      router.refresh();
+      await refreshTrip(tripId);
     });
   }
 

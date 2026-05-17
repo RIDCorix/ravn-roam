@@ -71,6 +71,13 @@
       "when": 1779500000000,
       "tag": "0009_trip_day_stops",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779600000000,
+      "tag": "0010_stop_attachments",
+      "breakpoints": true
     }
   ]
 }

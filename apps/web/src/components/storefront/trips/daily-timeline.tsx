@@ -89,30 +89,43 @@ export function DailyTimeline({
                       boxShadow: isToday ? "none" : "var(--shadow-xs)",
                     }}
                   >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "truncate text-[14px] font-semibold",
-                          isToday ? "text-accent" : "text-fg",
-                        )}
-                      >
-                        {d.city}
-                      </span>
-                      {isToday && (
-                        <span
-                          className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-[2px] text-[10px] font-semibold text-accent"
-                          style={{ background: "var(--accent-soft)" }}
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                          {todayLabel}
-                        </span>
-                      )}
-                    </div>
-                    {d.note && (
-                      <div className="mt-0.5 truncate text-[12px] text-fg-secondary">
-                        {d.note}
-                      </div>
-                    )}
+                    {/* When Lumi has filled the day, `note` carries the
+                        thematic headline (e.g. 大教堂周邊散策) and reads
+                        as the title. Empty note → fall back to city so
+                        rest / unplanned days still have a label. */}
+                    {(() => {
+                      const headline = d.note?.trim() || d.city;
+                      const showCityChip =
+                        d.note?.trim() && d.note.trim() !== d.city;
+                      return (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "truncate text-[14px] font-semibold",
+                                isToday ? "text-accent" : "text-fg",
+                              )}
+                            >
+                              {headline}
+                            </span>
+                            {isToday && (
+                              <span
+                                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-[2px] text-[10px] font-semibold text-accent"
+                                style={{ background: "var(--accent-soft)" }}
+                              >
+                                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                                {todayLabel}
+                              </span>
+                            )}
+                          </div>
+                          {showCityChip && (
+                            <div className="mt-0.5 truncate text-[11.5px] text-fg-muted">
+                              {d.city}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </li>
               );

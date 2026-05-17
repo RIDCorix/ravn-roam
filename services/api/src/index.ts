@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
@@ -53,15 +55,54 @@ app.route("/", createAdminRouter());
 
 if (process.env.NODE_ENV !== "test") {
   const port = env.PORT ?? 3001;
+  const isDev = process.env.NODE_ENV !== "production";
 
   /* Bind with retry. `tsx watch` on file change can spawn the new
      process before the old one fully releases the port — even with a
-     SIGTERM handler. Instead of failing, we just wait and retry. */
+     SIGTERM handler. Instead of failing, we just wait and retry. If
+     the squatter is an orphan (previous crash, lingering tsx child),
+     we SIGKILL it after a few failed retries. Dev-only — production
+     should NEVER step on another process's port. */
   type ServerLike = ReturnType<typeof serve>;
   let currentServer: ServerLike | null = null;
 
+  // macOS / Linux: returns PIDs currently bound to the TCP port.
+  function findPortSquatters(p: number): number[] {
+    try {
+      const out = execSync(`lsof -ti tcp:${p}`, {
+        stdio: ["ignore", "pipe", "ignore"],
+      }).toString();
+      return out
+        .split(/\s+/)
+        .map((s) => Number.parseInt(s, 10))
+        .filter((n) => Number.isFinite(n) && n !== process.pid);
+    } catch {
+      return []; // no listener (or lsof unavailable)
+    }
+  }
+
+  function killSquatters(p: number): number {
+    const pids = findPortSquatters(p);
+    let killed = 0;
+    for (const pid of pids) {
+      try {
+        process.kill(pid, "SIGKILL");
+        killed++;
+      } catch {
+        /* already gone */
+      }
+    }
+    if (killed > 0) {
+      console.warn(
+        `[@roam/api] killed ${killed} stale process(es) holding port ${p}: ${pids.join(",")}`,
+      );
+    }
+    return killed;
+  }
+
   const listenWithRetry = (
-    retriesLeft: number,
+    attempt: number,
+    maxAttempts: number,
     delayMs: number,
   ): Promise<ServerLike> =>
     new Promise((resolve, reject) => {
@@ -75,12 +116,20 @@ if (process.env.NODE_ENV !== "test") {
       s.on?.("error", (err: NodeJS.ErrnoException) => {
         if (settled) return;
         settled = true;
-        if (err.code === "EADDRINUSE" && retriesLeft > 0) {
+        if (err.code === "EADDRINUSE" && attempt < maxAttempts) {
+          const retriesLeft = maxAttempts - attempt;
           console.warn(
             `[@roam/api] port ${port} still busy, retry in ${delayMs}ms (${retriesLeft} left)`,
           );
+          /* After a few polite retries, our own shutdown handler should
+             have finished. If the port is STILL held, the squatter is
+             an orphan we can't politely ask — SIGKILL it (dev only). */
+          if (isDev && attempt >= 3) killSquatters(port);
           setTimeout(() => {
-            listenWithRetry(retriesLeft - 1, delayMs).then(resolve, reject);
+            listenWithRetry(attempt + 1, maxAttempts, delayMs).then(
+              resolve,
+              reject,
+            );
           }, delayMs);
           return;
         }
@@ -94,34 +143,36 @@ if (process.env.NODE_ENV !== "test") {
       });
     });
 
-  void listenWithRetry(15, 200).then((s) => {
-    currentServer = s;
-  }).catch((err) => {
-    console.error("[@roam/api] failed to bind", err);
-    process.exit(1);
-  });
+  void listenWithRetry(0, 15, 200)
+    .then((s) => {
+      currentServer = s;
+    })
+    .catch((err) => {
+      console.error("[@roam/api] failed to bind", err);
+      process.exit(1);
+    });
 
-  /* `tsx watch` sends SIGTERM on file change. Best effort: close
-     idle connections + http server, then exit. The new process has
-     a retry loop above as a backstop, so even if the close is slow
-     (or signal arrives mid-bind), the next start eventually succeeds. */
+  /* `tsx watch` sends SIGTERM on file change. We don't wait for in-
+     flight requests to drain — dev reloads are disruptive by nature
+     and any held keep-alive socket blocks the port for the next
+     process. closeAllConnections + immediate exit releases the
+     socket as fast as the kernel allows. The new process has the
+     retry-with-kill loop above as a final backstop. */
   let shuttingDown = false;
   const shutdown = (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
     shuttingDown = true;
     console.log(`[@roam/api] received ${signal}, closing`);
     const s = currentServer;
-    if (!s) {
-      process.exit(0);
-      return;
-    }
     try {
-      (s as unknown as { closeAllConnections?: () => void }).closeAllConnections?.();
+      (s as unknown as { closeAllConnections?: () => void } | null)?.closeAllConnections?.();
     } catch {
       /* older runtime, fall through */
     }
-    s.close(() => process.exit(0));
-    setTimeout(() => process.exit(0), 800).unref();
+    /* Don't wait for s.close() — pending keep-alive sockets can hold
+       it open arbitrarily long. Exit on the next tick so the OS frees
+       the port immediately. */
+    setImmediate(() => process.exit(0));
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);

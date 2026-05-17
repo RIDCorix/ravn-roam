@@ -89,6 +89,11 @@ export const tripDayStop = roamPoc.table(
     arrivalTime: text("arrival_time"),
     durationMin: integer("duration_min"),
     note: text("note").notNull().default(""),
+    /* Per-stop preparation artifacts Lumi can require: ticket purchase,
+       restaurant reservation, flight booking, image/document upload, etc.
+       Each item may link to a trip_checklist_item; that checklist row's
+       done state is the canonical completion signal. */
+    attachments: jsonb("attachments").notNull().default(sql`'[]'::jsonb`),
     /* Geocoded lat/lng. Nullable when geocoding hasn't run / failed —
        the map filters those out instead of pinning at [0,0]. */
     lat: doublePrecision("lat"),

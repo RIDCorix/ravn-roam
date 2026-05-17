@@ -183,7 +183,11 @@ export function TripMap({
       <MapContainer
         center={center}
         zoom={5}
-        scrollWheelZoom={false}
+        /* Gesture-only zoom: pinch on mobile, wheel + double-click on
+           desktop. No on-screen +/- control — keeps the map chrome-free. */
+        scrollWheelZoom={true}
+        touchZoom={true}
+        doubleClickZoom={true}
         zoomControl={false}
         className="absolute inset-0 h-full w-full"
         attributionControl={false}
@@ -195,17 +199,24 @@ export function TripMap({
         {/* FitToCities targets dayStops when present so the day-level view
             zooms tighter onto today's pins; otherwise fit the whole trip. */}
         <FitToCities cities={hasDayStops ? locatedStops : located} />
-        <Polyline
-          positions={located.map((c) => [c.lat, c.lng])}
-          pathOptions={{
-            color: "#0FB8B4",
-            weight: 2.5,
-            opacity: hasActive || hasDayStops ? 0.4 : 0.9,
-            dashArray: "4 6",
-            lineCap: "round",
-          }}
-        />
-        {activeLeg && (
+        {/* Macro routes (dashed full-trip line + solid "today's move" leg)
+            only make sense at the trip-overview zoom. On a day-stops view
+            the map is zoomed tight on a single city, so a leg to the
+            previous city would shoot off across continents and read as a
+            stray line — suppress both in that mode. */}
+        {!hasDayStops && (
+          <Polyline
+            positions={located.map((c) => [c.lat, c.lng])}
+            pathOptions={{
+              color: "#0FB8B4",
+              weight: 2.5,
+              opacity: hasActive ? 0.4 : 0.9,
+              dashArray: "4 6",
+              lineCap: "round",
+            }}
+          />
+        )}
+        {!hasDayStops && activeLeg && (
           <Polyline
             positions={[
               [activeLeg.from.lat, activeLeg.from.lng],
