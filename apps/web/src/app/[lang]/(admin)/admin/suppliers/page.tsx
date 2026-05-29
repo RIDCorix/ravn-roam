@@ -5,6 +5,7 @@ import type { Supplier, SupplierStatus } from "@roam/catalog";
 
 import { getDictionary, hasLocale } from "../../../dictionaries";
 
+import { FormSelect } from "@/components/admin/form-select";
 import { SupplierStatusBadge } from "@/components/admin/state-badge";
 import { ApiError, listSuppliers } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
@@ -61,18 +62,17 @@ export default async function SuppliersPage({
           <label className="block text-xs text-fg-secondary mb-1">
             {dict.admin.suppliers.filters.status}
           </label>
-          <select
+          <FormSelect
             name="status"
             defaultValue={filters.status ?? ""}
-            className="rounded border border-border bg-bg px-2 py-1 text-sm"
-          >
-            <option value="">{dict.admin.common.all}</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {dict.admin.suppliers.statuses[s]}
-              </option>
-            ))}
-          </select>
+            options={[
+              { label: dict.admin.common.all, value: "" },
+              ...STATUSES.map((s) => ({
+                label: dict.admin.suppliers.statuses[s],
+                value: s,
+              })),
+            ]}
+          />
         </div>
         <div className="flex-1 min-w-[200px]">
           <label className="block text-xs text-fg-secondary mb-1">

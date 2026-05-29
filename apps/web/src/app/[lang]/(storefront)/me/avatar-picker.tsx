@@ -13,10 +13,12 @@ import {
 
 export function LumiAvatarPicker({
   initialId,
-  lang,
+  labels,
 }: {
   initialId: string | null;
-  lang: string;
+  labels: {
+    saving: string;
+  };
 }) {
   const [selected, setSelected] = useState(initialId ?? DEFAULT_LUMI_AVATAR_ID);
   const [saving, setSaving] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function LumiAvatarPicker({
               )}
               {isSaving && (
                 <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/60 text-[11px] text-fg-muted">
-                  {lang === "zh-TW" ? "儲存中…" : "Saving…"}
+                  {labels.saving}
                 </span>
               )}
             </button>

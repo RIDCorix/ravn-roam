@@ -96,6 +96,13 @@ const PIN_CSS = `
   box-shadow: 0 0 0 3px rgba(15,184,180,0.25), 0 1px 4px rgba(0,0,0,0.20);
 }
 .leaflet-container { background: #DCF4F3; font: inherit; }
+.roam-trip-map .leaflet-tile-pane {
+  filter: saturate(0.54) contrast(0.82) brightness(1.08);
+  opacity: 0.72;
+}
+.roam-trip-map .leaflet-overlay-pane {
+  mix-blend-mode: multiply;
+}
 .leaflet-popup-content { margin: 8px 12px; font-size: 12px; }
 `;
 
@@ -178,7 +185,7 @@ export function TripMap({
   }
 
   return (
-    <div className="relative h-48 overflow-hidden rounded-2xl">
+    <div className="roam-trip-map isolate relative z-0 h-48 overflow-hidden rounded-2xl bg-[#E7F4F2]">
       <style dangerouslySetInnerHTML={{ __html: PIN_CSS }} />
       <MapContainer
         center={center}
@@ -209,9 +216,9 @@ export function TripMap({
             positions={located.map((c) => [c.lat, c.lng])}
             pathOptions={{
               color: "#0FB8B4",
-              weight: 2.5,
-              opacity: hasActive ? 0.4 : 0.9,
-              dashArray: "4 6",
+              weight: 2,
+              opacity: hasActive ? 0.28 : 0.58,
+              dashArray: "3 7",
               lineCap: "round",
             }}
           />
@@ -224,8 +231,8 @@ export function TripMap({
             ]}
             pathOptions={{
               color: "#0FB8B4",
-              weight: 3.5,
-              opacity: 1,
+              weight: 2.75,
+              opacity: 0.72,
               lineCap: "round",
             }}
           />
@@ -237,8 +244,8 @@ export function TripMap({
             positions={locatedStops.map((s) => [s.lat, s.lng])}
             pathOptions={{
               color: "#0FB8B4",
-              weight: 3,
-              opacity: 1,
+              weight: 2.5,
+              opacity: 0.72,
               lineCap: "round",
             }}
           />

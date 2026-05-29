@@ -1,0 +1,20 @@
+[project]
+name = "lumi-agent"
+version = "0.1.0"
+description = "FastAPI Lumi agent backend with MCP-style tool boundaries"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115.0",
+  "pydantic>=2.10.0",
+  "uvicorn>=0.34.0",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.28.0",
+  "pytest>=8.3.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

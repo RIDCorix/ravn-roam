@@ -11,6 +11,7 @@ import {
 } from "@roam/catalog";
 
 import type { AdminDict } from "./dict";
+import { FormSelect } from "./form-select";
 import {
   createProductAction,
   updateProductAction,
@@ -258,20 +259,17 @@ export function ProductForm(props: ProductFormProps) {
             label={dict.admin.products.form.category}
             locked={productLocked("category")}
           >
-            <select
+            <FormSelect
               value={form.category}
-              onChange={(e) =>
-                update("category", e.target.value as FormState["category"])
+              onValueChange={(v) =>
+                update("category", v as FormState["category"])
               }
               disabled={productLocked("category")}
-              className={inputClass(productLocked("category"))}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {dict.admin.products.categories[c]}
-                </option>
-              ))}
-            </select>
+              options={CATEGORIES.map((c) => ({
+                label: dict.admin.products.categories[c],
+                value: c,
+              }))}
+            />
           </Field>
         </Grid>
 
@@ -365,23 +363,20 @@ export function ProductForm(props: ProductFormProps) {
             label={dict.admin.products.form.activation_policy_display}
             locked={productLocked("activation_policy_display")}
           >
-            <select
+            <FormSelect
               value={form.activation_policy_display}
-              onChange={(e) =>
+              onValueChange={(v) =>
                 update(
                   "activation_policy_display",
-                  e.target.value as SupplierPlanActivationPolicy,
+                  v as SupplierPlanActivationPolicy,
                 )
               }
               disabled={productLocked("activation_policy_display")}
-              className={inputClass(productLocked("activation_policy_display"))}
-            >
-              {ACTIVATION_POLICIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+              options={ACTIVATION_POLICIES.map((p) => ({
+                label: p,
+                value: p,
+              }))}
+            />
           </Field>
         </Grid>
 
@@ -499,40 +494,34 @@ export function ProductForm(props: ProductFormProps) {
             />
           </Field>
           <Field label={dict.admin.products.pricing.markup_mode} locked={pricingLocked}>
-            <select
+            <FormSelect
               value={form.markup_mode}
-              onChange={(e) =>
-                update("markup_mode", e.target.value as FormState["markup_mode"])
+              onValueChange={(v) =>
+                update("markup_mode", v as FormState["markup_mode"])
               }
               disabled={pricingLocked}
-              className={inputClass(pricingLocked)}
-            >
-              {(
+              options={(
                 ["fixed_amount", "percentage", "target_margin", "manual"] as const
-              ).map((m) => (
-                <option key={m} value={m}>
-                  {dict.admin.products.pricing.modes[m]}
-                </option>
-              ))}
-            </select>
+              ).map((m) => ({
+                label: dict.admin.products.pricing.modes[m],
+                value: m,
+              }))}
+            />
           </Field>
           <Field label={dict.admin.products.pricing.fx_policy} locked={pricingLocked}>
-            <select
+            <FormSelect
               value={form.fx_policy}
-              onChange={(e) =>
-                update("fx_policy", e.target.value as FormState["fx_policy"])
+              onValueChange={(v) =>
+                update("fx_policy", v as FormState["fx_policy"])
               }
               disabled={pricingLocked}
-              className={inputClass(pricingLocked)}
-            >
-              {(
+              options={(
                 ["snapshot_at_publish", "daily_refresh", "manual"] as const
-              ).map((p) => (
-                <option key={p} value={p}>
-                  {dict.admin.products.pricing.fx_policies[p]}
-                </option>
-              ))}
-            </select>
+              ).map((p) => ({
+                label: dict.admin.products.pricing.fx_policies[p],
+                value: p,
+              }))}
+            />
           </Field>
         </Grid>
 

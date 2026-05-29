@@ -1,8 +1,12 @@
 "use client";
 
 // Vendor create/edit form. Submits via the server-action helpers in
-// `lib/actions.ts` so the page can stay a Server Component. POSTs to
-// /admin/vendors (create) or PATCHes /admin/vendors/:id (edit).
+// `lib/api.ts`. Two notable simplifications vs. the early draft:
+//   - tier is NOT exposed — it's auto-derived (Roam-owned vendors are
+//     tier1, vendors created BY another vendor are tier2). Form forces
+//     tier1 on create; edit preserves whatever the row has.
+//   - grade is no longer collected; the column stays in the DB for
+//     legacy rows but ops decided it wasn't useful.
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -15,19 +19,40 @@ import {
 
 import type { AdminDict } from "@/components/admin/dict";
 
+import type { Product } from "@roam/catalog";
+
 import { Button } from "@/components/ui/button";
+import { CommissionProductPicker } from "@/components/admin/commission-product-picker";
+import { CommissionSlider } from "@/components/admin/commission-slider";
+import { FormSelect } from "@/components/admin/form-select";
 
 interface VendorFormProps {
   lang: string;
   dict: AdminDict["admin"];
   mode: "create" | "edit";
   vendor?: Vendor;
+  // Optional hook for the dialog wrapper to close itself + refresh the
+  // parent list on success. If absent (page-level use), we router.push
+  // to the detail page like the old flow.
+  onSuccess?: (id: string) => void;
 }
 
-export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
+export function VendorForm({
+  lang,
+  dict,
+  mode,
+  vendor,
+  onSuccess,
+}: VendorFormProps) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [commission, setCommission] = React.useState<number>(
+    vendor?.commission_rate ?? 0,
+  );
+  const [previewProduct, setPreviewProduct] = React.useState<Product | null>(
+    null,
+  );
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,16 +62,15 @@ export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
     const form = new FormData(e.currentTarget);
     const code = String(form.get("code") ?? "").trim();
     const displayName = String(form.get("display_name") ?? "").trim();
-    const tier = String(form.get("tier") ?? "tier1") as Vendor["tier"];
     const status = String(form.get("status") ?? "active") as Vendor["status"];
-    const gradeRaw = String(form.get("grade") ?? "");
-    const grade = (gradeRaw || null) as Vendor["grade"];
     const contactEmailRaw = String(form.get("contact_email") ?? "").trim();
     const contactEmail = contactEmailRaw || null;
-    const commissionRaw = String(form.get("commission_rate") ?? "").trim();
-    const commissionRate = commissionRaw === "" ? null : Number(commissionRaw);
     const notesRaw = String(form.get("notes") ?? "").trim();
     const notes = notesRaw || null;
+    // tier auto-derivation: a vendor created in the platform admin is
+    // tier1; tier2 is reserved for "vendor of vendor" (created from
+    // inside a tier1's own dashboard, not implemented yet).
+    const tier: Vendor["tier"] = vendor?.tier ?? "tier1";
 
     try {
       if (mode === "create") {
@@ -55,25 +79,33 @@ export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
           display_name: displayName,
           tier,
           status,
-          grade,
+          grade: null,
           contact_email: contactEmail,
-          commission_rate: commissionRate,
+          commission_rate: commission,
           notes,
         });
-        router.push(`/${lang}/admin/vendors/${created.id}`);
-        router.refresh();
+        if (onSuccess) {
+          onSuccess(created.id);
+        } else {
+          router.push(`/${lang}/admin/vendors/${created.id}`);
+          router.refresh();
+        }
       } else if (vendor) {
         await patchVendor(vendor.id, {
           display_name: displayName,
           tier,
           status,
-          grade,
+          grade: null,
           contact_email: contactEmail,
-          commission_rate: commissionRate,
+          commission_rate: commission,
           notes,
         });
-        router.push(`/${lang}/admin/vendors/${vendor.id}`);
-        router.refresh();
+        if (onSuccess) {
+          onSuccess(vendor.id);
+        } else {
+          router.push(`/${lang}/admin/vendors/${vendor.id}`);
+          router.refresh();
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -86,7 +118,7 @@ export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {error ? (
-        <div className="rounded-md border border-error/30 bg-error-soft text-error text-sm px-3 py-2">
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-sm px-3 py-2">
           {error}
         </div>
       ) : null}
@@ -97,7 +129,7 @@ export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
           required
           defaultValue={v?.code ?? ""}
           disabled={mode === "edit"}
-          className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm t-mono disabled:bg-surface-sunken disabled:text-fg-muted"
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono disabled:bg-muted disabled:text-muted-foreground"
         />
       </Field>
 
@@ -106,72 +138,48 @@ export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
           name="display_name"
           required
           defaultValue={v?.display_name ?? ""}
-          className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm"
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label={dict.vendors.form.tier}>
-          <select
-            name="tier"
-            defaultValue={v?.tier ?? "tier1"}
-            className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm"
-          >
-            <option value="platform">{dict.vendors.tiers.platform}</option>
-            <option value="tier1">{dict.vendors.tiers.tier1}</option>
-            <option value="tier2">{dict.vendors.tiers.tier2}</option>
-          </select>
-        </Field>
-        <Field label={dict.vendors.form.status}>
-          <select
-            name="status"
-            defaultValue={v?.status ?? "active"}
-            className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm"
-          >
-            <option value="active">{dict.vendors.statuses.active}</option>
-            <option value="paused">{dict.vendors.statuses.paused}</option>
-            <option value="terminated">
-              {dict.vendors.statuses.terminated}
-            </option>
-          </select>
-        </Field>
-      </div>
+      <Field label={dict.vendors.form.status}>
+        <FormSelect
+          name="status"
+          defaultValue={v?.status ?? "active"}
+          options={[
+            { label: dict.vendors.statuses.active, value: "active" },
+            { label: dict.vendors.statuses.paused, value: "paused" },
+            { label: dict.vendors.statuses.terminated, value: "terminated" },
+          ]}
+        />
+      </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label={dict.vendors.form.grade}>
-          <select
-            name="grade"
-            defaultValue={v?.grade ?? ""}
-            className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm"
-          >
-            <option value="">—</option>
-            <option value="A">{dict.vendors.grades.A}</option>
-            <option value="B">{dict.vendors.grades.B}</option>
-            <option value="C">{dict.vendors.grades.C}</option>
-          </select>
-        </Field>
-        <Field
-          label={dict.vendors.form.commission_rate}
-          hint={dict.vendors.form.commission_rate_hint}
-        >
-          <input
-            type="number"
-            name="commission_rate"
-            min={0}
-            max={1}
-            step={0.0001}
-            defaultValue={v?.commission_rate ?? ""}
-            className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm t-mono"
+      <Field
+        label={dict.vendors.form.commission_rate}
+        hint={dict.vendors.form.commission_rate_hint}
+        labelRight={
+          <CommissionProductPicker
+            selected={previewProduct}
+            onSelect={setPreviewProduct}
+            defaultSlug="JP-T50-7D"
           />
-        </Field>
-      </div>
+        }
+      >
+        <CommissionSlider
+          name="commission_rate"
+          value={commission}
+          onChange={setCommission}
+          disabled={pending}
+          previewProduct={previewProduct}
+        />
+      </Field>
 
       <Field label={dict.vendors.form.contact_email}>
         <input
           type="email"
           name="contact_email"
           defaultValue={v?.contact_email ?? ""}
-          className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm"
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
       </Field>
 
@@ -180,7 +188,7 @@ export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
           name="notes"
           rows={4}
           defaultValue={v?.notes ?? ""}
-          className="w-full rounded-md border border-divider bg-surface px-3 py-1.5 text-sm"
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
       </Field>
 
@@ -196,17 +204,26 @@ export function VendorForm({ lang, dict, mode, vendor }: VendorFormProps) {
 function Field({
   label,
   hint,
+  labelRight,
   children,
 }: {
   label: string;
   hint?: string;
+  labelRight?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <label className="block space-y-1">
-      <span className="block text-xs text-fg-secondary">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="block flex-1 text-xs text-muted-foreground">
+          {label}
+        </span>
+        {labelRight}
+      </div>
       {children}
-      {hint ? <span className="block text-xs text-fg-muted">{hint}</span> : null}
+      {hint ? (
+        <span className="block text-xs text-muted-foreground">{hint}</span>
+      ) : null}
     </label>
   );
 }

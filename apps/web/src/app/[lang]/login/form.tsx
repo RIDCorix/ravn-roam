@@ -7,10 +7,19 @@ import { createSupabaseBrowserClient } from "@roam/shared";
 
 export function LoginForm({
   lang,
+  labels,
   next,
   initialError,
 }: {
   lang: string;
+  labels: {
+    email: string;
+    password: string;
+    sign_in: string;
+    sign_up: string;
+    signing_in: string;
+    signing_up: string;
+  };
   next?: string;
   initialError?: string;
 }) {
@@ -19,25 +28,6 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
-
-  const t =
-    lang === "zh-TW"
-      ? {
-          email: "Email",
-          password: "密碼",
-          signIn: "登入",
-          signUp: "註冊新帳號",
-          signingIn: "登入中…",
-          signingUp: "建立中…",
-        }
-      : {
-          email: "Email",
-          password: "Password",
-          signIn: "Sign in",
-          signUp: "Sign up",
-          signingIn: "Signing in…",
-          signingUp: "Creating account…",
-        };
 
   async function go(mode: "in" | "up") {
     if (busy) return;
@@ -70,7 +60,7 @@ export function LoginForm({
       }}
     >
       <label className="flex flex-col gap-1">
-        <span className="text-[12px] font-medium text-fg-secondary">{t.email}</span>
+        <span className="text-[12px] font-medium text-fg-secondary">{labels.email}</span>
         <input
           type="email"
           autoComplete="email"
@@ -81,7 +71,7 @@ export function LoginForm({
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-[12px] font-medium text-fg-secondary">{t.password}</span>
+        <span className="text-[12px] font-medium text-fg-secondary">{labels.password}</span>
         <input
           type="password"
           autoComplete="current-password"
@@ -104,7 +94,7 @@ export function LoginForm({
         disabled={busy}
         className="mt-1 inline-flex h-11 items-center justify-center rounded-xl bg-fg text-[14px] font-semibold text-white transition-opacity disabled:opacity-60"
       >
-        {busy ? t.signingIn : t.signIn}
+        {busy ? labels.signing_in : labels.sign_in}
       </button>
       <button
         type="button"
@@ -112,7 +102,7 @@ export function LoginForm({
         disabled={busy}
         className="inline-flex h-11 items-center justify-center rounded-xl border border-divider-strong bg-white text-[14px] font-semibold text-fg transition-opacity disabled:opacity-60"
       >
-        {busy ? t.signingUp : t.signUp}
+        {busy ? labels.signing_up : labels.sign_up}
       </button>
     </form>
   );

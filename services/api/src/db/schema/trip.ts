@@ -119,7 +119,12 @@ export const tripChecklistItem = roamPoc.table(
       .notNull()
       .references(() => trip.id, { onDelete: "cascade" }),
     text: text("text").notNull(),
+    description: text("description"),
     kind: text("kind").notNull(),
+    startDate: date("start_date"),
+    phase: text("phase"),
+    groupLabel: text("group_label"),
+    subtasks: jsonb("subtasks").notNull().default(sql`'[]'::jsonb`),
     done: boolean("done").notNull().default(false),
     suggested: boolean("suggested").notNull().default(false),
     suggestedBy: text("suggested_by"),

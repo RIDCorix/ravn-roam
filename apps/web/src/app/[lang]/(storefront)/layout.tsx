@@ -4,7 +4,6 @@ import { createSupabaseServerClient } from "@roam/shared";
 
 import { DEFAULT_LUMI_AVATAR_ID } from "@/components/storefront/lumi-avatar";
 import { StorefrontShell } from "@/components/storefront/shell";
-import { getLumiContext } from "@/lib/lumi-context";
 
 import { getDictionary, hasLocale } from "../dictionaries";
 
@@ -26,7 +25,6 @@ export default async function StorefrontLayout({
   const lumiAvatarId =
     (user?.user_metadata?.lumi_avatar as string | undefined) ??
     DEFAULT_LUMI_AVATAR_ID;
-  const lumiContext = user ? await getLumiContext() : null;
   const t = dict.storefront.trips;
   const lumiLabels = {
     name: t.lumi.name,
@@ -58,7 +56,6 @@ export default async function StorefrontLayout({
       labels={dict.storefront.nav}
       lumiLabels={user ? lumiLabels : null}
       lumiAvatarId={lumiAvatarId}
-      lumiContext={lumiContext}
     >
       {children}
     </StorefrontShell>

@@ -23,6 +23,7 @@ const schema = z.object({
 
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+  OPENAI_SEARCH_MODEL: z.string().min(1).default("gpt-4o-mini-search-preview"),
 
   // Supabase project URL + anon key. The /trips/* routes call
   // `supabase.auth.getUser(bearerToken)` to resolve the caller's user_id

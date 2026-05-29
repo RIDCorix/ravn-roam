@@ -48,6 +48,19 @@ export const BRAND = {
   ] as string[],
 } as const;
 
+const DEFAULT_KEYWORDS = [
+  "travel eSIM",
+  "international eSIM",
+  "roaming data",
+  "Japan eSIM",
+  "Korea eSIM",
+  "Europe eSIM",
+  "USA eSIM",
+  "iPhone eSIM",
+  "Pixel eSIM",
+  "travel data plan",
+];
+
 /* BCP 47 hreflang codes — Google reads `zh-Hant-TW` more precisely than
    `zh-TW`. Keep them mapped here so every page emits the same alternates. */
 const HREFLANG: Record<Locale, string> = {
@@ -93,9 +106,13 @@ export function buildMetadata({
 }: BuildMetaInput): Metadata {
   const url = localeHref(locale, path);
   const fullTitle = isRoot ? title : `${title} — Roam Travel eSIM`;
+  const image = `${SITE_URL}/${locale}/opengraph-image`;
   return {
     title: fullTitle,
     description,
+    applicationName: "Roam",
+    category: "Travel",
+    keywords: DEFAULT_KEYWORDS,
     metadataBase: new URL(SITE_URL),
     alternates: alternatesFor(locale, path),
     openGraph: {
@@ -105,11 +122,20 @@ export function buildMetadata({
       siteName: "Roam",
       type: "website",
       locale: locale === "zh-TW" ? "zh_TW" : "en_US",
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: fullTitle,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: fullTitle,
       description,
+      images: [image],
     },
     robots: {
       index: true,
@@ -199,6 +225,35 @@ export function websiteJsonLd(locale: Locale) {
     url: localeHref(locale),
     inLanguage: HREFLANG[locale],
     publisher: { "@id": `${SITE_URL}/#organization` },
+  });
+}
+
+export function travelEsimProductJsonLd(locale: Locale) {
+  return pruneEmpty({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${SITE_URL}/#app`,
+    name: "Roam Travel eSIM",
+    alternateName: "Roam",
+    applicationCategory: "TravelApplication",
+    operatingSystem: "iOS, Android",
+    url: localeHref(locale),
+    inLanguage: HREFLANG[locale],
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    description: BRAND.description,
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "USD",
+      lowPrice: "4",
+      availability: "https://schema.org/InStock",
+      category: "Travel eSIM data plans",
+    },
+    featureList: [
+      "Travel eSIM data for 200+ destinations",
+      "Live remaining-data visibility",
+      "In-app top ups",
+      "AI travel co-pilot",
+    ],
   });
 }
 

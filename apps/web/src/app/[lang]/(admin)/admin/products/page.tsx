@@ -11,6 +11,7 @@ import {
 } from "@/components/admin/state-badge";
 import { ApiError, listProducts } from "@/lib/api";
 import { formatData, formatDateTime, formatMoney, formatValidity } from "@/lib/format";
+import { FormSelect } from "@/components/admin/form-select";
 
 export const dynamic = "force-dynamic";
 
@@ -76,35 +77,33 @@ export default async function ProductsPage({
           <label className="block text-xs text-fg-secondary mb-1">
             {dict.admin.products.filters.publication_state}
           </label>
-          <select
+          <FormSelect
             name="state"
             defaultValue={filters.publication_state ?? ""}
-            className="rounded border border-border bg-bg px-2 py-1 text-sm"
-          >
-            <option value="">{dict.admin.common.all}</option>
-            {PUBLICATION_STATES.map((s) => (
-              <option key={s} value={s}>
-                {dict.admin.products.states[s]}
-              </option>
-            ))}
-          </select>
+            options={[
+              { label: dict.admin.common.all, value: "" },
+              ...PUBLICATION_STATES.map((s) => ({
+                label: dict.admin.products.states[s],
+                value: s,
+              })),
+            ]}
+          />
         </div>
         <div>
           <label className="block text-xs text-fg-secondary mb-1">
             {dict.admin.products.filters.category}
           </label>
-          <select
+          <FormSelect
             name="category"
             defaultValue={filters.category ?? ""}
-            className="rounded border border-border bg-bg px-2 py-1 text-sm"
-          >
-            <option value="">{dict.admin.common.all}</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {dict.admin.products.categories[c]}
-              </option>
-            ))}
-          </select>
+            options={[
+              { label: dict.admin.common.all, value: "" },
+              ...CATEGORIES.map((c) => ({
+                label: dict.admin.products.categories[c],
+                value: c,
+              })),
+            ]}
+          />
         </div>
         <div className="flex-1 min-w-[200px]">
           <label className="block text-xs text-fg-secondary mb-1">

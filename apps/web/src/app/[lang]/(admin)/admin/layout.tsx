@@ -1,20 +1,24 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Toaster } from "sonner";
 
 import { getDictionary, hasLocale, LOCALES } from "../../dictionaries";
 
 import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs";
-import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { LocaleSwitcher } from "@/components/admin/locale-switcher";
 import { TweaksPanel } from "@/components/admin/tweaks-panel";
+import { Separator } from "@/components/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-// ROA-100 Lume redesign: the admin lives inside a floating app-canvas on a
-// warm-white body with an ambient teal/indigo bloom behind it. The shell
-// classes (.app-shell / .app-canvas / .app-main / .bg-ambient) live in
-// apps/web/src/app/globals.css so any future Lume surface can opt in
-// without re-declaring the radii / shadow values.
+// buff-flavored admin shell. The `.admin-scope` class on the outer
+// wrapper switches the entire shadcn token palette (primary, card,
+// sidebar, etc.) to buff's deep-forest + cream system — see
+// globals.css. Storefront tokens are untouched.
 export default async function AdminLayout({
   children,
   params,
@@ -28,45 +32,34 @@ export default async function AdminLayout({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="bg-ambient h-screen w-screen overflow-hidden">
-        <div className="app-shell">
-          <aside className="w-60 shrink-0 flex flex-col pr-3">
-            <div className="px-3 h-14 flex items-center">
-              <Link
-                href={`/${lang}/admin`}
-                className="font-semibold tracking-tight text-fg flex items-center gap-2"
-              >
-                <span className="inline-block h-6 w-6 rounded-md bg-accent" />
-                Roam
-              </Link>
-            </div>
-            <AdminNav
-              lang={lang}
-              labels={{
-                dashboard: dict.admin.heading,
-                orders: dict.admin.nav.orders,
-                products: dict.admin.nav.products,
-                suppliers: dict.admin.nav.suppliers,
-                supplier_plans: dict.admin.nav.supplier_plans,
-                vendors: dict.admin.nav.vendors,
-              }}
-            />
-          </aside>
-          <div className="app-canvas">
-            <header className="h-14 flex items-center gap-3 px-6 border-b border-divider bg-surface/80 backdrop-blur">
+      <div className="admin-scope min-h-screen bg-background text-foreground">
+        <SidebarProvider>
+          <AdminSidebar
+            lang={lang}
+            labels={{
+              dashboard: dict.admin.heading,
+              orders: dict.admin.nav.orders,
+              products: dict.admin.nav.products,
+              suppliers: dict.admin.nav.suppliers,
+              supplier_plans: dict.admin.nav.supplier_plans,
+              vendors: dict.admin.nav.vendors,
+            }}
+          />
+          <SidebarInset>
+            <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="h-5" />
               <AdminBreadcrumbs />
-              <div className="ml-auto flex items-center gap-3">
+              <div className="ml-auto flex items-center gap-2">
                 <LocaleSwitcher
                   currentLang={lang}
                   locales={LOCALES as readonly string[]}
                 />
               </div>
             </header>
-            <div className="app-main">
-              <div className="lume-screen px-6 py-6">{children}</div>
-            </div>
-          </div>
-        </div>
+            <main className="flex-1 px-6 py-6">{children}</main>
+          </SidebarInset>
+        </SidebarProvider>
         <TweaksPanel
           dict={{
             title: dict.admin.tweaks.title,

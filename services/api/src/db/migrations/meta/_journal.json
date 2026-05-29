@@ -78,6 +78,27 @@
       "when": 1779600000000,
       "tag": "0010_stop_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779700000000,
+      "tag": "0011_storefront_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779800000000,
+      "tag": "0012_checklist_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1779900000000,
+      "tag": "0013_checklist_timing_groups",
+      "breakpoints": true
     }
   ]
 }

@@ -11,13 +11,18 @@
 //   * refreshes the current route after a successful edit so the trip
 //     page reflects the new days/cities Lumi just wrote
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import useSWR from "swr";
 import {
+  ArrowRight,
   ChevronDown,
   ChevronUp,
   MessageSquarePlus,
   Send,
+  ShoppingBag,
   Trash2,
 } from "lucide-react";
 
@@ -25,8 +30,10 @@ import {
   getLumiAvatar,
   LumiAvatarChip,
 } from "@/components/storefront/lumi-avatar";
+import { MotionButton, popIn } from "@/components/storefront/motion";
 import type { LumiContext } from "@/lib/lumi-context";
 import { markDaysUnread } from "@/lib/lumi-unread";
+import { buildShopHref } from "@/lib/shop-link";
 import { refreshTrip } from "@/lib/trip-cache";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +79,8 @@ interface TripDraftStop {
     id?: string | null;
     type?: string;
     label: string;
+    url?: string | null;
+    amount?: string | null;
     action_label?: string | null;
     checklist_text?: string | null;
     checklist_kind?: string | null;
@@ -93,7 +102,32 @@ interface TripDraft {
        backwards compat with older drafter outputs that only set `city`. */
     stops?: TripDraftStop[];
   }[];
-  checklist?: { text: string; kind: string; suggested?: boolean }[];
+  checklist?: {
+    text: string;
+    description?: string | null;
+    kind: string;
+    start_date?: string | null;
+    phase?: string | null;
+    group_label?: string | null;
+    subtasks?: { text: string; done?: boolean }[];
+    shop_filter?: {
+      country: string;
+      days?: number | null;
+      gb?: number | null;
+    } | null;
+    suggested?: boolean;
+  }[];
+}
+
+interface EsimSuggestionPlan {
+  country: string;
+  days?: number | null;
+  gb?: number | null;
+  label?: string | null;
+}
+interface EsimSuggestion {
+  plans: EsimSuggestionPlan[];
+  rationale?: string | null;
 }
 
 interface Message {
@@ -104,6 +138,7 @@ interface Message {
   trip_draft?: TripDraft;
   trip_draft_created_id?: string | null;
   changes?: ChangeSummary;
+  esim_suggestion?: EsimSuggestion;
 }
 
 interface Conversation {
@@ -123,11 +158,9 @@ const TRIP_PATH = /^\/(?:en|zh-TW)\/trips\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-
 export function LumiAssistant({
   labels,
   avatarId,
-  context,
 }: {
   labels: LumiAssistantLabels;
   avatarId?: string;
-  context: LumiContext | null;
 }) {
   const pathname = usePathname();
   const tripId = pathname?.match(TRIP_PATH)?.[1] ?? null;
@@ -139,12 +172,23 @@ export function LumiAssistant({
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [view, setView] = useState<"messages" | "history">("messages");
   const [expanded, setExpanded] = useState(false);
+  // Collapsed by default: only the circular avatar shows. Tapping the
+  // avatar opens the input pill.
+  const [inputOpen, setInputOpen] = useState(false);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [thinkingPhrase, setThinkingPhrase] = useState(labels.thinking);
   const composingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const { data: context } = useSWR<LumiContext | null>(
+    "lumi-context",
+    fetchLumiContext,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 30_000,
+    },
+  );
 
   // Reset chat state when the user navigates to a different trip / leaves trip view.
   const lastTripRef = useRef<string | null>(tripId);
@@ -173,15 +217,11 @@ export function LumiAssistant({
      down in a staggered wave (rendered in Bubble). Cycling index-wise
      (not random) avoids the same phrase repeating back-to-back. */
   useEffect(() => {
-    if (!busy) {
-      setThinkingPhrase(labels.thinking);
-      return;
-    }
+    if (!busy) return;
     const phrases = labels.thinking_phrases?.length
       ? labels.thinking_phrases
       : [labels.thinking];
     let i = Math.floor(Math.random() * phrases.length);
-    setThinkingPhrase(phrases[i] ?? labels.thinking);
     const interval = window.setInterval(() => {
       i = (i + 1) % phrases.length;
       setThinkingPhrase(phrases[i] ?? labels.thinking);
@@ -249,8 +289,10 @@ export function LumiAssistant({
       { id: pendingId, role: "lumi", content: labels.thinking, pending: true },
     ]);
     setValue("");
+    setThinkingPhrase(firstThinkingPhrase(labels));
     setBusy(true);
     setExpanded(true);
+    setInputOpen(true);
     setView("messages");
 
     try {
@@ -273,6 +315,7 @@ export function LumiAssistant({
         cities?: unknown;
         companions?: unknown;
         trip_draft?: TripDraft | null;
+        esim_suggestion?: EsimSuggestion | null;
         conversation_id?: string;
         message?: string;
         error?: string;
@@ -291,6 +334,7 @@ export function LumiAssistant({
                 content: text,
                 pending: false,
                 trip_draft: payload.trip_draft ?? undefined,
+                esim_suggestion: payload.esim_suggestion ?? undefined,
                 changes,
               }
             : m,
@@ -324,6 +368,7 @@ export function LumiAssistant({
       );
     } finally {
       setBusy(false);
+      setThinkingPhrase(labels.thinking);
       inputRef.current?.focus();
     }
   }
@@ -348,15 +393,16 @@ export function LumiAssistant({
 
   return (
     <div
-      className="pointer-events-none fixed right-4 z-30 flex flex-col items-end gap-2"
-      style={{
-        bottom: "calc(5.5rem + env(safe-area-inset-bottom))",
-      }}
+      className="pointer-events-none fixed right-4 bottom-[calc(8.25rem+env(safe-area-inset-bottom))] z-30 flex flex-col items-end gap-2 md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))]"
     >
-      {(showMessages || showHistory) && (
-        <div className="pointer-events-auto w-[min(86vw,360px)] overflow-hidden rounded-2xl border border-divider bg-white/95 shadow-xl backdrop-blur">
+      <AnimatePresence>
+        {(showMessages || showHistory) && (
+        <motion.div
+          className="pointer-events-auto w-[min(86vw,360px)] overflow-hidden rounded-2xl border border-divider bg-white/95 shadow-xl backdrop-blur"
+          {...popIn}
+        >
           <div className="flex items-center justify-between gap-2 border-b border-divider px-3.5 py-2">
-            <button
+            <MotionButton
               type="button"
               onClick={() =>
                 setView((v) => (v === "history" ? "messages" : "history"))
@@ -373,8 +419,8 @@ export function LumiAssistant({
               <span className="truncate text-[12px] font-semibold tracking-tight text-fg">
                 {view === "history" ? labels.history_title : labels.name}
               </span>
-            </button>
-            <button
+            </MotionButton>
+            <MotionButton
               type="button"
               onClick={startNewChat}
               aria-label={labels.new_chat}
@@ -382,15 +428,15 @@ export function LumiAssistant({
               className="inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-muted hover:bg-[rgba(0,0,0,0.04)]"
             >
               <MessageSquarePlus className="h-3.5 w-3.5" />
-            </button>
-            <button
+            </MotionButton>
+            <MotionButton
               type="button"
               onClick={() => setExpanded(false)}
               aria-label={labels.close}
               className="inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-muted hover:bg-[rgba(0,0,0,0.04)]"
             >
               <ChevronDown className="h-3.5 w-3.5" />
-            </button>
+            </MotionButton>
           </div>
 
           {showHistory ? (
@@ -405,7 +451,7 @@ export function LumiAssistant({
                     const active = c.id === activeConversationId;
                     return (
                       <li key={c.id} className="flex items-stretch">
-                        <button
+                        <MotionButton
                           type="button"
                           onClick={() => void openConversation(c.id)}
                           className={cn(
@@ -419,15 +465,15 @@ export function LumiAssistant({
                           <span className="text-[10.5px] text-fg-muted">
                             {new Date(c.updated_at).toLocaleString()}
                           </span>
-                        </button>
-                        <button
+                        </MotionButton>
+                        <MotionButton
                           type="button"
                           onClick={() => void deleteConversation(c.id)}
                           aria-label={labels.delete_chat}
                           className="inline-flex w-8 shrink-0 items-center justify-center rounded-r-xl text-fg-muted hover:bg-[rgba(0,0,0,0.04)] hover:text-[#b91c1c]"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        </MotionButton>
                       </li>
                     );
                   })}
@@ -459,14 +505,39 @@ export function LumiAssistant({
               ))}
             </div>
           )}
-        </div>
-      )}
+        </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div
-        className="pointer-events-auto flex w-[min(86vw,360px)] items-center gap-2 rounded-full border border-divider bg-white/95 pl-2 pr-1.5 shadow-lg backdrop-blur"
+      <motion.div
+        layout
+        className={cn(
+          "pointer-events-auto flex items-center overflow-hidden rounded-full bg-white/95 shadow-lg backdrop-blur transition-[width,border-color,padding] duration-300 ease-out",
+          inputOpen
+            ? "w-[min(86vw,360px)] gap-2 border border-divider pl-2 pr-1.5"
+            : "w-12 gap-0 border border-transparent p-0",
+        )}
         style={{ height: 48 }}
       >
-        <LumiAvatarChip avatar={avatar} size={36} />
+        <MotionButton
+          type="button"
+          onClick={() => {
+            if (inputOpen) {
+              setInputOpen(false);
+              setExpanded(false);
+            } else {
+              setInputOpen(true);
+              window.setTimeout(() => inputRef.current?.focus(), 50);
+            }
+          }}
+          aria-label={inputOpen ? labels.close : labels.open}
+          className={cn(
+            "shrink-0 rounded-full transition-transform duration-500 ease-out",
+            inputOpen ? "rotate-[360deg]" : "rotate-0",
+          )}
+        >
+          <LumiAvatarChip avatar={avatar} size={inputOpen ? 36 : 44} />
+        </MotionButton>
         <input
           ref={inputRef}
           value={value}
@@ -478,11 +549,15 @@ export function LumiAssistant({
           onCompositionEnd={() => {
             composingRef.current = false;
           }}
-          disabled={busy}
+          disabled={busy || !inputOpen}
+          tabIndex={inputOpen ? 0 : -1}
           placeholder={busy ? thinkingPhrase : labels.placeholder}
-          className="min-w-0 flex-1 bg-transparent text-[13.5px] text-fg outline-none placeholder:text-fg-muted disabled:opacity-60"
+          className={cn(
+            "min-w-0 flex-1 bg-transparent text-[13.5px] text-fg outline-none placeholder:text-fg-muted disabled:opacity-60 transition-opacity duration-200",
+            inputOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+          )}
         />
-        <button
+        <MotionButton
           type="button"
           onClick={() => {
             setExpanded((v) => !v);
@@ -490,30 +565,54 @@ export function LumiAssistant({
           }}
           aria-label={expanded ? labels.close : labels.open}
           aria-expanded={expanded}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-[rgba(0,0,0,0.04)]"
+          tabIndex={inputOpen ? 0 : -1}
+          className={cn(
+            "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg-muted transition-all duration-200 hover:bg-[rgba(0,0,0,0.04)]",
+            inputOpen ? "opacity-100" : "pointer-events-none opacity-0",
+          )}
         >
           {expanded ? (
             <ChevronDown className="h-4 w-4" />
           ) : (
             <ChevronUp className="h-4 w-4" />
           )}
-        </button>
-        <button
+        </MotionButton>
+        <MotionButton
           type="button"
           onClick={() => void handleSend()}
-          disabled={busy || value.trim().length === 0}
+          disabled={busy || value.trim().length === 0 || !inputOpen}
+          tabIndex={inputOpen ? 0 : -1}
           aria-label={labels.send}
           className={cn(
-            "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition-opacity",
+            "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition-all duration-200",
             "bg-gradient-to-br from-accent to-[#0a8e8a]",
             (busy || value.trim().length === 0) && "opacity-40",
+            !inputOpen && "pointer-events-none opacity-0",
           )}
         >
           <Send className="h-3.5 w-3.5" />
-        </button>
-      </div>
+        </MotionButton>
+      </motion.div>
     </div>
   );
+}
+
+function firstThinkingPhrase(labels: LumiAssistantLabels): string {
+  const phrases = labels.thinking_phrases?.length
+    ? labels.thinking_phrases
+    : [labels.thinking];
+  return phrases[Math.floor(Math.random() * phrases.length)] ?? labels.thinking;
+}
+
+async function fetchLumiContext(): Promise<LumiContext | null> {
+  const res = await fetch("/api/lumi/context", {
+    credentials: "same-origin",
+    headers: { accept: "application/json" },
+  });
+  if (res.status === 401) return null;
+  if (!res.ok) return null;
+  const data = (await res.json()) as { context?: LumiContext | null };
+  return data.context ?? null;
 }
 
 function Bubble({
@@ -560,7 +659,72 @@ function Bubble({
           onCreated={onCreated}
         />
       )}
+      {!isUser && message.esim_suggestion && (
+        <EsimSuggestionCard
+          suggestion={message.esim_suggestion}
+          lang={lang}
+        />
+      )}
     </div>
+  );
+}
+
+function EsimSuggestionCard({
+  suggestion,
+  lang,
+}: {
+  suggestion: EsimSuggestion;
+  lang: string;
+}) {
+  const plans = suggestion.plans ?? [];
+  if (plans.length === 0) return null;
+  return (
+    <div className="mt-2 space-y-1.5">
+      {suggestion.rationale ? (
+        <div className="text-[11px] text-fg-muted leading-snug">
+          {suggestion.rationale}
+        </div>
+      ) : null}
+      {plans.map((p, i) => (
+        <EsimSuggestionLink key={i} plan={p} lang={lang} />
+      ))}
+    </div>
+  );
+}
+
+function EsimSuggestionLink({
+  plan,
+  lang,
+}: {
+  plan: EsimSuggestionPlan;
+  lang: string;
+}) {
+  const days = plan.days ?? undefined;
+  const gb = plan.gb ?? undefined;
+  const href = buildShopHref(lang, {
+    country: plan.country,
+    days,
+    gb,
+  });
+  const label =
+    plan.label ??
+    `${plan.country}${days ? ` · ${days} 天` : ""}${
+      gb ? ` · ${gb} GB` : ""
+    }`;
+  return (
+    <Link
+      href={href}
+      className="inline-flex w-full items-center justify-between gap-2 rounded-xl bg-accent-softer px-3 py-2.5 text-[13px] font-medium text-accent transition-colors hover:bg-accent-soft"
+    >
+      <span className="flex items-center gap-2">
+        <ShoppingBag className="h-4 w-4" />
+        {label}
+      </span>
+      <span className="inline-flex items-center gap-0.5 text-[12px]">
+        去買
+        <ArrowRight className="h-3 w-3" />
+      </span>
+    </Link>
   );
 }
 
@@ -721,7 +885,14 @@ function TripDraftCard({
           days: draft.days,
           checklist: (draft.checklist ?? []).map((c) => ({
             text: c.text,
+            description: c.description ?? null,
             kind: c.kind,
+            start_date: c.start_date ?? null,
+            phase: c.phase ?? null,
+            group_label: c.group_label ?? null,
+            subtasks: c.subtasks ?? [],
+            shortcut: c.kind === "esim" ? "shop" : null,
+            shop_filter: c.shop_filter ?? null,
             done: false,
             suggested: c.suggested ?? true,
             suggested_by: c.suggested ? "Lumi" : undefined,

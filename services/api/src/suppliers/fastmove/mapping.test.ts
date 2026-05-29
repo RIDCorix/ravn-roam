@@ -131,4 +131,77 @@ describe("mapFastmoveQuoteToRawPlan", () => {
 
     expect(mapFastmoveQuoteToRawPlan(item).available).toBe(false);
   });
+
+  // productName-parser fallback — Fastmove v2 payloads encode days and
+  // data inline in `productName` instead of dedicated fields. These cases
+  // pin down the regex / unit-conversion choices.
+  test("productName fallback: extracts days + GB from inline name", () => {
+    const item = {
+      wmproductId: "WM-e-USA-T20-7D",
+      productName: "美國, 7天, 20GB",
+      productType: 0,
+      productPrice: 299,
+      productRegion: "美國",
+    } as unknown as Parameters<typeof mapFastmoveQuoteToRawPlan>[0];
+
+    const out = mapFastmoveQuoteToRawPlan(item);
+    expect(out.validityDays).toBe(7);
+    expect(out.dataAmountMb).toBe(20 * 1024);
+  });
+
+  test("productName fallback: MB per-day pattern", () => {
+    const item = {
+      wmproductId: "WM-e-EU-C-3GB-27D",
+      productName: "歐洲C, 27天, 3GB/天, 128kbps",
+      productType: 0,
+      productPrice: 726,
+      productRegion: "歐洲",
+    } as unknown as Parameters<typeof mapFastmoveQuoteToRawPlan>[0];
+
+    const out = mapFastmoveQuoteToRawPlan(item);
+    expect(out.validityDays).toBe(27);
+    expect(out.dataAmountMb).toBe(3 * 1024);
+  });
+
+  test("productName fallback: 吃到飽 → unlimited sentinel", () => {
+    const item = {
+      wmproductId: "WM-e-PH-TI-21D",
+      productName: "菲律賓, 21天, 鈦金吃到飽/天",
+      productType: 0,
+      productPrice: 3210,
+      productRegion: "菲律賓",
+    } as unknown as Parameters<typeof mapFastmoveQuoteToRawPlan>[0];
+
+    const out = mapFastmoveQuoteToRawPlan(item);
+    expect(out.validityDays).toBe(21);
+    expect(out.dataAmountMb).toBe(-1);
+  });
+
+  test("productName fallback: no day token → infer 1 day for productType=2", () => {
+    const item = {
+      wmproductId: "WM-TR-500MB",
+      productName: "土耳其, 500MB/天, 128kbps",
+      productType: 2,
+      productPrice: 6,
+      productRegion: "土耳其",
+    } as unknown as Parameters<typeof mapFastmoveQuoteToRawPlan>[0];
+
+    const out = mapFastmoveQuoteToRawPlan(item);
+    expect(out.validityDays).toBe(1);
+    expect(out.dataAmountMb).toBe(500);
+  });
+
+  test("productName fallback: blank card stock stays at 0 days / 0 MB", () => {
+    const item = {
+      wmproductId: "Black Card",
+      productName: "黑卡(空卡)",
+      productType: 1,
+      productPrice: 14,
+      productRegion: "任何",
+    } as unknown as Parameters<typeof mapFastmoveQuoteToRawPlan>[0];
+
+    const out = mapFastmoveQuoteToRawPlan(item);
+    expect(out.validityDays).toBe(0);
+    expect(out.dataAmountMb).toBe(0);
+  });
 });

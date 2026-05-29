@@ -7,6 +7,7 @@ import { env } from "./env.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { ordersRouter } from "./routes/orders.js";
 import { productsRouter } from "./routes/products.js";
+import { storefrontRouter } from "./routes/storefront.js";
 import { supplierPlansRouter } from "./routes/supplier-plans.js";
 import { suppliersRouter } from "./routes/suppliers.js";
 import { inviteRouter } from "./routes/invite.js";
@@ -49,6 +50,9 @@ app.route("/admin/orders", ordersRouter);
 app.route("/trips", tripsRouter);
 app.route("/lumi", lumiRouter);
 app.route("/invite", inviteRouter);
+
+// Storefront catalog browse — unauthenticated read-only.
+app.route("/storefront", storefrontRouter);
 
 // Supplier-plan sync trigger — token-gated; see routes/admin.ts.
 app.route("/", createAdminRouter());

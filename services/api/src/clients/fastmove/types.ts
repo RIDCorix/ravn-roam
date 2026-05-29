@@ -95,8 +95,10 @@ export interface SOrderMyBuyEsimItem {
 }
 
 export interface SOrderMyBuyEsimRequest extends FastmoveAuthEnvelope {
-  orderId: string;
-  items: SOrderMyBuyEsimItem[];
+  email: string;
+  prodList: SOrderMyBuyEsimItem[];
+  systemMail?: boolean;
+  items?: SOrderMyBuyEsimItem[];
 }
 
 export interface SOrderMyBuyEsimResponse extends FastmoveBaseResponse {
@@ -115,7 +117,9 @@ export interface SOrderMyBuyEsimCallback {
 }
 
 // 2.3 POST /Api/SOrder/querybuyesim  —  sync recovery query for 2.2 misses
-export interface SOrderQueryBuyEsimRequest extends FastmoveAuthEnvelope {
+export interface SOrderQueryBuyEsimRequest {
+  merchantId: string;
+  encStr: string;
   orderId: string;
 }
 export interface SOrderQueryBuyEsimResponse extends FastmoveBaseResponse {
@@ -128,8 +132,10 @@ export interface SOrderQueryBuyEsimResponse extends FastmoveBaseResponse {
 // ---------------------------------------------------------------------------
 
 export interface SOrderMyBuyEsimRedemptionRequest extends FastmoveAuthEnvelope {
-  orderId: string;
-  items: SOrderMyBuyEsimItem[];
+  /** Fastmove requires QR delivery type for redemption orders. */
+  qrcodeType?: string | number;
+  prodList: SOrderMyBuyEsimItem[];
+  items?: SOrderMyBuyEsimItem[];
 }
 export interface SOrderMyBuyEsimRedemptionResponse extends FastmoveBaseResponse {
   orderId: string;
@@ -152,7 +158,9 @@ export interface SOrderMyBuyEsimRedemptionCallback {
 }
 
 // 2.6 sync recovery for 2.5
-export interface SOrderQueryBuyEsimRedemptionRequest extends FastmoveAuthEnvelope {
+export interface SOrderQueryBuyEsimRedemptionRequest {
+  merchantId: string;
+  encStr: string;
   orderId: string;
 }
 export interface SOrderQueryBuyEsimRedemptionResponse extends FastmoveBaseResponse {

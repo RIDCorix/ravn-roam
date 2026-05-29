@@ -41,8 +41,22 @@ const AVAILABLE_FIELDS = ["available", "onSale", "enabled"] as const;
 export function mapFastmoveQuoteToRawPlan(item: QuoteMgQuoteItem): RawPlan {
   const name = readString(item, NAME_FIELDS) ?? item.wmproductId;
   const destinations = readDestinations(item);
-  const dataAmountMb = readDataAmount(item);
-  const validityDays = readNumber(item, VALIDITY_FIELDS) ?? 0;
+  // Fastmove v2 payloads do not expose flowMb / validDay as dedicated
+  // fields — those are encoded inline in productName. Read the dedicated
+  // fields first (future-proof if they ever appear), fall back to a
+  // productName parser otherwise.
+  const fromName = parseProductName(name);
+  const dataFromField = readDataAmount(item);
+  const dataAmountMb =
+    dataFromField !== 0
+      ? dataFromField
+      : fromName.dataAmountMb ?? 0;
+  const validityDays =
+    readNumber(item, VALIDITY_FIELDS) ??
+    fromName.validityDays ??
+    // productType=2 are uniformly 1-day plans (no day token in name); if
+    // we extracted a data spec but no day count, assume 1.
+    (fromName.dataAmountMb !== null ? 1 : 0);
   const available = readBoolean(item, AVAILABLE_FIELDS) ?? true;
   const inventoryHint = readNumber(item, INVENTORY_FIELDS) ?? null;
 
@@ -115,6 +129,52 @@ function readDestinations(item: QuoteMgQuoteItem): string[] {
     }
   }
   return [];
+}
+
+/**
+ * Parse data + validity out of a Fastmove `productName` like
+ *   "歐洲C, 27天, 3GB/天, 128kbps"   → days=27, mb=3072
+ *   "土耳其, 500MB/天, 128kbps"       → days=null (inferred =1 by caller), mb=500
+ *   "美國, 7天, 20GB"                 → days=7, mb=20480
+ *   "菲律賓, 21天, 鈦金吃到飽/天"      → days=21, mb=-1 (unlimited)
+ *   "黑卡(空卡)"                      → days=null, mb=null
+ *
+ * Treats the name as a list of comma-separated tokens (handles ASCII
+ * and full-width comma) and matches each token against day / data /
+ * unlimited patterns. Returns null fields for "no signal found"; the
+ * caller decides how to default.
+ */
+function parseProductName(name: string): {
+  dataAmountMb: number | null;
+  validityDays: number | null;
+} {
+  if (!name) return { dataAmountMb: null, validityDays: null };
+  const chunks = name.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+  let validityDays: number | null = null;
+  let dataAmountMb: number | null = null;
+  for (const chunk of chunks) {
+    if (validityDays === null) {
+      const m = chunk.match(/^(\d+)\s*天$/);
+      if (m) {
+        validityDays = Number(m[1]);
+        continue;
+      }
+    }
+    if (dataAmountMb === null && /吃到飽/.test(chunk)) {
+      dataAmountMb = UNLIMITED_MB;
+      continue;
+    }
+    if (dataAmountMb === null) {
+      const m = chunk.match(/(\d+(?:\.\d+)?)\s*(MB|GB|TB)/i);
+      if (m?.[1] && m[2]) {
+        const n = Number(m[1]);
+        const unit = m[2].toUpperCase();
+        const factor = unit === "MB" ? 1 : unit === "GB" ? 1024 : 1024 * 1024;
+        dataAmountMb = Math.round(n * factor);
+      }
+    }
+  }
+  return { dataAmountMb, validityDays };
 }
 
 function readDataAmount(item: QuoteMgQuoteItem): number {

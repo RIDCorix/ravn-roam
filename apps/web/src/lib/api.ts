@@ -13,6 +13,12 @@ import type {
 } from "@roam/catalog";
 
 function apiBase(): string {
+  // In the browser `process.env.ROAM_API_URL` is undefined (only
+  // NEXT_PUBLIC_* vars get exposed client-side), so direct calls to the
+  // upstream would fall back to localhost:3001 and miss the real API on
+  // 4000. Instead, client calls go same-origin through the catch-all
+  // proxy at /api/admin/[...path], which reads the env server-side.
+  if (typeof window !== "undefined") return "/api";
   return process.env.ROAM_API_URL ?? "http://localhost:3001";
 }
 

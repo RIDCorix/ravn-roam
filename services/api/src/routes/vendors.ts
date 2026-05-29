@@ -14,8 +14,23 @@ import { z } from "zod";
 import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
 import { actorFromContext, recordAudit } from "./audit.js";
+import { isUuid } from "./_uuid.js";
 
 export const vendorsRouter = new Hono();
+
+// Reject non-uuid `:id` values up-front so stale links like
+// /admin/vendors/new (the route we removed when the create flow moved
+// into a dialog) emit a clean 404 instead of crashing postgres with
+// "invalid input syntax for type uuid". Applies to every handler on
+// this router that mounts an `:id` segment.
+vendorsRouter.use("/:id/*", async (c, next) => {
+  if (!isUuid(c.req.param("id"))) return c.json({ error: "not_found" }, 404);
+  await next();
+});
+vendorsRouter.use("/:id", async (c, next) => {
+  if (!isUuid(c.req.param("id"))) return c.json({ error: "not_found" }, 404);
+  await next();
+});
 
 const vendorTierEnum = z.enum(["platform", "tier1", "tier2"]);
 const vendorStatusEnum = z.enum(["active", "paused", "terminated"]);

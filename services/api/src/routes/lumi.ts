@@ -9,7 +9,8 @@ import { z } from "zod";
 import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
 import { geocodeCities } from "../geocode/nominatim.js";
-import { runLumiTurn, type LumiDay } from "../lumi/openai.js";
+import { enrichAttachmentUrls } from "../lumi/booking-links.js";
+import { runLumiTurn, type LumiDay, type LumiResult } from "../lumi/openai.js";
 import { getUser, requireAuth } from "./_auth.js";
 
 export const lumiRouter = new Hono();
@@ -265,7 +266,7 @@ lumiRouter.post("/chat", async (c) => {
     return { role: "user" as const, content: row.content };
   });
 
-  let result;
+  let result: LumiResult;
   try {
     result = await runLumiTurn({
       prompt: parsed.data.prompt,
@@ -282,6 +283,32 @@ lumiRouter.post("/chat", async (c) => {
         : undefined,
       context: parsed.data.context,
     });
+    if (
+      editableTrip &&
+      result.days &&
+      FULL_TRIP_PLANNING_RE.test(parsed.data.prompt) &&
+      missingEditableTripDates(editableTrip, result.days).length > 0
+    ) {
+      const missing = missingEditableTripDates(editableTrip, result.days);
+      result = await runLumiTurn({
+        prompt:
+          `${parsed.data.prompt}\n\n` +
+          `系統校正：你上一版漏掉了 ${missing.length} 個日期：${missing.join(", ")}。` +
+          `這是同一趟 ${editableTrip.start_date} 到 ${editableTrip.end_date} 的旅程，` +
+          `請重新輸出完整 days[]，必須保留 editableTrip.days 裡的每一個 day_date，` +
+          `且每個非純交通日安排 2 到 3 個真實活動。`,
+        history,
+        editableTrip: {
+          title: editableTrip.title,
+          start_date: editableTrip.start_date,
+          end_date: editableTrip.end_date,
+          days: editableTrip.days,
+          cities: editableTrip.cities,
+          companions: editableTrip.companions,
+        },
+        context: parsed.data.context,
+      });
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "lumi_error";
     await db.insert(schema.lumiMessage).values({
@@ -305,6 +332,12 @@ lumiRouter.post("/chat", async (c) => {
     lng: number | null;
   }> | null = null;
   let summary = result.summary;
+  if (result.days) {
+    result.days = await enrichAttachmentUrls({
+      prompt: parsed.data.prompt,
+      days: result.days,
+    });
+  }
   if (result.days && editableTrip && isAttachmentOnlyPrompt(parsed.data.prompt)) {
     const touched = await applyAttachmentPatch({
       tripId: editableTrip.tripId,
@@ -314,17 +347,17 @@ lumiRouter.post("/chat", async (c) => {
     if (touched) {
       updatedDays = editableTrip.days;
       delete result.days;
-      summary = "我已經把需要票券、訂位或上傳資料的行程標記上去了，原本的行程內容有保留下來。";
+      summary = "我幫你把需要處理的票券、訂位或上傳資料補上了。";
     } else {
       delete result.days;
       summary =
-        "我先保護原本行程，這次沒有找到可安全對應的活動來標記票券或訂位。請指定活動名稱，我再幫你標上去。";
+        "我還沒找到要補票券或訂位資訊的活動。你可以告訴我活動名稱，我再幫你補上。";
     }
   } else if (result.days && editableTrip) {
     if (!isSafeFullDayRewrite(parsed.data.prompt, editableTrip, result.days)) {
       delete result.days;
       summary =
-        "我先保護原本行程，沒有套用這次會刪減既有活動的更新。如果你真的要重排，請明確說「重新規劃整天」。";
+        "我沒有套用這次安排，因為新版本看起來會少掉既有內容。你可以說「重排整趟」或指定某一天，我就會直接幫你改。";
     }
   }
 
@@ -375,7 +408,14 @@ lumiRouter.post("/chat", async (c) => {
                 .values({
                   tripId,
                   text: a.checklist_text?.trim() || `${s.name}：${a.label}`,
+                  description: a.checklist_description ?? null,
                   kind: a.checklist_kind ?? fallbackChecklistKind(a.type ?? "ticket"),
+                  startDate: d.day_date,
+                  phase: "on_trip",
+                  groupLabel: "抵達當地",
+                  subtasks: checklistSubtasksFromDescription(
+                    a.checklist_description,
+                  ),
                   done: a.status === "completed" || a.status === "uploaded",
                   suggested: true,
                   suggestedBy: "Lumi",
@@ -505,6 +545,8 @@ lumiRouter.post("/chat", async (c) => {
       days: result.days ?? null,
       companions: result.companions ?? null,
       trip_draft: result.trip_draft ?? null,
+      esim_suggestion: result.esim_suggestion ?? null,
+      tool_call: result.tool_call ?? null,
     },
   });
   await db
@@ -542,6 +584,7 @@ lumiRouter.post("/chat", async (c) => {
     cities: updatedCities,
     companions: updatedCompanions,
     trip_draft: result.trip_draft ?? null,
+    esim_suggestion: result.esim_suggestion ?? null,
     conversation_id: conversationId,
   });
 });
@@ -569,8 +612,11 @@ interface LoadedEditableTrip {
         id?: string | null;
         type?: string;
         label: string;
+        url?: string | null;
+        amount?: string | null;
         action_label?: string | null;
         checklist_text?: string | null;
+        checklist_description?: string | null;
         checklist_kind?: string | null;
         checklist_item_id?: string | null;
         image_name?: string | null;
@@ -703,6 +749,10 @@ const ATTACHMENT_ONLY_PROMPT_RE =
 
 const REWRITE_SHRINK_OK_RE =
   /重新規劃|重排|刪|移除|拿掉|減少|精簡|只留|縮短|remove|delete|drop|shorten|simplify|replan|rewrite/i;
+const FULL_TRIP_PLANNING_RE =
+  /整趟|整個行程|這趟旅程|這趟行程|全部|每天|每一天|全程|安排.*旅程|規劃.*旅程|plan.*whole|whole trip|every day|fill.*trip/i;
+const DATE_REMOVAL_OK_RE =
+  /刪|移除|拿掉|減少|精簡|只留|縮短|remove|delete|drop|shorten|simplify/i;
 
 function isAttachmentOnlyPrompt(prompt: string): boolean {
   return (
@@ -716,12 +766,12 @@ function isSafeFullDayRewrite(
   editableTrip: LoadedEditableTrip,
   days: LumiDay[],
 ): boolean {
-  if (REWRITE_SHRINK_OK_RE.test(prompt)) return true;
+  if (!DATE_REMOVAL_OK_RE.test(prompt)) {
+    if (missingEditableTripDates(editableTrip, days).length > 0) return false;
+  }
 
-  const existingDates = new Set(editableTrip.days.map((d) => d.day_date));
-  const nextDates = new Set(days.map((d) => d.day_date));
-  for (const date of existingDates) {
-    if (!nextDates.has(date)) return false;
+  if (REWRITE_SHRINK_OK_RE.test(prompt) || FULL_TRIP_PLANNING_RE.test(prompt)) {
+    return true;
   }
 
   const existingStopCount = editableTrip.days.reduce(
@@ -733,6 +783,16 @@ function isSafeFullDayRewrite(
     0,
   );
   return existingStopCount === 0 || nextStopCount >= existingStopCount;
+}
+
+function missingEditableTripDates(
+  editableTrip: LoadedEditableTrip,
+  days: LumiDay[],
+): string[] {
+  const nextDates = new Set(days.map((d) => d.day_date));
+  return editableTrip.days
+    .map((d) => d.day_date)
+    .filter((date) => !nextDates.has(date));
 }
 
 async function applyAttachmentPatch({
@@ -780,7 +840,44 @@ async function applyAttachmentPatch({
             attachment.checklist_text?.trim() ||
             `${existingStop.name}：${label}`;
           const key = attachmentKey(type, checklistText);
-          if (seen.has(key)) continue;
+          const existingAttachmentIndex = merged.findIndex(
+            (a) =>
+              attachmentKey(
+                a.type ?? "ticket",
+                a.checklist_text ?? a.label,
+              ) === key,
+          );
+          if (existingAttachmentIndex >= 0) {
+            const current = merged[existingAttachmentIndex]!;
+            const next = {
+              ...current,
+              url: attachment.url ?? current.url ?? null,
+              amount: attachment.amount ?? current.amount ?? null,
+              action_label:
+                attachment.action_label ?? current.action_label ?? null,
+              checklist_text: current.checklist_text ?? checklistText,
+              checklist_description:
+                current.checklist_description ??
+                attachment.checklist_description ??
+                null,
+              checklist_kind:
+                current.checklist_kind ??
+                attachment.checklist_kind ??
+                fallbackChecklistKind(type),
+              checklist_item_id:
+                current.checklist_item_id ??
+                attachment.checklist_item_id ??
+                null,
+              status: attachment.status ?? current.status ?? "required",
+            };
+            const changed = JSON.stringify(current) !== JSON.stringify(next);
+            if (changed) {
+              merged[existingAttachmentIndex] = next;
+              stopTouched = true;
+              touched = true;
+            }
+            continue;
+          }
 
           let checklistItemId = attachment.checklist_item_id ?? null;
           if (!checklistItemId) {
@@ -789,7 +886,14 @@ async function applyAttachmentPatch({
               .values({
                 tripId,
                 text: checklistText,
+                description: attachment.checklist_description ?? null,
                 kind: attachment.checklist_kind ?? fallbackChecklistKind(type),
+                startDate: incomingDay.day_date,
+                phase: "on_trip",
+                groupLabel: "抵達當地",
+                subtasks: checklistSubtasksFromDescription(
+                  attachment.checklist_description,
+                ),
                 done:
                   attachment.status === "completed" ||
                   attachment.status === "uploaded",
@@ -805,8 +909,11 @@ async function applyAttachmentPatch({
             id: attachment.id ?? null,
             type,
             label,
+            url: attachment.url ?? null,
+            amount: attachment.amount ?? null,
             action_label: attachment.action_label ?? null,
             checklist_text: checklistText,
+            checklist_description: attachment.checklist_description ?? null,
             checklist_kind:
               attachment.checklist_kind ?? fallbackChecklistKind(type),
             checklist_item_id: checklistItemId,
@@ -863,6 +970,16 @@ function attachmentKey(type: string, text: string): string {
   return `${type.trim().toLowerCase()}::${normalizeMatchText(text)}`;
 }
 
+function checklistSubtasksFromDescription(description: string | null | undefined) {
+  if (!description) return [];
+  return description
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- ") || line.startsWith("* "))
+    .map((line) => ({ text: line.slice(2).trim(), done: false }))
+    .filter((item) => item.text);
+}
+
 function normalizeLoadedAttachments(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
@@ -879,10 +996,16 @@ function normalizeLoadedAttachments(value: unknown) {
         id: typeof raw.id === "string" ? raw.id : null,
         type: typeof raw.type === "string" ? raw.type : "ticket",
         label,
+        url: typeof raw.url === "string" ? raw.url : null,
+        amount: typeof raw.amount === "string" ? raw.amount : null,
         action_label:
           typeof raw.action_label === "string" ? raw.action_label : null,
         checklist_text:
           typeof raw.checklist_text === "string" ? raw.checklist_text : null,
+        checklist_description:
+          typeof raw.checklist_description === "string"
+            ? raw.checklist_description
+            : null,
         checklist_kind:
           typeof raw.checklist_kind === "string" ? raw.checklist_kind : null,
         checklist_item_id:

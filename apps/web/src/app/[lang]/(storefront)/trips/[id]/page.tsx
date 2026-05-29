@@ -1,16 +1,12 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { TripDetailClient } from "@/components/storefront/trips/trip-detail-client";
 import type { TripDetailClientLabels } from "@/components/storefront/trips/trip-detail-client";
-import { getTrip, TripApiError } from "@/lib/trips-api";
 
 import { getDictionary, hasLocale } from "../../../dictionaries";
 
-// Auth gate + initial RSC paint only — every interaction after first
-// load reads from the SWR cache on the client (see TripDetailClient).
-// `force-dynamic` so the auth check + Bearer-forwarded fetch stay
-// per-request; static caching is meaningless for a user's own trips.
+// Do not block route entry on the trip payload. The client renders a
+// skeleton immediately, then hydrates the itinerary via SWR.
 export const dynamic = "force-dynamic";
 
 export default async function TripDetailPage({
@@ -22,18 +18,6 @@ export default async function TripDetailPage({
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
   const t = dict.storefront.trips;
-
-  let initialPayload;
-  try {
-    initialPayload = await getTrip(id);
-  } catch (err) {
-    if (err instanceof TripApiError && err.status === 404) {
-      return (
-        <TripNotFound lang={lang} title={t.detail.not_found} back={t.detail.back} />
-      );
-    }
-    throw err;
-  }
 
   const labels: TripDetailClientLabels = {
     tabs: {
@@ -49,15 +33,56 @@ export default async function TripDetailPage({
       pending: t.checklist.pending,
       done: t.checklist.done,
     },
+    checklistFilters: {
+      all: t.checklist.filter_all,
+      mine: t.checklist.filter_mine,
+    },
     shopCta: t.checklist.shop_cta,
+    esimOrderLabels: {
+      pending: t.checklist.esim_order_pending,
+      ready: t.checklist.esim_order_ready,
+      shared: t.checklist.esim_order_shared,
+    },
+    esimShareLabels: {
+      title: t.checklist.esim_share_title,
+      description: t.checklist.esim_share_description,
+      cta: t.checklist.esim_share_cta,
+      sharing: t.checklist.esim_share_sharing,
+      shared: t.checklist.esim_share_shared,
+      empty: t.checklist.esim_share_empty,
+      error: t.checklist.esim_share_error,
+    },
     emptyChecklist: t.checklist.empty,
     assigneeLabels: {
       assign: t.checklist.assign,
       assigned_to: t.checklist.assigned_to,
       unassigned: t.checklist.unassigned,
     },
+    quickInfo: {
+      title: t.quick_info.title,
+      ready: t.quick_info.ready,
+      prepare: t.quick_info.prepare,
+      view: t.quick_info.view,
+      empty: t.quick_info.empty,
+      source_task: t.quick_info.source_task,
+      install_esim_cta: t.quick_info.install_esim_cta,
+      install_esim: t.quick_info.install_esim,
+      copy_activation_code: t.quick_info.copy_activation_code,
+      copied: t.quick_info.copied,
+      open_qr_code: t.quick_info.open_qr_code,
+    },
     back: t.detail.back,
     dayUnit: t.detail.day_unit,
+    settings: {
+      title: t.settings.title,
+      aria: t.settings.aria,
+      trip_section: t.settings.trip_section,
+      delete_trip: t.settings.delete_trip,
+      delete_confirm: t.settings.delete_confirm,
+      delete_cancel: t.settings.delete_cancel,
+      deleting: t.settings.deleting,
+      delete_error: t.settings.delete_error,
+    },
     companions: {
       manage_title: t.companions.manage_title,
       manage_aria: t.companions.manage_aria,
@@ -71,36 +96,14 @@ export default async function TripDetailPage({
       pick_friend: t.companions.pick_friend,
       pick_friend_soon: t.companions.pick_friend_soon,
     },
+    notFound: t.detail.not_found,
   };
 
   return (
     <TripDetailClient
       tripId={id}
       lang={lang}
-      initialPayload={initialPayload}
       labels={labels}
     />
-  );
-}
-
-function TripNotFound({
-  lang,
-  title,
-  back,
-}: {
-  lang: string;
-  title: string;
-  back: string;
-}) {
-  return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="text-[16px] text-fg-muted">{title}</div>
-      <Link
-        href={`/${lang}/trips`}
-        className="rounded-[10px] bg-fg px-4 py-2 text-[13px] font-semibold text-white"
-      >
-        {back}
-      </Link>
-    </div>
   );
 }

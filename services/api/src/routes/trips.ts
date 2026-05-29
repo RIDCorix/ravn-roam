@@ -12,7 +12,7 @@
 // scope queries by it. The DB has no RLS on these tables yet — the
 // app-layer WHERE user_id = $1 is the only gate.
 
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -46,12 +46,15 @@ const stopInput = z.object({
         id: z.string().min(1).max(80).nullish(),
         type: z.string().min(1).max(40).default("ticket"),
         label: z.string().min(1).max(120),
+        url: z.string().url().max(1200).nullish(),
+        amount: z.string().max(80).nullish(),
         action_label: z.string().max(80).nullish(),
         checklist_text: z.string().max(500).nullish(),
+        checklist_description: z.string().max(4000).nullish(),
         checklist_kind: z.string().max(40).nullish(),
         checklist_item_id: z.string().uuid().nullish(),
         image_name: z.string().max(240).nullish(),
-        image_data_url: z.string().max(2_000_000).nullish(),
+        image_data_url: z.string().max(8_000_000).nullish(),
         status: z.enum(["required", "completed", "uploaded"]).default("required"),
       }),
     )
@@ -77,7 +80,22 @@ const dayInput = z.object({
 
 const checklistInput = z.object({
   text: z.string().min(1).max(500),
+  description: z.string().max(4000).nullish(),
   kind: z.string().min(1).max(40),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  phase: z.string().max(40).nullish(),
+  group_label: z.string().max(80).nullish(),
+  subtasks: z
+    .array(
+      z.object({
+        text: z.string().min(1).max(300),
+        done: z.boolean().default(false),
+        image_name: z.string().max(240).nullish(),
+        image_data_url: z.string().max(8_000_000).nullish(),
+      }),
+    )
+    .max(20)
+    .default([]),
   done: z.boolean().default(false),
   suggested: z.boolean().default(false),
   suggested_by: z.string().max(40).nullish(),
@@ -185,20 +203,164 @@ function rowToDay(
   };
 }
 
-function rowToChecklist(row: ChecklistRow) {
+interface ChecklistOrderState {
+  order_id: string;
+  order_number: string;
+  status: "pending" | "ready" | "shared";
+  profile_count: number;
+  assigned_count: number;
+}
+
+function readSupplierItems(metadata: unknown): Array<Record<string, unknown>> {
+  if (!metadata || typeof metadata !== "object") return [];
+  const recovery = (metadata as Record<string, unknown>).supplier_recovery_response;
+  if (!recovery || typeof recovery !== "object") return [];
+  const items =
+    (recovery as { itemList?: unknown; results?: unknown }).itemList ??
+    (recovery as { results?: unknown }).results;
+  return Array.isArray(items)
+    ? items.filter((item): item is Record<string, unknown> =>
+        Boolean(item && typeof item === "object"),
+      )
+    : [];
+}
+
+async function loadChecklistOrderStates(
+  db: ReturnType<typeof getDb>,
+  checklistRows: ChecklistRow[],
+  trips: Array<typeof schema.trip.$inferSelect>,
+): Promise<Map<string, ChecklistOrderState>> {
+  const checklistIds = checklistRows.map((row) => row.id);
+  if (checklistIds.length === 0) return new Map();
+
+  const assignedByChecklist = new Map<string, number>();
+  for (const trip of trips) {
+    const metadata =
+      trip.metadata && typeof trip.metadata === "object"
+        ? (trip.metadata as Record<string, unknown>)
+        : {};
+    const esims = Array.isArray(metadata.esims) ? metadata.esims : [];
+    for (const raw of esims) {
+      if (!raw || typeof raw !== "object") continue;
+      const checklistId = String(
+        (raw as Record<string, unknown>).checklist_item_id ?? "",
+      );
+      if (!checklistId) continue;
+      assignedByChecklist.set(
+        checklistId,
+        (assignedByChecklist.get(checklistId) ?? 0) + 1,
+      );
+    }
+  }
+
+  const rows = await db
+    .select({
+      order: schema.orderRecord,
+      item: schema.orderItem,
+      checklistItemId: sql<string>`${schema.orderRecord.metadata}->>'checklist_item_id'`,
+    })
+    .from(schema.orderRecord)
+    .innerJoin(schema.orderItem, eq(schema.orderItem.orderId, schema.orderRecord.id))
+    .where(
+      inArray(
+        sql<string>`${schema.orderRecord.metadata}->>'checklist_item_id'`,
+        checklistIds,
+      ),
+    )
+    .orderBy(desc(schema.orderRecord.createdAt));
+
+  const byChecklist = new Map<string, ChecklistOrderState>();
+  for (const row of rows) {
+    const checklistId = row.checklistItemId;
+    if (!checklistId || byChecklist.has(checklistId)) continue;
+    const profileCount = readSupplierItems(row.order.metadata).length;
+    const assignedCount = assignedByChecklist.get(checklistId) ?? 0;
+    byChecklist.set(checklistId, {
+      order_id: row.order.id,
+      order_number: row.order.orderNumber,
+      status:
+        assignedCount > 0
+          ? "shared"
+          : profileCount > 0 || row.order.status === "fulfilled"
+            ? "ready"
+            : "pending",
+      profile_count: profileCount,
+      assigned_count: assignedCount,
+    });
+  }
+  return byChecklist;
+}
+
+function rowToChecklist(
+  row: ChecklistRow,
+  orderState?: ChecklistOrderState,
+) {
+  const subtasks = normalizeChecklistSubtasks(row.subtasks);
   return {
     id: row.id,
     trip_id: row.tripId,
     text: row.text,
+    description: row.description,
     kind: row.kind,
+    start_date: row.startDate,
+    phase: row.phase,
+    group_label: row.groupLabel,
+    subtasks,
     done: row.done,
     suggested: row.suggested,
     suggested_by: row.suggestedBy,
-    shortcut: row.shortcut,
+    shortcut: row.shortcut ?? (row.kind === "esim" ? "shop" : null),
     shop_filter: row.shopFilter,
+    esim_order: orderState ?? null,
     due_date: row.dueDate,
     assigned_companion_id: row.assignedCompanionId,
   };
+}
+
+function normalizeChecklistSubtasks(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((raw) => {
+      if (!raw || typeof raw !== "object") return null;
+      const item = raw as Record<string, unknown>;
+      if (typeof item.text !== "string" || !item.text.trim()) return null;
+      return {
+        text: item.text.trim(),
+        done: item.done === true,
+        image_name:
+          typeof item.image_name === "string"
+            ? item.image_name
+            : typeof item.imageName === "string"
+              ? item.imageName
+              : null,
+        image_data_url:
+          typeof item.image_data_url === "string"
+            ? item.image_data_url
+            : typeof item.imageDataUrl === "string"
+              ? item.imageDataUrl
+              : null,
+      };
+    })
+    .filter(
+      (
+        item,
+      ): item is {
+        text: string;
+        done: boolean;
+        image_name: string | null;
+        image_data_url: string | null;
+      } => !!item,
+    );
+}
+
+function checklistSubtasksFromDescription(description: string | null | undefined) {
+  if (!description) return [];
+  return description
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- ") || line.startsWith("* "))
+    .map((line) => ({ text: line.slice(2).trim(), done: false }))
+    .filter((item) => item.text);
 }
 
 function normalizeStopAttachments(
@@ -223,6 +385,8 @@ function normalizeStopAttachments(
         id: typeof raw.id === "string" ? raw.id : label,
         type: typeof raw.type === "string" ? raw.type : "ticket",
         label,
+        url: typeof raw.url === "string" ? raw.url : null,
+        amount: typeof raw.amount === "string" ? raw.amount : null,
         action_label:
           typeof raw.action_label === "string" ? raw.action_label : null,
         checklist_item_id: checklistItemId,
@@ -270,7 +434,89 @@ tripsRouter.get("/", async (c) => {
     .from(schema.trip)
     .where(eq(schema.trip.userId, user.id))
     .orderBy(asc(schema.trip.startDate));
-  return c.json({ trips: rows.map(rowToTrip) });
+  if (rows.length === 0) return c.json({ trips: [] });
+
+  const tripIds = rows.map((row) => row.id);
+  const [days, checklist] = await Promise.all([
+    db
+      .select()
+      .from(schema.tripDay)
+      .where(inArray(schema.tripDay.tripId, tripIds))
+      .orderBy(asc(schema.tripDay.sortOrder)),
+    db
+      .select()
+      .from(schema.tripChecklistItem)
+      .where(inArray(schema.tripChecklistItem.tripId, tripIds)),
+  ]);
+
+  const daysByTrip = new Map<string, TripDayRow[]>();
+  for (const day of days) {
+    const existing = daysByTrip.get(day.tripId);
+    if (existing) existing.push(day);
+    else daysByTrip.set(day.tripId, [day]);
+  }
+
+  const checklistStats = new Map<string, { total: number; done: number }>();
+  for (const item of checklist) {
+    const stats = checklistStats.get(item.tripId) ?? { total: 0, done: 0 };
+    stats.total += 1;
+    if (item.done) stats.done += 1;
+    checklistStats.set(item.tripId, stats);
+  }
+
+  const trips = rows.map((row) => {
+    const tripDays = daysByTrip.get(row.id) ?? [];
+    const stats = checklistStats.get(row.id) ?? { total: 0, done: 0 };
+    return {
+      ...rowToTrip(row),
+      days_count: tripDays.length,
+      cities: Array.from(new Set(tripDays.map((day) => day.city))),
+      checklist_total: stats.total,
+      checklist_done: stats.done,
+    };
+  });
+
+  return c.json({ trips });
+});
+
+// ─── CHECKLISTS (flat list for home-page todo grouping) ────────────────
+//
+// Returns every checklist item for the auth'd user across all their
+// trips. Cheap variant of /:id that skips days/stops/companions so the
+// home screen can render real task text without N+1 calls.
+//
+//   GET /trips/checklists?done=false   only incomplete (default)
+//   GET /trips/checklists?done=any     incomplete + done
+
+tripsRouter.get("/checklists", async (c) => {
+  const user = getUser(c);
+  const db = getDb();
+  const doneParam = c.req.query("done");
+  const includeDone = doneParam === "any" || doneParam === "true";
+
+  const tripIds = (
+    await db
+      .select({ id: schema.trip.id })
+      .from(schema.trip)
+      .where(eq(schema.trip.userId, user.id))
+  ).map((row) => row.id);
+  if (tripIds.length === 0) return c.json({ items: [] });
+
+  const rows = await db
+    .select()
+    .from(schema.tripChecklistItem)
+    .where(inArray(schema.tripChecklistItem.tripId, tripIds))
+    .orderBy(asc(schema.tripChecklistItem.createdAt));
+
+  const trips = await db
+    .select()
+    .from(schema.trip)
+    .where(inArray(schema.trip.id, tripIds));
+  const orderStates = await loadChecklistOrderStates(db, rows, trips);
+  const items = (includeDone ? rows : rows.filter((row) => !row.done)).map((row) =>
+    rowToChecklist(row, orderStates.get(row.id)),
+  );
+  return c.json({ items });
 });
 
 // ─── DETAIL ────────────────────────────────────────────────────────────
@@ -360,7 +606,9 @@ tripsRouter.get("/:id", async (c) => {
       cityList.push(key);
     }
   }
-  const cityGeocoded = await geocodeCities(cityList).catch(() => []);
+  const cityGeocoded = await geocodeCities(cityList, {
+    fetchMisses: false,
+  }).catch(() => []);
   const cityCountryByName = new Map(
     cityGeocoded.map((g) => [
       g.name.trim().toLowerCase(),
@@ -389,6 +637,7 @@ tripsRouter.get("/:id", async (c) => {
     if (!cc) continue;
     const batch = await geocodeCities(Array.from(names), {
       strictCountry: cc,
+      fetchMisses: false,
     }).catch(() => []);
     stopGeocoded.push(...batch);
   }
@@ -405,24 +654,39 @@ tripsRouter.get("/:id", async (c) => {
     const c = coordByName.get(name.toLowerCase());
     return { name, lat: c?.lat ?? null, lng: c?.lng ?? null };
   });
+  const orderStates = await loadChecklistOrderStates(db, checklist, [trip]);
 
   return c.json({
     trip: rowToTrip(trip),
     days: days.map((d) =>
       rowToDay(d, stopsByDay.get(d.id) ?? [], coordByName, checklistById),
     ),
-    checklist: checklist.map(rowToChecklist),
+    checklist: checklist.map((row) => rowToChecklist(row, orderStates.get(row.id))),
     cities,
-    companions: companions.map((c) => ({
-      id: c.id,
-      trip_id: c.tripId,
-      display_name: c.displayName,
-      color: c.color,
-      sort_order: c.sortOrder,
-      user_id: c.userId,
-      invite_token: c.inviteToken,
-      accepted_at: c.acceptedAt?.toISOString() ?? null,
-    })),
+    companions: [
+      {
+        id: `owner:${trip.userId}`,
+        trip_id: trip.id,
+        display_name: user.email?.split("@")[0] || "我",
+        color: "#111111",
+        sort_order: -1,
+        user_id: trip.userId,
+        invite_token: null,
+        accepted_at: trip.createdAt.toISOString(),
+        role: "owner",
+      },
+      ...companions.map((c) => ({
+        id: c.id,
+        trip_id: c.tripId,
+        display_name: c.displayName,
+        color: c.color,
+        sort_order: c.sortOrder,
+        user_id: c.userId,
+        invite_token: c.inviteToken,
+        accepted_at: c.acceptedAt?.toISOString() ?? null,
+        role: "companion",
+      })),
+    ],
   });
 });
 
@@ -484,7 +748,17 @@ tripsRouter.post("/", async (c) => {
               .values({
                 tripId: trip!.id,
                 text,
+                description: a.checklist_description ?? null,
                 kind,
+                startDate: d.day_date,
+                phase: "on_trip",
+                groupLabel:
+                  kind === "ticket" || kind === "stay"
+                    ? "訂票與預訂"
+                    : "抵達當地",
+                subtasks: checklistSubtasksFromDescription(
+                  a.checklist_description,
+                ),
                 done: a.status === "completed" || a.status === "uploaded",
                 suggested: true,
                 suggestedBy: "Lumi",
@@ -523,19 +797,25 @@ tripsRouter.post("/", async (c) => {
       checklistRows.map((c) => ({
         tripId: trip!.id,
         text: c.text,
+        description: c.description ?? null,
         kind: c.kind,
+        startDate: c.start_date ?? null,
+        phase: c.phase ?? null,
+        groupLabel: c.group_label ?? null,
+        subtasks: c.subtasks,
         done: c.done,
         suggested: c.suggested,
         suggestedBy: c.suggested_by ?? null,
-        shortcut: c.shortcut ?? null,
+        shortcut: c.shortcut ?? (c.kind === "esim" ? "shop" : null),
         shopFilter: c.shop_filter ?? null,
         dueDate: c.due_date ?? null,
       })),
     );
   }
 
-  // Seed three placeholder companions so the user can pre-assign tasks
-  // before figuring out who's actually coming.
+  // Seed one placeholder companion. The owner is rendered as a virtual
+  // participant in the detail payload, so a two-person ticket reads as
+  // "owner + one companion" instead of three empty companion slots.
   await db.insert(schema.tripCompanion).values(
     placeholderCompanions().map((p, i) => ({
       tripId: trip!.id,
@@ -646,7 +926,14 @@ tripsRouter.put("/:id/days", async (c) => {
               .values({
                 tripId: id,
                 text: attachmentChecklistText(a, s.name),
+                description: a.checklist_description ?? null,
                 kind: a.checklist_kind ?? fallbackChecklistKind(a.type),
+                startDate: d.day_date,
+                phase: "on_trip",
+                groupLabel: "抵達當地",
+                subtasks: checklistSubtasksFromDescription(
+                  a.checklist_description,
+                ),
                 done: a.status === "completed" || a.status === "uploaded",
                 suggested: true,
                 suggestedBy: "Lumi",
@@ -734,15 +1021,33 @@ const checklistPatch = z.object({
   // null = unassign; uuid = assign to that companion.
   assigned_companion_id: z.string().uuid().nullable().optional(),
   text: z.string().min(1).max(500).optional(),
+  description: z.string().max(4000).nullable().optional(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  phase: z.string().max(40).nullable().optional(),
+  group_label: z.string().max(80).nullable().optional(),
+  subtasks: z
+    .array(
+      z.object({
+        text: z.string().min(1).max(300),
+        done: z.boolean().default(false),
+        image_name: z.string().max(240).nullish(),
+        image_data_url: z.string().max(8_000_000).nullish(),
+      }),
+    )
+    .max(20)
+    .optional(),
 });
 
 const attachmentPatch = z.object({
+  label: z.string().min(1).max(120).optional(),
+  url: z.union([z.string().url().max(1200), z.literal("")]).optional(),
+  amount: z.string().max(80).optional(),
   status: z.enum(["required", "completed", "uploaded"]).optional(),
   image_name: z.string().min(1).max(240).optional(),
   image_data_url: z
     .string()
     .startsWith("data:image/")
-    .max(2_000_000)
+    .max(8_000_000)
     .optional(),
 });
 
@@ -771,6 +1076,21 @@ tripsRouter.patch("/:id/checklist/:itemId", async (c) => {
   const patch: Record<string, unknown> = {};
   if (parsed.data.done != null) patch.done = parsed.data.done;
   if (parsed.data.text != null) patch.text = parsed.data.text;
+  if ("description" in parsed.data) {
+    patch.description = parsed.data.description?.trim() || null;
+  }
+  if ("start_date" in parsed.data) {
+    patch.startDate = parsed.data.start_date ?? null;
+  }
+  if ("phase" in parsed.data) {
+    patch.phase = parsed.data.phase?.trim() || null;
+  }
+  if ("group_label" in parsed.data) {
+    patch.groupLabel = parsed.data.group_label?.trim() || null;
+  }
+  if ("subtasks" in parsed.data) {
+    patch.subtasks = parsed.data.subtasks ?? [];
+  }
   if ("assigned_companion_id" in parsed.data) {
     patch.assignedCompanionId = parsed.data.assigned_companion_id ?? null;
   }
@@ -794,11 +1114,16 @@ tripsRouter.patch("/:id/checklist/:itemId", async (c) => {
       id: row.id,
       trip_id: row.tripId,
       text: row.text,
+      description: row.description,
       kind: row.kind,
+      start_date: row.startDate,
+      phase: row.phase,
+      group_label: row.groupLabel,
+      subtasks: normalizeChecklistSubtasks(row.subtasks),
       done: row.done,
       suggested: row.suggested,
       suggested_by: row.suggestedBy,
-      shortcut: row.shortcut,
+      shortcut: row.shortcut ?? (row.kind === "esim" ? "shop" : null),
       shop_filter: row.shopFilter,
       due_date: row.dueDate,
       assigned_companion_id: row.assignedCompanionId,
@@ -858,6 +1183,15 @@ tripsRouter.patch("/:id/stops/:stopId/attachments/:attachmentId", async (c) => {
     (parsed.data.image_data_url ? "uploaded" : attachments[idx]!.status);
   const updated = {
     ...attachments[idx]!,
+    label: parsed.data.label ?? attachments[idx]!.label,
+    url:
+      parsed.data.url !== undefined
+        ? parsed.data.url || null
+        : attachments[idx]!.url,
+    amount:
+      parsed.data.amount !== undefined
+        ? parsed.data.amount || null
+        : attachments[idx]!.amount,
     status: nextStatus,
     image_name: parsed.data.image_name ?? attachments[idx]!.image_name,
     image_data_url:

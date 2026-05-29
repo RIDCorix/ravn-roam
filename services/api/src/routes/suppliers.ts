@@ -25,8 +25,19 @@ import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
 import { actorFromContext, recordAudit } from "./audit.js";
 import { rowToSupplier, rowToSyncLog } from "./catalog-helpers.js";
+import { isUuid } from "./_uuid.js";
 
 export const suppliersRouter = new Hono();
+
+// Defensive uuid guard for `:id` — see vendors.ts for rationale.
+suppliersRouter.use("/:id/*", async (c, next) => {
+  if (!isUuid(c.req.param("id"))) return c.json({ error: "not_found" }, 404);
+  await next();
+});
+suppliersRouter.use("/:id", async (c, next) => {
+  if (!isUuid(c.req.param("id"))) return c.json({ error: "not_found" }, 404);
+  await next();
+});
 
 // ────────────────────────────────────────────────────────────────────────
 // LIST

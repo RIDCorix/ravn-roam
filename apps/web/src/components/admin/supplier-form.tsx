@@ -17,6 +17,7 @@ import {
 } from "@/lib/actions";
 
 import type { AdminDict } from "./dict";
+import { FormSelect } from "./form-select";
 
 const STATUSES: SupplierStatus[] = ["active", "paused", "terminated"];
 const INTEGRATIONS: SupplierIntegrationType[] = ["api", "manual_csv"];
@@ -191,35 +192,29 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
       </Field>
 
       <Field label={dict.admin.suppliers.form.status}>
-        <select
+        <FormSelect
           name="status"
           value={status}
-          onChange={(e) => setStatus(e.target.value as SupplierStatus)}
-          className="rounded border border-border bg-bg px-2 py-1 text-sm"
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {dict.admin.suppliers.statuses[s]}
-            </option>
-          ))}
-        </select>
+          onValueChange={(v) => setStatus(v as SupplierStatus)}
+          options={STATUSES.map((s) => ({
+            label: dict.admin.suppliers.statuses[s],
+            value: s,
+          }))}
+        />
       </Field>
 
       <Field label={dict.admin.suppliers.form.integration_type}>
-        <select
+        <FormSelect
           name="integration_type"
           value={integrationType}
-          onChange={(e) =>
-            setIntegrationType(e.target.value as SupplierIntegrationType)
+          onValueChange={(v) =>
+            setIntegrationType(v as SupplierIntegrationType)
           }
-          className="rounded border border-border bg-bg px-2 py-1 text-sm"
-        >
-          {INTEGRATIONS.map((i) => (
-            <option key={i} value={i}>
-              {dict.admin.suppliers.integration_types[i]}
-            </option>
-          ))}
-        </select>
+          options={INTEGRATIONS.map((i) => ({
+            label: dict.admin.suppliers.integration_types[i],
+            value: i,
+          }))}
+        />
       </Field>
 
       <Field

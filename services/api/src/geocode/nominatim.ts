@@ -108,6 +108,10 @@ export interface GeocodeOptions {
      places (e.g. "米蘭時尚區" with country=IT falls back to a Chinese
      place in CN). Prefer null lat/lng over a wrong-country pin. */
   strictCountry?: string | null;
+  /* Render paths should never wait on Nominatim. Set false to return
+     cached rows only; background/Lumi write paths can keep the default
+     and fill misses over time. */
+  fetchMisses?: boolean;
 }
 
 export async function geocodeCities(
@@ -157,6 +161,12 @@ export async function geocodeCities(
         byKey.delete(k);
       }
     }
+  }
+
+  if (opts.fetchMisses === false) {
+    return unique
+      .map((name) => byKey.get(normalize(name)))
+      .filter((c): c is Geocoded => c != null);
   }
 
   const misses = unique.filter((n) => !byKey.has(normalize(n)));

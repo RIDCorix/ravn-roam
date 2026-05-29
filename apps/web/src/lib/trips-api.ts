@@ -13,6 +13,10 @@ export interface ApiTrip {
   end_date: string;
   status: "upcoming" | "active" | "past" | "cancelled";
   metadata: Record<string, unknown>;
+  days_count?: number;
+  cities?: string[];
+  checklist_total?: number;
+  checklist_done?: number;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +39,8 @@ export interface ApiTripStopAttachment {
   id: string;
   type: string;
   label: string;
+  url: string | null;
+  amount: string | null;
   action_label: string | null;
   checklist_item_id: string | null;
   checklist_text: string | null;
@@ -61,12 +67,29 @@ export interface ApiChecklistItem {
   id: string;
   trip_id: string;
   text: string;
+  description: string | null;
   kind: string;
+  start_date: string | null;
+  phase: string | null;
+  group_label: string | null;
+  subtasks: {
+    text: string;
+    done: boolean;
+    image_name?: string | null;
+    image_data_url?: string | null;
+  }[];
   done: boolean;
   suggested: boolean;
   suggested_by: string | null;
   shortcut: string | null;
   shop_filter: Record<string, unknown> | null;
+  esim_order: {
+    order_id: string;
+    order_number: string;
+    status: "pending" | "ready" | "shared";
+    profile_count: number;
+    assigned_count: number;
+  } | null;
   due_date: string | null;
   assigned_companion_id: string | null;
 }
@@ -86,6 +109,7 @@ export interface ApiCompanion {
   user_id: string | null;
   invite_token: string | null;
   accepted_at: string | null;
+  role?: "owner" | "companion";
 }
 
 export interface TripDetailPayload {
@@ -144,6 +168,19 @@ export async function getTrip(id: string): Promise<TripDetailPayload> {
   return authedFetch<TripDetailPayload>(`/trips/${id}`);
 }
 
+/** Flat list of the user's checklist items across all trips. Each item
+ *  carries `trip_id` so callers can group client-side. Defaults to
+ *  incomplete-only; pass `{ includeDone: true }` to fetch everything. */
+export async function listChecklists(
+  opts: { includeDone?: boolean } = {},
+): Promise<ApiChecklistItem[]> {
+  const qs = opts.includeDone ? "?done=any" : "";
+  const { items } = await authedFetch<{ items: ApiChecklistItem[] }>(
+    `/trips/checklists${qs}`,
+  );
+  return items;
+}
+
 export async function createTrip(input: {
   title: string;
   cover?: string | null;
@@ -164,6 +201,8 @@ export async function createTrip(input: {
         id?: string | null;
         type?: string;
         label: string;
+        url?: string | null;
+        amount?: string | null;
         action_label?: string | null;
         checklist_text?: string | null;
         checklist_kind?: string | null;
@@ -174,7 +213,17 @@ export async function createTrip(input: {
   }[];
   checklist?: {
     text: string;
+    description?: string | null;
     kind: string;
+    start_date?: string | null;
+    phase?: string | null;
+    group_label?: string | null;
+    subtasks?: {
+      text: string;
+      done?: boolean;
+      image_name?: string | null;
+      image_data_url?: string | null;
+    }[];
     done?: boolean;
     suggested?: boolean;
     suggested_by?: string | null;

@@ -33,10 +33,21 @@ import {
   rowToPlan,
   rowToProduct,
 } from "./catalog-helpers.js";
+import { isUuid } from "./_uuid.js";
 
 const PLATFORM_VENDOR_ID = "00000000-0000-0000-0000-0000000000a1";
 
 export const productsRouter = new Hono();
+
+// Defensive uuid guard for `:id` — see vendors.ts for rationale.
+productsRouter.use("/:id/*", async (c, next) => {
+  if (!isUuid(c.req.param("id"))) return c.json({ error: "not_found" }, 404);
+  await next();
+});
+productsRouter.use("/:id", async (c, next) => {
+  if (!isUuid(c.req.param("id"))) return c.json({ error: "not_found" }, 404);
+  await next();
+});
 
 // ────────────────────────────────────────────────────────────────────────
 // LIST

@@ -50,6 +50,8 @@ export interface TripStopAttachment {
   id: string;
   type: string;
   label: string;
+  url?: string | null;
+  amount?: string | null;
   actionLabel?: string | null;
   checklistItemId?: string | null;
   checklistText?: string | null;
@@ -73,10 +75,27 @@ export interface TripDay {
 export interface ChecklistItem {
   id: string;
   text: string;
+  description?: string | null;
   done: boolean;
   kind: "esim" | "money" | "flight" | "stay" | "ticket" | "visa" | "doc" | "transit" | "gear" | "insurance";
+  start?: string | null;
+  phase?: string | null;
+  groupLabel?: string | null;
+  subtasks?: {
+    text: string;
+    done: boolean;
+    imageName?: string | null;
+    imageDataUrl?: string | null;
+  }[];
   shortcut?: "shop";
   shopFilter?: { country: string; days?: number; gb?: number };
+  esimOrder?: {
+    orderId: string;
+    orderNumber: string;
+    status: "pending" | "ready" | "shared";
+    profileCount: number;
+    assignedCount: number;
+  } | null;
   due?: string;
   suggested?: boolean;
   suggestedBy?: "Lumi";
@@ -90,6 +109,7 @@ export interface Trip {
   start: string;
   end: string;
   status: TripStatus;
+  metadata?: Record<string, unknown>;
   days: TripDay[];
   checklist: ChecklistItem[];
 }
@@ -230,5 +250,5 @@ export function daysUntil(dateISO: string, fromISO: string = TODAY): number {
 }
 
 export function uniqueCities(trip: Trip): string[] {
-  return Array.from(new Set(trip.days.map((d) => d.city)));
+  return Array.from(new Set(trip.days.map((d) => d.city).filter(Boolean)));
 }

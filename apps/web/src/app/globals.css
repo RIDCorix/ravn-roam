@@ -123,6 +123,18 @@
     0 16px 40px rgba(17, 17, 32, 0.08);
   --shadow-glow-accent: 0 12px 40px rgba(15, 184, 180, 0.24),
     0 0 0 1px rgba(15, 184, 180, 0.08);
+
+  /* Dedicated card shadow — adds depth + a hairline inset ring so cards
+     feel lifted without bleeding teal everywhere. Pair with -hover on
+     tappable cards. */
+  --shadow-card:
+    0 1px 2px rgba(17, 17, 32, 0.04),
+    0 6px 18px -6px rgba(17, 17, 32, 0.10),
+    inset 0 0 0 1px rgba(17, 17, 32, 0.04);
+  --shadow-card-hover:
+    0 2px 4px rgba(17, 17, 32, 0.06),
+    0 14px 32px -10px rgba(17, 17, 32, 0.14),
+    inset 0 0 0 1px rgba(17, 17, 32, 0.04);
   --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 
   /* ---- MOTION ---- */
@@ -196,6 +208,231 @@
   --sidebar-accent-foreground: var(--fg);
   --sidebar-border: var(--divider);
   --sidebar-ring: var(--accent-ring);
+}
+
+/* ============================================================
+   Admin-scoped palette — buff_frontend look. Wrap admin layout
+   in `<div class="admin-scope">` and every shadcn primitive
+   automatically picks up these overrides via the shim tokens.
+   Storefront tokens above are untouched.
+   ============================================================ */
+.admin-scope {
+  /* Surfaces */
+  --bg: hsl(0 0% 100%);
+  --surface: hsl(0 0% 100%);
+  --surface-elevated: hsl(0 0% 100%);
+  --surface-sunken: hsl(0 0% 96%);
+  --surface-hover: hsl(0 0% 94%);
+
+  /* Foreground */
+  --fg: hsl(207 35% 17%);
+  --fg-secondary: hsl(0 0% 35%);
+  --fg-muted: hsl(0 0% 48%);
+  --fg-subtle: hsl(0 0% 65%);
+
+  /* Borders / dividers */
+  --border: hsl(0 0% 90%);
+  --border-strong: hsl(0 0% 80%);
+  --divider: hsl(0 0% 90%);
+  --divider-strong: hsl(0 0% 80%);
+
+  /* Accent — Roam brand teal. Same hex values the storefront uses, so
+     admin primary buttons, sidebar active state, focus rings and brand
+     accents all read as one product. */
+  --accent: #0fb8b4;
+  --accent-hover: #1fc9c5;
+  --accent-soft: #dcf4f3;
+  --accent-softer: #ebfaf9;
+  --accent-ring: rgba(15, 184, 180, 0.32);
+  --accent-glow: rgba(15, 184, 180, 0.20);
+  --accent-fg: #ffffff;
+
+  /* Semantic */
+  --success: hsl(142 76% 36%);
+  --success-soft: hsl(142 60% 92%);
+  --warning: hsl(38 92% 50%);
+  --warning-soft: hsl(38 80% 92%);
+  --error: hsl(5 73% 58%);
+  --error-soft: hsl(5 80% 95%);
+  --info: hsl(207 35% 17%);
+  --info-soft: hsl(207 30% 92%);
+
+  /* shadcn shim — keep mapped to brand tokens above */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --card-foreground: var(--fg);
+  --popover: var(--surface);
+  --popover-foreground: var(--fg);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-fg);
+  --secondary: var(--accent-soft);
+  --secondary-foreground: var(--fg);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--fg-secondary);
+  --accent-bg: var(--accent-soft);
+  --accent-foreground: var(--fg);
+  --destructive: var(--error);
+  --destructive-foreground: hsl(0 0% 100%);
+  --input: var(--border);
+  --ring: hsla(0, 0%, 63%, 0.5);
+
+  /* Sidebar — soft sage active state (buff signature) */
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--accent-fg);
+  --sidebar-accent: var(--accent-softer);
+  --sidebar-accent-foreground: var(--accent);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent-ring);
+
+  /* Radii — buff is tighter than Roam's storefront */
+  --radius: 0.45rem;
+}
+
+
+/* Tailwind 4 dropped the implicit gray-200 default for the `border`
+   utility — without a fallback every `border-*-side` without an
+   explicit color renders as currentColor (often near-black).
+   This restores the v3 behavior using our --border token. */
+*,
+::before,
+::after {
+  border-color: var(--border);
+}
+
+/* Tailwind 4 also dropped the v3 preflight rule that gave <button> a
+   pointer cursor. Restore it across the app so interactive buttons,
+   button-role triggers (Radix popovers / dropdowns) and the role=button
+   primitives all feel clickable on hover. Disabled ones still revert to
+   the default cursor via the shadcn variants. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* ============================================================
+   Commission slider — two-band track painted via CSS pseudo-
+   elements. JS sets --cs-thumb-pct on the element; the track
+   gradient stops at that point to split 收益 (primary) from
+   讓利 (amber).
+   ============================================================ */
+.commission-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.commission-slider:disabled {
+  cursor: not-allowed;
+}
+.commission-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0%,
+    var(--primary) var(--cs-thumb-pct, 0%),
+    #fcd34d var(--cs-thumb-pct, 0%),
+    #fcd34d 100%
+  );
+}
+.commission-slider::-moz-range-track {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0%,
+    var(--primary) var(--cs-thumb-pct, 0%),
+    #fcd34d var(--cs-thumb-pct, 0%),
+    #fcd34d 100%
+  );
+}
+.commission-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--background);
+  border: 2px solid var(--primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  margin-top: -4px; /* center vertically on the 10px track */
+  cursor: grab;
+  transition: transform 120ms ease;
+}
+.commission-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+.commission-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--background);
+  border: 2px solid var(--primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  cursor: grab;
+}
+.commission-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px var(--accent-ring);
+}
+.commission-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px var(--accent-ring);
+}
+
+/* Storefront shop day-picker — Roam teal, no segmented gradient (this
+   slider has one continuous range, the value is just N days). */
+.shop-days-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+.shop-days-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--accent-soft);
+}
+.shop-days-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--accent-soft);
+}
+.shop-days-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 3px 8px rgba(15, 184, 180, 0.32);
+  margin-top: -8px;
+  cursor: grab;
+}
+.shop-days-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.08);
+}
+.shop-days-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 3px 8px rgba(15, 184, 180, 0.32);
+  cursor: grab;
 }
 
 html,
@@ -397,6 +634,56 @@ body {
 }
 
 @keyframes lume-fade-up {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
+}
+
+.lume-fade-up {
+  animation: lume-fade-up 420ms var(--ease-out-soft) both;
+}
+.lume-stagger > * { animation: lume-fade-up 460ms var(--ease-out-soft) both; }
+.lume-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.lume-stagger > *:nth-child(2) { animation-delay: 100ms; }
+.lume-stagger > *:nth-child(3) { animation-delay: 160ms; }
+.lume-stagger > *:nth-child(4) { animation-delay: 220ms; }
+.lume-stagger > *:nth-child(5) { animation-delay: 280ms; }
+
+@keyframes lume-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(-12px, 6px, 0); }
+}
+@keyframes lume-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Storefront page ambient backdrop — soft teal + indigo aurora. */
+.storefront-aurora {
+  position: relative;
+  isolation: isolate;
+}
+.storefront-aurora::before,
+.storefront-aurora::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.storefront-aurora::before {
+  background:
+    radial-gradient(60% 50% at 8% -8%, rgba(15, 184, 180, 0.22), transparent 70%),
+    radial-gradient(50% 40% at 100% 18%, rgba(91, 124, 250, 0.16), transparent 72%),
+    radial-gradient(70% 50% at 50% 110%, rgba(255, 196, 120, 0.12), transparent 70%);
+  filter: blur(2px);
+  animation: lume-drift 18s var(--ease-in-out) infinite;
+}
+.storefront-aurora::after {
+  background-image:
+    radial-gradient(rgba(17, 17, 32, 0.045) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0) 70%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0) 70%);
+  opacity: 0.7;
 }

@@ -1,0 +1,46 @@
+// ISO-3166-1 alpha-2 → rough country centroid (or capital) used to
+// plot "我的足跡" pins on the world map. Hand-curated to the countries
+// we actually surface in the trip catalogue — extend as needed.
+
+export const COUNTRY_CENTROIDS: Record<
+  string,
+  { lat: number; lng: number; nameZh: string; nameEn: string }
+> = {
+  JP: { lat: 35.6762, lng: 139.6503, nameZh: "日本", nameEn: "Japan" },
+  KR: { lat: 37.5665, lng: 126.978, nameZh: "韓國", nameEn: "Korea" },
+  TW: { lat: 25.033, lng: 121.5654, nameZh: "台灣", nameEn: "Taiwan" },
+  HK: { lat: 22.3193, lng: 114.1694, nameZh: "香港", nameEn: "Hong Kong" },
+  MO: { lat: 22.1987, lng: 113.5439, nameZh: "澳門", nameEn: "Macau" },
+  CN: { lat: 39.9042, lng: 116.4074, nameZh: "中國", nameEn: "China" },
+  SG: { lat: 1.3521, lng: 103.8198, nameZh: "新加坡", nameEn: "Singapore" },
+  MY: { lat: 3.139, lng: 101.6869, nameZh: "馬來西亞", nameEn: "Malaysia" },
+  TH: { lat: 13.7563, lng: 100.5018, nameZh: "泰國", nameEn: "Thailand" },
+  VN: { lat: 21.0285, lng: 105.8542, nameZh: "越南", nameEn: "Vietnam" },
+  ID: { lat: -6.2088, lng: 106.8456, nameZh: "印尼", nameEn: "Indonesia" },
+  PH: { lat: 14.5995, lng: 120.9842, nameZh: "菲律賓", nameEn: "Philippines" },
+  IN: { lat: 28.6139, lng: 77.209, nameZh: "印度", nameEn: "India" },
+  AU: { lat: -33.8688, lng: 151.2093, nameZh: "澳洲", nameEn: "Australia" },
+  NZ: { lat: -36.8485, lng: 174.7633, nameZh: "紐西蘭", nameEn: "New Zealand" },
+  US: { lat: 40.7128, lng: -74.006, nameZh: "美國", nameEn: "USA" },
+  CA: { lat: 43.6532, lng: -79.3832, nameZh: "加拿大", nameEn: "Canada" },
+  MX: { lat: 19.4326, lng: -99.1332, nameZh: "墨西哥", nameEn: "Mexico" },
+  BR: { lat: -22.9068, lng: -43.1729, nameZh: "巴西", nameEn: "Brazil" },
+  AR: { lat: -34.6037, lng: -58.3816, nameZh: "阿根廷", nameEn: "Argentina" },
+  GB: { lat: 51.5074, lng: -0.1278, nameZh: "英國", nameEn: "UK" },
+  FR: { lat: 48.8566, lng: 2.3522, nameZh: "法國", nameEn: "France" },
+  DE: { lat: 52.52, lng: 13.405, nameZh: "德國", nameEn: "Germany" },
+  IT: { lat: 41.9028, lng: 12.4964, nameZh: "義大利", nameEn: "Italy" },
+  ES: { lat: 40.4168, lng: -3.7038, nameZh: "西班牙", nameEn: "Spain" },
+  NL: { lat: 52.3676, lng: 4.9041, nameZh: "荷蘭", nameEn: "Netherlands" },
+  CH: { lat: 46.948, lng: 7.4474, nameZh: "瑞士", nameEn: "Switzerland" },
+  AT: { lat: 48.2082, lng: 16.3738, nameZh: "奧地利", nameEn: "Austria" },
+  CZ: { lat: 50.0755, lng: 14.4378, nameZh: "捷克", nameEn: "Czech" },
+  HU: { lat: 47.4979, lng: 19.0402, nameZh: "匈牙利", nameEn: "Hungary" },
+  PL: { lat: 52.2297, lng: 21.0122, nameZh: "波蘭", nameEn: "Poland" },
+  GR: { lat: 37.9838, lng: 23.7275, nameZh: "希臘", nameEn: "Greece" },
+  TR: { lat: 41.0082, lng: 28.9784, nameZh: "土耳其", nameEn: "Turkey" },
+  EG: { lat: 30.0444, lng: 31.2357, nameZh: "埃及", nameEn: "Egypt" },
+  ZA: { lat: -33.9249, lng: 18.4241, nameZh: "南非", nameEn: "South Africa" },
+  KE: { lat: -1.2921, lng: 36.8219, nameZh: "肯亞", nameEn: "Kenya" },
+  AE: { lat: 25.2048, lng: 55.2708, nameZh: "阿聯", nameEn: "UAE" },
+};

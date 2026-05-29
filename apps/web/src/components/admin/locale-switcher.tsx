@@ -2,6 +2,14 @@
 
 import { usePathname, useRouter } from "next/navigation";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 export function LocaleSwitcher({
   currentLang,
   locales,
@@ -20,17 +28,20 @@ export function LocaleSwitcher({
   }
 
   return (
-    <select
-      className="rounded border border-border bg-surface text-sm px-2 py-1"
-      value={currentLang}
-      onChange={(e) => pickLocale(e.target.value)}
-      aria-label="Language"
-    >
-      {locales.map((locale) => (
-        <option key={locale} value={locale}>
-          {locale}
-        </option>
-      ))}
-    </select>
+    <Select value={currentLang} onValueChange={pickLocale}>
+      <SelectTrigger
+        aria-label="Language"
+        className="h-8 w-[80px] text-xs"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        {locales.map((locale) => (
+          <SelectItem key={locale} value={locale} className="text-xs">
+            {locale}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -29,8 +29,11 @@ export interface LumiStopAttachment {
   /* ticket | reservation | booking | flight | transit | upload | document */
   type?: string;
   label: string;
+  url?: string | null;
+  amount?: string | null;
   action_label?: string | null;
   checklist_text?: string | null;
+  checklist_description?: string | null;
   checklist_kind?: string | null;
   checklist_item_id?: string | null;
   status?: "required" | "completed" | "uploaded";
@@ -145,9 +148,19 @@ export interface LumiTripDraft {
   days: LumiDay[];
   checklist?: {
     text: string;
+    description?: string | null;
     kind: string;
-    suggested?: boolean;
-  }[];
+    start_date?: string | null;
+    phase?: string | null;
+    group_label?: string | null;
+    subtasks?: { text: string; done?: boolean | null }[] | null;
+    suggested?: boolean | null;
+    shop_filter?: {
+      country: string;
+      days?: number | null;
+      gb?: number | null;
+    } | null;
+  }[] | null;
 }
 
 export interface LumiResult {
@@ -157,6 +170,25 @@ export interface LumiResult {
   // A complete trip proposal for the user to confirm. Available in any
   // mode — the client surfaces a "Create trip" button when present.
   trip_draft?: LumiTripDraft;
+  // Read-only product suggestion — the chat UI renders one CTA per plan
+  // (single plan or multi-region combo). Does NOT mutate any trip.
+  esim_suggestion?: {
+    plans: Array<{
+      country: string;
+      days?: number;
+      gb?: number;
+      label?: string;
+    }>;
+    rationale?: string;
+  };
+  // Raw OpenAI function call arguments before server-side normalization.
+  // Persisted for audit/debugging so we can inspect exactly what Lumi asked
+  // the app to do on that turn.
+  tool_call?: {
+    id?: string | null;
+    name: "lumi_response";
+    arguments: unknown;
+  };
 }
 
 /* One stop inside a day. `name` is the only required field; everything
@@ -174,8 +206,11 @@ const stopSchema = z.object({
         id: z.string().min(1).max(80).nullish(),
         type: z.string().min(1).max(40).default("ticket"),
         label: z.string().min(1).max(120),
+        url: z.string().url().max(1200).nullish(),
+        amount: z.string().max(80).nullish(),
         action_label: z.string().max(80).nullish(),
         checklist_text: z.string().max(500).nullish(),
+        checklist_description: z.string().max(4000).nullish(),
         checklist_kind: z.string().max(40).nullish(),
         checklist_item_id: z.string().uuid().nullish(),
         status: z.enum(["required", "completed", "uploaded"]).default("required"),
@@ -213,6 +248,38 @@ const responseSchema = z.object({
     )
     .max(12)
     .nullish(),
+  // Read-only suggestion: Lumi proposes one or more eSIM plans and the
+  // chat UI renders them as "去買 →" CTA cards. Does not mutate any
+  // trip — the user clicks through to the shop page where they can
+  // actually buy. Use this for shopping intent; trip_draft is for
+  // *new trip* creation only.
+  //
+  // Multi-plan combos: when the trip spans multiple sub-regions, emit
+  // multiple plans in the array (e.g. western Europe 3 days + eastern
+  // Europe 2 days). Each plan has its own country / days / gb.
+  esim_suggestion: z
+    .object({
+      plans: z
+        .array(
+          z.object({
+            // ISO 3166-1 alpha-2 (e.g. "JP", "FR") OR a region slug
+            // from the storefront catalogue when the suggestion spans
+            // multiple ISO codes (e.g. "western-northern-europe",
+            // "central-eastern-europe-balkans"). Picking a slug lets
+            // the storefront deep-link to the right sub-region page.
+            country: z.string().min(2).max(40),
+            days: z.number().int().min(1).max(60).nullish(),
+            gb: z.number().min(0.5).max(200).nullish(),
+            label: z.string().min(1).max(200).nullish(),
+          }),
+        )
+        .min(1)
+        .max(4),
+      // Why these plans? Shown as a small explanation above the CTA
+      // cards. Keep to one sentence in the user's language.
+      rationale: z.string().min(1).max(300).nullish(),
+    })
+    .nullish(),
   trip_draft: z
     .object({
       title: z.string().min(1).max(200),
@@ -224,8 +291,31 @@ const responseSchema = z.object({
         .array(
           z.object({
             text: z.string().min(1).max(500),
+            description: z.string().max(4000).nullish(),
             kind: z.string().min(1).max(40),
+            start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+            phase: z.string().max(40).nullish(),
+            group_label: z.string().max(80).nullish(),
+            subtasks: z
+              .array(
+                z.object({
+                  text: z.string().min(1).max(300),
+                  done: z.boolean().nullish(),
+                }),
+              )
+              .max(20)
+              .nullish(),
             suggested: z.boolean().nullish(),
+            // Only meaningful when kind === "esim". Drives the
+            // "去買 →" deep-link on the storefront so the user can
+            // jump to the shop region page with the slider pre-set.
+            shop_filter: z
+              .object({
+                country: z.string().min(2).max(40), // ISO 3166-1 alpha-2 preferred (e.g. "JP")
+                days: z.number().int().min(1).max(60).nullish(),
+                gb: z.number().min(0.5).max(200).nullish(),
+              })
+              .nullish(),
           }),
         )
         .max(40)
@@ -241,7 +331,8 @@ const responseSchema = z.object({
 // that don't apply to its current input.
 
 const CORE_PROMPT = `You are Lumi, a travel assistant inside the Roam eSIM app.
-Reply with strict JSON, no markdown, no commentary.
+Use the lumi_response tool exactly once. Put every field in the tool
+arguments; do not write a normal assistant message.
 
 ALWAYS include a top-level "summary" — a 1-2 sentence reply in the
 user's language (default 繁中). Never omit it, even when emitting a
@@ -249,9 +340,10 @@ trip_draft or days/companions edit. Be honest about what you don't know.
 
 Possible shapes:
   { "summary": string }                              // default — just answer
-  { "summary": string, "days": [ … ] }               // edit current trip's days
+  { "summary": string, "days": [ … ] }               // update the visible trip
   { "summary": string, "companions": [ … ] }         // CRUD current trip's companions
   { "summary": string, "trip_draft": { … } }         // propose a brand-new trip
+  { "summary": string, "esim_suggestion": { … } }    // surface a buyable eSIM plan
 
 Field names are case-sensitive and snake_case. Add extra top-level keys
 only when the relevant skill below tells you to.`;
@@ -273,10 +365,22 @@ Any vague trip reference in the user's message refers to THIS trip:
 
 When the user asks you to plan / fill / 規劃 / 排程 / 安排 this trip,
 or to edit any specific day:
-  → Emit "days" with the trip's entire itinerary, every day filled
-    with concrete stops (3-5 stops per full day; see SKILL · trip-
-    drafter's stop guidance for kind / time / note conventions).
+  → Return the updated itinerary in "days".
   → Never re-ask for destination/dates — they're already in context.
+  → For any whole-trip planning request, days[] MUST contain every
+    existing editableTrip.days day_date exactly once. Never collapse a
+    multi-day trip into the first day.
+  → If the user says "每天安排 N-M 個行程" / "fill every day" /
+    "plan this whole trip", update EVERY day in this trip. Keep the
+    same day_date values and emit 2-3 real stops per non-transit day
+    when that is what they asked for. Do not ask which day.
+
+Day references:
+  • "day2", "Day 2", "第二天", "第 2 天", "D2" mean the second entry in
+    editableTrip.days. Use that exact day_date and its existing stops.
+  • If the user asks for links/tickets/reservations for a day, update the
+    relevant attachments on that day rather than asking them to name the
+    activity again when the day has clear ticketed stops.
 
 DO NOT emit trip_draft in editor mode. Creating a draft would clone
 this trip into a duplicate. The ONLY exception: the user explicitly
@@ -299,6 +403,8 @@ days: chronological array, each entry:
           {
             "type": "ticket" | "reservation" | "booking" | "flight" | "transit" | "upload" | "document",
             "label": string,              // "門票" / "訂位" / "機票"
+            "url": string | null,         // official booking URL if known
+            "amount": string | null,      // price if known, e.g. "€18"
             "action_label": string | null,// "訂票" / "定位" / "上傳"
             "checklist_text": string | null,
             "checklist_kind": string | null,
@@ -340,10 +446,8 @@ Day note rule (CRITICAL — the UI shows this as the day's headline):
 
 Attachment rule:
   • If the user asks "哪些行程需要買票/訂位/標記上去" or any
-    ticket/reservation/upload marking request, this is an enrichment task,
-    NOT a replanning task. Preserve every existing day and every existing
-    stop exactly; only add attachments to the relevant existing stops.
-    Never replace the itinerary with only the stops that need tickets.
+    ticket/reservation/upload marking request, add the needed attachment
+    to the relevant existing stop. Keep the user's itinerary as-is.
   • When a stop naturally requires proof or an action before travel,
     add one attachment to that stop AND make it checklist-backed.
   • Examples: museums / theme parks / popular attractions that need
@@ -357,6 +461,12 @@ Attachment rule:
     checklist_item_id null unless the existing context already gives an
     id. Status is usually "required"; use "completed" only if the user
     explicitly says it is already bought/reserved/uploaded.
+  • Set attachment.url when you know the official booking, ticket,
+    reservation, airline, train, museum, hotel or restaurant URL. Prefer
+    official sites over aggregators. If unsure, set url null.
+  • In summary, speak naturally to the traveler. Do not mention internal
+    mechanics like days, patches, rewrites, schemas, preserving data, or
+    safety checks. Say things like: "我幫你補上訂票資訊了。"
 
 Preserve existing day_date values when filling stops — don't shift
 dates. Include EVERY day in the trip window (start_date..end_date),
@@ -397,8 +507,11 @@ trip_draft = {
             {
               "type": string,
               "label": string,
+              "url": string | null,
+              "amount": string | null,
               "action_label": string | null,
               "checklist_text": string | null,
+              "checklist_description": string | null,
               "checklist_kind": string | null,
               "status": "required" | "completed" | "uploaded"
             }
@@ -408,7 +521,11 @@ trip_draft = {
     }
   ],
   "checklist": [                                              // optional
-    { "text": string, "kind": string, "suggested": true }
+    { "text": string, "description": string | null,
+      "kind": string, "start_date": "YYYY-MM-DD" | null,
+      "phase": "early" | "week_before" | "days_before" | "travel_day" | "on_trip",
+      "group_label": string, "subtasks": [{ "text": string, "done": false }],
+      "suggested": true }
   ]
 }
 
@@ -424,8 +541,9 @@ Per-day stops guidance:
   • Rest / unplanned days: a single stop named after the city with
     kind:"other" is fine. Empty stops[] is allowed but discouraged.
   • Add stop attachments for tickets, reservations, bookings and
-    uploads that the user must complete; every attachment should include
-    checklist_text so it becomes a checklist item. Do not repeat the same
+   uploads that the user must complete; every attachment should include
+    checklist_text and checklist_description so it becomes a helpful
+    checklist item. Do not repeat the same
     checklist_text again in trip_draft.checklist.
 
 Time rule applies here too — every stop on a planned day MUST carry
@@ -444,7 +562,23 @@ invent fictional landmarks. If unsure, write the neighborhood instead
 Do NOT use "date", "place", "location", "task", "item", or Chinese
 keys. Each day MUST have day_date + city; "note" can be "" but the
 key must exist. Each stop MUST have name; other fields optional but
-preferred. Each checklist item MUST have text + kind.
+preferred. Each checklist item MUST have text + kind + phase +
+group_label + start_date + subtasks. Checklist subtasks are the concrete
+steps the user can tick off. Checklist description is optional markdown
+for guidance only: how to prepare, caveats, official-document hints, or
+decision criteria. NEVER repeat the same wording as subtasks in
+description. If there is no extra guidance beyond the subtasks, set
+description to null.
+
+Checklist timing:
+  • "early": bookings, visas, insurance, hotels; start as soon as the
+    trip is created, due before departure.
+  • "week_before": documents, confirmations, eSIM install; start about
+    7 days before departure.
+  • "days_before": packing and offline copies; start 3-5 days before.
+  • "travel_day": airport / flight-day tasks.
+  • "on_trip": things to do only after arrival.
+Every checklist item should have 2-5 subtasks. Keep subtasks concrete.
 
 Extract dates from any pasted itinerary silently — outbound = start,
 return = end. Compute duration yourself: (end - start + 1) days. Emit
@@ -455,18 +589,145 @@ destination but no dates). Otherwise emit trip_draft immediately.
 
 Title: short and human ("東京 + 京都"). Checklist: 3-6 items with kind ∈
 {esim, money, flight, stay, ticket, visa, doc, transit, gear,
-insurance}; mark each "suggested": true.`;
+insurance}; mark each "suggested": true.
+
+eSIM items: when emitting a checklist item with kind="esim", ALWAYS
+include shop_filter so the storefront can deep-link to the matching
+shop region with the slider pre-positioned. Shape:
+  { "country": ISO_2, "days": number?, "gb": number? }
+  • country  REQUIRED. Use an ISO 3166-1 alpha-2 code: "JP" (Japan),
+             "KR" (Korea), "TW" (Taiwan), "TH" (Thailand), "FR", "DE",
+             "GB", "US", "AU"… For a multi-country region pick the
+             single dominant country (e.g. user going to "Italy +
+             France" → "IT" or "FR"; never write "EU+UK" or "歐洲").
+  • days     OPTIONAL. The trip length in days. Use the actual planned
+             duration, not a rounded value.
+  • gb       OPTIONAL. Estimated GB needed for the whole trip. If you
+             don't know the user's usage pattern, leave it null rather
+             than guessing.
+Example: { "text": "購買日本 7 日 eSIM",
+            "description": "抵達前可以先安裝，但先不要啟用；落地後再切換數據線路。",
+           "kind": "esim",
+           "shop_filter": { "country": "JP", "days": 7, "gb": 5 },
+           "suggested": true }`;
+
+const SKILL_ESIM_SHOP = `SKILL · esim-shop — TAKES PRECEDENCE OVER trip-editor
+
+User intent is shopping for an eSIM. This skill OVERRIDES any pull
+from trip-editor: do NOT respond with "我沒有更動行程" or similar
+day-rewrite framing. The user wants a buyable plan, not a schedule
+change.
+
+When the user asks about buying an eSIM, about data plans, or how
+much data they'll need:
+
+1. Use the trip context (destination + dates) to infer country and
+   days if available. If genuinely missing, ask ONE clarifying
+   question. Example: "你這趟去日本大概幾天？"
+2. If they give a vague data need ("不用太多", "夠用就好"), default
+   to: 1 GB/day for light use, 3 GB/day for moderate, unlimited for
+   heavy. Quote the assumption in your summary.
+3. ALWAYS emit a top-level "esim_suggestion" object with at least one
+   plan in plans[]. The storefront renders one CTA card per plan,
+   deep-linking each to its shop region with the slider pre-positioned.
+
+Two patterns:
+
+A. Single-country / single sub-region trip:
+   { "summary": "幫你準備了 7 天日本 5GB 的方案，點 → 去買看看。",
+     "esim_suggestion": {
+       "plans": [
+         { "country": "JP", "days": 7, "gb": 5,
+           "label": "日本 7 天 5GB" }
+       ],
+       "rationale": null }
+   }
+
+B. Multi-region trip (e.g. user is going to BOTH western AND eastern
+   Europe). Compare two options and pick the better one — usually
+   either ONE full-coverage plan OR multiple sub-region plans:
+
+   Option B-1 (one full plan): one plans[] entry covering the whole
+     parent region. Use this when the user's destinations span > 50%
+     of the parent region's countries.
+   Option B-2 (combo): two plans[] entries, one per sub-region, with
+     days split per the user's itinerary. Use this when the user
+     visits only 1-2 specific sub-regions; cheaper than a full plan.
+
+   Example (3 days western EU + 2 days eastern EU):
+   { "summary": "你的行程跨西歐和中歐，建議兩個方案分別買，比全境便宜。",
+     "esim_suggestion": {
+       "plans": [
+         { "country": "western-northern-europe", "days": 3, "gb": 3,
+           "label": "西歐 3 天" },
+         { "country": "central-eastern-europe-balkans", "days": 2,
+           "gb": 2, "label": "中歐 2 天" }
+       ],
+       "rationale": "西歐 3 天 + 中歐 2 天比歐洲全境 5 天便宜約 30%" }
+   }
+
+Country field — choose ONE of:
+  • ISO 3166-1 alpha-2:  JP / KR / FR / DE / IT / ES / GB / US / AU
+  • Storefront region slug (for multi-country coverage):
+      western-northern-europe          (FR/DE/NL/BE/LU/GB/IE/DK/SE/NO/FI/IS/CH/AT)
+      central-eastern-europe-balkans   (PL/CZ/SK/HU/RO/BG/HR/SI/RS/BA/ME/MK/AL/GR/EE/LV/LT)
+      europe                            (all 32 EU+ countries)
+      spain-camino                      (Spain only)
+      greater-china                     (CN/HK/MO)
+      singapore-malaysia                (SG/MY)
+      anz                               (AU/NZ)
+      saipan-guam                       (MP/GU)
+      north-america                     (US/CA/MX)
+      south-america / africa / india / turkey
+
+Never write Chinese region names ("歐洲", "東南亞") in country —
+either ISO-2 OR one of the slugs above.
+
+rationale: short one-sentence Chinese explanation when emitting
+multiple plans. Null when emitting just one.
+
+Do NOT use trip_draft for this — trip_draft creates a brand-new trip
+and is wrong for "user already has a trip and just wants a plan".
+
+Follow-ups like "怎麼買", "要多少 GB", "可以再便宜嗎" stay inside this
+skill — keep answering with summary + esim_suggestion.`;
 
 interface SkillSelection {
   prompts: string[];
 }
 
+// Lightweight regex match for prompts that read like an eSIM / data-plan
+// shopping intent. Cheap enough to run on every turn; false positives
+// just add ~250 tokens of skill prompt which is acceptable.
+const ESIM_INTENT_RE =
+  /eSIM|sim\s*卡|網卡|上網卡|流量|吃到飽|要多少\s*G|資費|網路方案/i;
+
+/**
+ * True when the current prompt OR the last few user turns mention eSIM
+ * intent. We need the history check because short follow-ups like
+ * "怎麼買" / "要多少 GB" don't carry the trigger word themselves but
+ * are part of the same shopping conversation.
+ */
+function looksLikeEsimShopPrompt(input: LumiInput): boolean {
+  if (ESIM_INTENT_RE.test(input.prompt)) return true;
+  // Scan the last 3 user turns. Anything older usually means a topic
+  // change and we shouldn't keep biasing the model toward eSIM.
+  const recentUserTurns = (input.history ?? [])
+    .filter((t) => t.role === "user")
+    .slice(-3);
+  return recentUserTurns.some((t) => ESIM_INTENT_RE.test(t.content));
+}
+
 function selectSkills(input: LumiInput): SkillSelection {
   const prompts: string[] = [];
-  if (input.editableTrip) prompts.push(SKILL_EDITOR);
-  // Drafter is always available — even editor-mode users may want to
-  // plan a separate new trip. Cheap to include (~120 tokens).
+  const esim = looksLikeEsimShopPrompt(input);
+  // When the user is clearly shopping, drop the trip-editor skill —
+  // its "TAKES PRECEDENCE" wording otherwise hijacks short follow-ups
+  // like "怎麼買" into a day-rewrite SOP. Users who want to edit days
+  // can pivot the conversation explicitly.
+  if (input.editableTrip && !esim) prompts.push(SKILL_EDITOR);
   prompts.push(SKILL_DRAFTER);
+  if (esim) prompts.push(SKILL_ESIM_SHOP);
   return { prompts };
 }
 
@@ -512,13 +773,13 @@ function formatContext(input: LumiInput): string {
       `  end_date:   ${input.editableTrip.end_date}`,
       `  day_count:  ${input.editableTrip.days.length}`,
       `When the user says "this trip" / "這趟" / "幫我規劃" with no`,
-      `other trip named, they mean THIS trip. Emit "days" to edit it;`,
+      `other trip named, they mean THIS trip. You may update it;`,
       `do NOT emit "trip_draft" (that would create a duplicate).`,
       "",
     );
     lines.push(
       "",
-      "Editable trip — full day list (ground truth, preserve day_date values):",
+      "Current itinerary:",
       JSON.stringify(input.editableTrip.days, null, 2),
       "",
       "Cities currently pinned on the map (geocoded; null means we couldn't",
@@ -543,7 +804,7 @@ function formatContext(input: LumiInput): string {
   return lines.join("\n");
 }
 
-/* Strict JSON Schema sent to OpenAI as `response_format.json_schema`.
+/* Strict JSON Schema sent to OpenAI as the `lumi_response` tool schema.
    Mirrors the zod `responseSchema` shape but obeys OpenAI's strict-mode
    restrictions: every property listed in `required`, `additionalProperties:
    false` on every object, no `default`/`min`/`max`/`pattern` keywords.
@@ -578,10 +839,23 @@ const STOP_SCHEMA = {
               "ticket | reservation | booking | flight | transit | upload | document",
           },
           label: { type: "string", description: "Short badge label" },
+          url: {
+            type: ["string", "null"],
+            description: "Official booking/reservation URL when known",
+          },
+          amount: {
+            type: ["string", "null"],
+            description: "Ticket/reservation price when known, e.g. €18",
+          },
           action_label: { type: ["string", "null"] },
           checklist_text: {
             type: ["string", "null"],
             description: "Task text to create/link as a checklist item",
+          },
+          checklist_description: {
+            type: ["string", "null"],
+            description:
+              "Short markdown prep memo for the linked checklist item.",
           },
           checklist_kind: {
             type: ["string", "null"],
@@ -597,8 +871,11 @@ const STOP_SCHEMA = {
           "id",
           "type",
           "label",
+          "url",
+          "amount",
           "action_label",
           "checklist_text",
+          "checklist_description",
           "checklist_kind",
           "checklist_item_id",
           "status",
@@ -628,16 +905,21 @@ const DAY_SCHEMA = {
   required: ["day_date", "city", "note", "stops"],
 } as const;
 
-/* When `days` is nullable — default mode for non-editor or off-topic
-   prompts. The model can return `null` to mean "no day edits this turn". */
+/* Nullable in default mode; required only for explicit planning prompts. */
 const DAYS_NULLABLE = {
   anyOf: [
     { type: "null" },
     { type: "array", items: DAY_SCHEMA },
   ],
   description:
-    "Use to rewrite the current trip's days in editor mode. " +
+    "Updated itinerary for the current trip. " +
     "Set null when not editing.",
+} as const;
+
+const DAYS_FORBIDDEN = {
+  type: "null",
+  description:
+    "Always null outside trip-editor mode. New trip proposals must use trip_draft.",
 } as const;
 
 /* Planning-mode variant — when the user is on a trip page AND their prompt
@@ -700,10 +982,55 @@ const RESPONSE_JSON_SCHEMA = {
                     additionalProperties: false,
                     properties: {
                       text: { type: "string" },
+                      description: {
+                        type: ["string", "null"],
+                        description:
+                          "Short markdown memo: bullets, links, or prep notes.",
+                      },
                       kind: { type: "string" },
+                      start_date: {
+                        type: ["string", "null"],
+                        description: "YYYY-MM-DD date to start preparing.",
+                      },
+                      phase: {
+                        type: ["string", "null"],
+                        description:
+                          "early | week_before | days_before | travel_day | on_trip",
+                      },
+                      group_label: {
+                        type: ["string", "null"],
+                        description:
+                          "Human group label, e.g. 訂票與預訂 or 行李整理.",
+                      },
+                      subtasks: {
+                        anyOf: [
+                          { type: "null" },
+                          {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              additionalProperties: false,
+                              properties: {
+                                text: { type: "string" },
+                                done: { type: ["boolean", "null"] },
+                              },
+                              required: ["text", "done"],
+                            },
+                          },
+                        ],
+                      },
                       suggested: { type: ["boolean", "null"] },
                     },
-                    required: ["text", "kind", "suggested"],
+                    required: [
+                      "text",
+                      "description",
+                      "kind",
+                      "start_date",
+                      "phase",
+                      "group_label",
+                      "subtasks",
+                      "suggested",
+                    ],
                   },
                 },
               ],
@@ -720,8 +1047,62 @@ const RESPONSE_JSON_SCHEMA = {
         },
       ],
     },
+    esim_suggestion: {
+      anyOf: [
+        { type: "null" },
+        {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            plans: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  country: {
+                    type: "string",
+                    description:
+                      "ISO 3166-1 alpha-2 (JP, KR, FR) OR a storefront " +
+                      "region slug for sub-regions: japan, korea, " +
+                      "western-northern-europe, central-eastern-europe-balkans, " +
+                      "spain-camino, anz, greater-china, singapore-malaysia, " +
+                      "north-america, south-america, africa, etc.",
+                  },
+                  days: { type: ["integer", "null"] },
+                  gb: { type: ["number", "null"] },
+                  label: {
+                    type: ["string", "null"],
+                    description:
+                      "Short CTA label; storefront falls back to a default.",
+                  },
+                },
+                required: ["country", "days", "gb", "label"],
+              },
+            },
+            rationale: {
+              type: ["string", "null"],
+              description:
+                "One-sentence reason for this combo (e.g. why two plans " +
+                "instead of full-region). Shown above the CTA cards.",
+            },
+          },
+          required: ["plans", "rationale"],
+        },
+      ],
+      description:
+        "Surface one or more buyable eSIM plans via deep-link CTAs. " +
+        "Use when the user is shopping (not creating a new trip). " +
+        "For multi-region trips, emit multiple plans in `plans[]`.",
+    },
   },
-  required: ["summary", "days", "companions", "trip_draft"],
+  required: [
+    "summary",
+    "days",
+    "companions",
+    "trip_draft",
+    "esim_suggestion",
+  ],
 } as const;
 
 /* Planning-mode schema: same shape as the default, but `days` is now a
@@ -732,6 +1113,16 @@ const RESPONSE_JSON_SCHEMA_PLANNING = {
   properties: {
     ...RESPONSE_JSON_SCHEMA.properties,
     days: DAYS_REQUIRED,
+  },
+} as const;
+
+/* Off-trip pages cannot safely apply top-level day edits. If the user is
+   creating a new journey, Lumi must emit trip_draft instead. */
+const RESPONSE_JSON_SCHEMA_NO_EDITOR = {
+  ...RESPONSE_JSON_SCHEMA,
+  properties: {
+    ...RESPONSE_JSON_SCHEMA.properties,
+    days: DAYS_FORBIDDEN,
   },
 } as const;
 
@@ -766,7 +1157,9 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     !!input.editableTrip && looksLikePlanningPrompt(input.prompt);
   const activeSchema = planningMode
     ? RESPONSE_JSON_SCHEMA_PLANNING
-    : RESPONSE_JSON_SCHEMA;
+    : input.editableTrip
+      ? RESPONSE_JSON_SCHEMA
+      : RESPONSE_JSON_SCHEMA_NO_EDITOR;
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -777,18 +1170,26 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     body: JSON.stringify({
       model: env.OPENAI_MODEL,
       temperature: 0.2,
-      /* Strict structured output: the model is structurally prevented
-         from emitting keys outside the schema, missing required fields,
-         or returning non-JSON. Requires gpt-4o-2024-08-06+ / gpt-4o-mini.
+      /* Real tool calling: Lumi must call this function once, and the
+         function arguments are the app action payload. Strict mode still
+         prevents keys outside the schema or missing required fields.
          Zod safeParse below is a second guard for range/regex constraints
          strict mode can't express. */
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "lumi_response",
-          strict: true,
-          schema: activeSchema,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "lumi_response",
+            description:
+              "Return Lumi's structured response and any app actions for this turn.",
+            strict: true,
+            parameters: activeSchema,
+          },
         },
+      ],
+      tool_choice: {
+        type: "function",
+        function: { name: "lumi_response" },
       },
       messages: [
         { role: "system", content: systemPrompt },
@@ -805,16 +1206,38 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
   }
 
   const json = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
+    choices?: {
+      message?: {
+        content?: string | null;
+        tool_calls?: {
+          id?: string | null;
+          type?: string;
+          function?: { name?: string; arguments?: string };
+        }[];
+      };
+    }[];
   };
-  const content = json.choices?.[0]?.message?.content;
-  if (!content) throw new Error("OpenAI returned no content");
+  const message = json.choices?.[0]?.message;
+  const toolCall =
+    message?.tool_calls?.find(
+      (call) => call.function?.name === "lumi_response",
+    ) ?? message?.tool_calls?.[0];
+  const content = toolCall?.function?.arguments;
+  if (!content) {
+    throw new Error(
+      `OpenAI returned no lumi_response tool call: ${JSON.stringify(
+        message?.content ?? null,
+      ).slice(0, 200)}`,
+    );
+  }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new Error(`OpenAI returned non-JSON content: ${content.slice(0, 200)}`);
+    throw new Error(
+      `OpenAI returned non-JSON tool arguments: ${content.slice(0, 200)}`,
+    );
   }
 
   const parsedResult = responseSchema.safeParse(parsed);
@@ -824,6 +1247,11 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     );
   }
   const result = parsedResult.data;
+  const rawToolCall: NonNullable<LumiResult["tool_call"]> = {
+    id: toolCall.id ?? null,
+    name: "lumi_response",
+    arguments: parsed,
+  };
 
   /* Dev visibility — tells us at a glance whether the model actually
      emitted structured payloads or just summary text. Keep terse so the
@@ -838,8 +1266,12 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
 
   if (result.days) {
     // Safety: editor mode requires an editable trip in the input. If
-    // Lumi tries to emit days without it, drop them.
+    // Lumi tries to emit days without it, surface them as a draft instead
+    // of leaving the user with a "planned" summary and no visible trip.
     if (!input.editableTrip) {
+      result.trip_draft ??= tripDraftFromLooseDays(
+        result.days,
+      ) as NonNullable<typeof result.trip_draft>;
       delete result.days;
     } else {
       for (let i = 1; i < result.days.length; i++) {
@@ -853,13 +1285,8 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     delete result.companions;
   }
   if (result.trip_draft) {
-    const draft = result.trip_draft;
-    if (draft.days[0]!.day_date !== draft.start_date) {
-      draft.start_date = draft.days[0]!.day_date;
-    }
-    if (draft.days[draft.days.length - 1]!.day_date !== draft.end_date) {
-      draft.end_date = draft.days[draft.days.length - 1]!.day_date;
-    }
+    const draft = normalizeTripDraftCalendar(result.trip_draft);
+    result.trip_draft = draft as NonNullable<typeof result.trip_draft>;
     for (let i = 1; i < draft.days.length; i++) {
       if (draft.days[i]!.day_date <= draft.days[i - 1]!.day_date) {
         throw new Error("OpenAI returned non-chronological draft day list");
@@ -875,5 +1302,164 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
     days: result.days ?? undefined,
     companions: (result.companions ?? undefined) as LumiResult["companions"],
     trip_draft: (result.trip_draft ?? undefined) as LumiResult["trip_draft"],
+    esim_suggestion:
+      (result.esim_suggestion ?? undefined) as LumiResult["esim_suggestion"],
+    tool_call: rawToolCall,
   };
+}
+
+export function tripDraftFromLooseDays(days: LumiDay[]): LumiTripDraft {
+  const first = days[0]!;
+  const last = days[days.length - 1]!;
+  const cities = uniqueDayCities(days);
+  return normalizeTripDraftCalendar({
+    title: titleFromCities(cities),
+    start_date: first.day_date,
+    end_date: last.day_date,
+    cover: cities[0]?.slice(0, 2) ?? null,
+    days,
+    checklist: [
+      {
+        text: "確認航班與住宿資訊",
+        description: "如果航班時間有異動，住宿入住時間和接駁安排也要一起確認。",
+        kind: "flight",
+        phase: "week_before",
+        group_label: "文件與確認",
+        start_date: null,
+        subtasks: [
+          { text: "確認去程與回程航班時間", done: false },
+          { text: "把電子機票存到離線檔", done: false },
+        ],
+        suggested: true,
+      },
+      {
+        text: "準備目的地 eSIM 或漫遊方案",
+        description: "抵達前可以先安裝，但先不要啟用；落地後再切換數據線路。",
+        kind: "esim",
+        phase: "week_before",
+        group_label: "通訊與網路",
+        start_date: null,
+        subtasks: [
+          { text: "依旅程天數選擇方案", done: false },
+          { text: "出發前先安裝 eSIM", done: false },
+        ],
+        suggested: true,
+      },
+      {
+        text: "整理護照、簽證與保險文件",
+        description: "重要文件建議同時保存在手機離線檔和雲端，避免網路不穩時打不開。",
+        kind: "doc",
+        phase: "early",
+        group_label: "文件與保險",
+        start_date: null,
+        subtasks: [
+          { text: "確認護照效期", done: false },
+          { text: "保存簽證、保險與入境文件", done: false },
+        ],
+        suggested: true,
+      },
+    ],
+  });
+}
+
+export function normalizeTripDraftCalendar(draft: LumiTripDraft): LumiTripDraft {
+  const range = enumerateDateRange(draft.start_date, draft.end_date);
+  const normalizedDays = draft.days
+    .map((day) => ({ ...day, stops: day.stops ?? [] }))
+    .sort((a, b) => a.day_date.localeCompare(b.day_date));
+
+  if (!range) {
+    const first = normalizedDays[0]!;
+    const last = normalizedDays[normalizedDays.length - 1]!;
+    return {
+      ...draft,
+      start_date: first.day_date,
+      end_date: last.day_date,
+      days: normalizedDays,
+    };
+  }
+
+  const dayByDate = new Map(normalizedDays.map((day) => [day.day_date, day]));
+  const firstCity =
+    normalizedDays.find((day) => day.city.trim())?.city.trim() ||
+    draft.title.trim() ||
+    "旅程";
+
+  const days = range.map((date, index) => {
+    const existing = dayByDate.get(date);
+    if (existing) return existing;
+    const previous = range
+      .slice(0, index)
+      .reverse()
+      .map((d) => dayByDate.get(d))
+      .find((day): day is NonNullable<typeof day> => !!day);
+    const next = range
+      .slice(index + 1)
+      .map((d) => dayByDate.get(d))
+      .find((day): day is NonNullable<typeof day> => !!day);
+    return {
+      day_date: date,
+      city: previous?.city || next?.city || firstCity,
+      note: "",
+      stops: [],
+    };
+  });
+
+  return {
+    ...draft,
+    days,
+  };
+}
+
+function enumerateDateRange(start: string, end: string): string[] | null {
+  if (!isIsoDate(start) || !isIsoDate(end)) return null;
+  const startDate = parseIsoDate(start);
+  const endDate = parseIsoDate(end);
+  if (endDate.getTime() < startDate.getTime()) return null;
+
+  const out: string[] = [];
+  let cursor = startDate;
+  while (cursor.getTime() <= endDate.getTime()) {
+    out.push(formatIsoDate(cursor));
+    if (out.length > 60) return null;
+    cursor = addUtcDays(cursor, 1);
+  }
+  return out;
+}
+
+function isIsoDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function parseIsoDate(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+function addUtcDays(value: Date, days: number): Date {
+  const next = new Date(value);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function formatIsoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function uniqueDayCities(days: LumiDay[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const day of days) {
+    const city = day.city.trim();
+    const key = city.toLowerCase();
+    if (!city || seen.has(key)) continue;
+    seen.add(key);
+    out.push(city);
+  }
+  return out;
+}
+
+function titleFromCities(cities: string[]): string {
+  if (cities.length === 0) return "新的旅程";
+  if (cities.length === 1) return `${cities[0]}之旅`;
+  return cities.slice(0, 2).join(" + ");
 }

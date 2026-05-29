@@ -7,6 +7,7 @@ import { MotionProvider } from "@/components/motion-provider";
 import {
   buildMetadata,
   organizationJsonLd,
+  travelEsimProductJsonLd,
   websiteJsonLd,
 } from "@/lib/seo";
 import { getDictionary, hasLocale } from "./dictionaries";
@@ -78,6 +79,12 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(websiteJsonLd(lang)),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(travelEsimProductJsonLd(lang)),
           }}
         />
         <div

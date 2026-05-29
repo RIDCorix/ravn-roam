@@ -14,6 +14,7 @@ export * from "./trip";
 export * from "./trip-companion";
 export * from "./city-geocode";
 export * from "./lumi-chat";
+export * from "./storefront-event";
 
 import { auditLog } from "./audit-log";
 import { cityGeocode } from "./city-geocode";
@@ -21,6 +22,7 @@ import { lumiConversation, lumiMessage } from "./lumi-chat";
 import { orderItem, orderRecord } from "./order";
 import { product } from "./product";
 import { productSupplierMapping } from "./product-supplier-mapping";
+import { storefrontEvent } from "./storefront-event";
 import { supplier } from "./supplier";
 import { supplierPlan } from "./supplier-plan";
 import { supplierPlanSyncLog } from "./supplier-plan-sync-log";
@@ -46,6 +48,7 @@ export const schema = {
   cityGeocode,
   lumiConversation,
   lumiMessage,
+  storefrontEvent,
 } as const;
 
 export default schema;

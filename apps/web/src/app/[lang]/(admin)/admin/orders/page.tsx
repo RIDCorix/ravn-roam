@@ -11,6 +11,7 @@ import {
   type Vendor,
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
+import { FormSelect } from "@/components/admin/form-select";
 
 import {
   Card,
@@ -146,41 +147,31 @@ export default async function OrdersPage({
           <label className="block text-xs text-fg-secondary mb-1">
             {dict.admin.orders.filters.status}
           </label>
-          <select
+          <FormSelect
             name="status"
             defaultValue={filters.status ?? ""}
-            className="rounded-md border border-divider bg-bg px-2 py-1.5 text-sm"
-          >
-            <option value="">{dict.admin.common.all}</option>
-            <option value="pending">{dict.admin.orders.statuses.pending}</option>
-            <option value="paid">{dict.admin.orders.statuses.paid}</option>
-            <option value="fulfilled">
-              {dict.admin.orders.statuses.fulfilled}
-            </option>
-            <option value="cancelled">
-              {dict.admin.orders.statuses.cancelled}
-            </option>
-            <option value="refunded">
-              {dict.admin.orders.statuses.refunded}
-            </option>
-          </select>
+            options={[
+              { label: dict.admin.common.all, value: "" },
+              { label: dict.admin.orders.statuses.pending, value: "pending" },
+              { label: dict.admin.orders.statuses.paid, value: "paid" },
+              { label: dict.admin.orders.statuses.fulfilled, value: "fulfilled" },
+              { label: dict.admin.orders.statuses.cancelled, value: "cancelled" },
+              { label: dict.admin.orders.statuses.refunded, value: "refunded" },
+            ]}
+          />
         </div>
         <div>
           <label className="block text-xs text-fg-secondary mb-1">
             {dict.admin.orders.filters.vendor}
           </label>
-          <select
+          <FormSelect
             name="vendor_id"
             defaultValue={filters.vendor_id ?? ""}
-            className="rounded-md border border-divider bg-bg px-2 py-1.5 text-sm"
-          >
-            <option value="">{dict.admin.common.all}</option>
-            {vendors.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.display_name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { label: dict.admin.common.all, value: "" },
+              ...vendors.map((v) => ({ label: v.display_name, value: v.id })),
+            ]}
+          />
         </div>
         <button
           type="submit"

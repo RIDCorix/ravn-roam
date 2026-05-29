@@ -40,11 +40,7 @@ export function placeholderCompanions(): {
   display_name: string;
   color: string;
 }[] {
-  return [
-    { display_name: "旅伴 1", color: PLACEHOLDER_COLORS[0]! },
-    { display_name: "旅伴 2", color: PLACEHOLDER_COLORS[1]! },
-    { display_name: "旅伴 3", color: PLACEHOLDER_COLORS[2]! },
-  ];
+  return [{ display_name: "旅伴 1", color: PLACEHOLDER_COLORS[0]! }];
 }
 
 // Verify the caller owns the trip (or is one of its companions). Returns

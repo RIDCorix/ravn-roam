@@ -112,3 +112,18 @@ export const tripStatus = roamPoc.enum("trip_status", [
   "past",
   "cancelled",
 ]);
+
+// storefront_event.event_type — drives the tab filter on /shop. The
+// crawler can introduce new categories as it discovers them; consumers
+// gracefully bucket unknown values into the "other" tab in the UI.
+export const storefrontEventType = roamPoc.enum("storefront_event_type", [
+  "festival", // 祭典 — Gion, Songkran, Holi…
+  "carnival", // 狂歡季 — Venice Carnival, Rio Carnival
+  "religious", // 宗教 — pilgrimages, Ramadan, Vesak
+  "music", // 音樂 — Coachella, Sonar, Fuji Rock
+  "sports", // 運動 — Olympics, World Cup
+  "food", // 美食 — Oktoberfest, food weeks
+  "seasonal", // 季節 — sakura, autumn foliage, NYE
+  "cultural", // 文化 — fashion week, art biennale
+  "other",
+]);

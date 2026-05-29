@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@roam/shared";
 
+import { getDictionary, hasLocale } from "../dictionaries";
 import { LoginForm } from "./form";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,9 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const { lang } = await params;
+  if (!hasLocale(lang)) notFound();
+  const dict = await getDictionary(lang);
+  const t = dict.storefront.login;
   const { next, error } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
@@ -30,15 +34,18 @@ export default async function LoginPage({
             R
           </span>
           <h1 className="text-[22px] font-semibold tracking-tight">
-            {lang === "zh-TW" ? "登入 Roam" : "Sign in to Roam"}
+            {t.title}
           </h1>
           <p className="text-[13px] text-fg-muted">
-            {lang === "zh-TW"
-              ? "用 Email 登入，沒有帳號會自動建立。"
-              : "Sign in with email — a new account is created automatically."}
+            {t.subtitle}
           </p>
         </div>
-        <LoginForm lang={lang} next={next} initialError={error} />
+        <LoginForm
+          lang={lang}
+          labels={t}
+          next={next}
+          initialError={error}
+        />
       </div>
     </div>
   );

@@ -45,16 +45,16 @@ export function DailyTimeline({
           <div className="mb-2.5 px-1 text-[13px] font-semibold uppercase tracking-[0.04em] text-fg-secondary">
             {sectionLabel}
           </div>
-          <ol className="relative">
-            <span className="absolute bottom-2 left-[88px] top-2 w-px bg-divider" />
+          <ol className="relative grid grid-cols-[72px_22px_minmax(0,1fr)] gap-x-3">
+            <span className="absolute bottom-4 left-[82px] top-4 w-px bg-divider" />
             {trip.days.map((d, i) => {
               const isToday = d.d === TODAY;
               return (
                 <li
                   key={`${d.d}-${i}`}
-                  className="relative flex items-start gap-4 px-0 py-2"
+                  className="relative col-span-3 grid grid-cols-subgrid items-start py-2"
                 >
-                  <div className="w-16 shrink-0 text-right">
+                  <div className="text-right">
                     <div
                       className="whitespace-nowrap text-[11px] text-fg-muted"
                       style={{ fontFamily: "var(--font-mono)" }}
@@ -69,7 +69,7 @@ export function DailyTimeline({
                     </div>
                   </div>
                   <span
-                    className="relative z-10 mt-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                    className="relative z-10 mt-1.5 inline-block h-2.5 w-2.5 justify-self-center rounded-full"
                     style={{
                       background: isToday ? "var(--accent)" : "#fff",
                       boxShadow: isToday
@@ -99,10 +99,10 @@ export function DailyTimeline({
                         d.note?.trim() && d.note.trim() !== d.city;
                       return (
                         <>
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                             <span
                               className={cn(
-                                "truncate text-[14px] font-semibold",
+                                "min-w-0 break-words text-[14px] font-semibold",
                                 isToday ? "text-accent" : "text-fg",
                               )}
                             >
