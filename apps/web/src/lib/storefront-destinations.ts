@@ -15,7 +15,7 @@ export const EUROPE_COUNTRY_REGIONS: ShopRegion[] = [
   { slug: "greece", name: { "zh-TW": "希臘", en: "Greece" }, destinations: ["GR"], aliases: ["Athens", "Santorini", "雅典", "聖托里尼"], cover: "/illustrations/cities/europe.jpg" },
   { slug: "hungary", name: { "zh-TW": "匈牙利", en: "Hungary" }, destinations: ["HU"], aliases: ["Budapest", "布達佩斯"], cover: "/illustrations/cities/europe.jpg" },
   { slug: "ireland", name: { "zh-TW": "愛爾蘭", en: "Ireland" }, destinations: ["IE"], aliases: ["Dublin", "都柏林"], cover: "/illustrations/cities/europe.jpg" },
-  { slug: "italy", name: { "zh-TW": "義大利", en: "Italy" }, destinations: ["IT"], aliases: ["Rome", "Roma", "Milan", "Venice", "Florence", "羅馬", "米蘭", "威尼斯", "佛羅倫斯"], cover: "/illustrations/cities/rome.jpg" },
+  { slug: "italy", name: { "zh-TW": "義大利", en: "Italy" }, destinations: ["IT"], aliases: ["Rome", "Roma", "Milan", "Venice", "Florence", "羅馬", "米蘭", "威尼斯", "佛羅倫斯"], intro: { "zh-TW": "古城、海岸與美食季節交錯，從羅馬一路走進托斯卡尼與南義。", en: "Ancient cities, coastal escapes, and food seasons from Rome to Tuscany and the south." }, cover: "/illustrations/cities/rome.jpg" },
   { slug: "latvia", name: { "zh-TW": "拉脫維亞", en: "Latvia" }, destinations: ["LV"], aliases: ["Riga", "里加"], cover: "/illustrations/cities/europe.jpg" },
   { slug: "lithuania", name: { "zh-TW": "立陶宛", en: "Lithuania" }, destinations: ["LT"], aliases: ["Vilnius", "維爾紐斯"], cover: "/illustrations/cities/europe.jpg" },
   { slug: "luxembourg", name: { "zh-TW": "盧森堡", en: "Luxembourg" }, destinations: ["LU"], aliases: ["Luxembourg City", "盧森堡市"], cover: "/illustrations/cities/europe.jpg" },

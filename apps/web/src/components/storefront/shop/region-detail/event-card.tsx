@@ -34,6 +34,10 @@ export function RegionEventCard({
     event.title_i18n?.[localeKey] ?? event.title_i18n?.["zh-TW"] ?? event.slug;
   const subtitle =
     event.subtitle_i18n?.[localeKey] ?? event.subtitle_i18n?.["zh-TW"] ?? "";
+  const location =
+    event.location_i18n?.[localeKey] ??
+    event.location_i18n?.["zh-TW"] ??
+    regionName;
   const badge = event.badge_override ?? deriveBadge(event, localeKey);
   const typeLabel = labels.event_types[event.event_type] ?? event.event_type;
   const visual = eventVisual(event.event_type);
@@ -85,7 +89,7 @@ export function RegionEventCard({
         </div>
         <div className="mt-1 flex items-center gap-1.5 text-[12.5px] font-semibold text-fg-muted">
           <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2.3} aria-hidden="true" />
-          <span className="truncate">{regionName}</span>
+          <span className="truncate">{location}</span>
         </div>
         <p className="mt-5 line-clamp-2 max-w-[230px] text-[14.5px] font-semibold leading-7 text-fg-secondary">
           {subtitle || labels.plan_with_event}

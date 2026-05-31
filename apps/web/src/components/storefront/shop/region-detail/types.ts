@@ -3,6 +3,7 @@ export interface ApiEvent {
   slug: string;
   title_i18n: Record<string, string>;
   subtitle_i18n: Record<string, string>;
+  location_i18n: Record<string, string>;
   event_type: string;
   region_slug: string;
   suggested_days: number | null;

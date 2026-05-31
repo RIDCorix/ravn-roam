@@ -1,23 +1,40 @@
 import {
   EUROPE_COUNTRY_REGION_SLUGS,
+  SHOP_REGIONS,
   type ShopRegion,
 } from "@/lib/storefront-regions";
 import type { ApiEvent } from "@/components/storefront/shop/region-detail/types";
 import { serverApiBase } from "@/lib/server-api-base";
 
-export async function loadRegionEvents(regionSlug: string): Promise<ApiEvent[]> {
+const EXCLUDED_ADDABLE_EVENT_REGION_SLUGS = new Set(["spain-camino"]);
+
+export async function loadRegionEvents(region: ShopRegion): Promise<ApiEvent[]> {
   const base = serverApiBase();
   const url = new URL("/storefront/events", base);
   url.searchParams.set("upcoming", "1");
-  url.searchParams.set("region", regionSlug);
+  url.searchParams.set("region", region.slug);
   try {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return [];
     const data = (await res.json()) as { events?: ApiEvent[] };
-    return (data.events ?? []).slice(0, 12);
+    return data.events ?? [];
   } catch {
     return [];
   }
+}
+
+export function addableEventRegionsForRegion(region: ShopRegion): ShopRegion[] {
+  if (region.destinations.length <= 1) return [];
+
+  const destinationSet = new Set(region.destinations);
+  return SHOP_REGIONS.filter((candidate) => {
+    if (candidate.slug === region.slug) return false;
+    if (EXCLUDED_ADDABLE_EVENT_REGION_SLUGS.has(candidate.slug)) return false;
+    if (candidate.destinations.length !== 1) return false;
+    return candidate.destinations.every((destination) =>
+      destinationSet.has(destination),
+    );
+  });
 }
 
 export function buildPlansHref(

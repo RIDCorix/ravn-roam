@@ -47,6 +47,8 @@ interface CrawledEvent {
   title_en: string;
   subtitle_zh: string | null;
   subtitle_en: string | null;
+  location_zh: string | null;
+  location_en: string | null;
   event_type: EventType;
   region_slug: RegionSlug;
   suggested_days: number | null;
@@ -93,6 +95,8 @@ interface TranslatedEvent {
   title_en: string;
   subtitle_zh: string | null;
   subtitle_en: string | null;
+  location_zh: string | null;
+  location_en: string | null;
   badge_override: string | null;
 }
 
@@ -172,6 +176,7 @@ Tone:
 - zh-TW MUST use Traditional Chinese and Taiwan vocabulary. Reject simplified Chinese.
 - Do not invent dates or facts beyond the archive.
 - subtitle should explain why a traveler would care in one compact phrase.
+- location should name the most useful city, district, venue, or region for a traveler. Use Traditional Chinese for location_zh and English for location_en. Prefer "city / district, country" over a country-only label.
 - badge_override should be a zh-TW date label like "3-4月", "12月底", "夏季", or null when the date fields already make it obvious.
 
 Input:
@@ -266,6 +271,8 @@ const TRANSLATION_RESPONSE_SCHEMA = {
           title_en: { type: "string" },
           subtitle_zh: { type: ["string", "null"] },
           subtitle_en: { type: ["string", "null"] },
+          location_zh: { type: ["string", "null"] },
+          location_en: { type: ["string", "null"] },
           badge_override: { type: ["string", "null"] },
         },
         required: [
@@ -274,6 +281,8 @@ const TRANSLATION_RESPONSE_SCHEMA = {
           "title_en",
           "subtitle_zh",
           "subtitle_en",
+          "location_zh",
+          "location_en",
           "badge_override",
         ],
       },
@@ -557,6 +566,12 @@ function combineEvents({
       title_en: translation?.title_en ?? event.canonical_name,
       subtitle_zh: translation?.subtitle_zh ?? event.summary,
       subtitle_en: translation?.subtitle_en ?? event.summary,
+      location_zh:
+        translation?.location_zh ??
+        (event.city ? `${event.city}，${event.market_zh}` : event.market_zh),
+      location_en:
+        translation?.location_en ??
+        (event.city ? `${event.city}, ${event.market_en}` : event.market_en),
       event_type: event.event_type,
       region_slug: event.region_slug,
       suggested_days: event.suggested_days,
@@ -856,12 +871,16 @@ async function upsertEvents({
   let updated = 0;
 
   for (const e of events) {
-    const values = {
+      const values = {
       slug: e.slug,
       titleI18n: { "zh-TW": e.title_zh, en: e.title_en },
       subtitleI18n: {
         ...(e.subtitle_zh ? { "zh-TW": e.subtitle_zh } : {}),
         ...(e.subtitle_en ? { en: e.subtitle_en } : {}),
+      },
+      locationI18n: {
+        ...(e.location_zh ? { "zh-TW": e.location_zh } : {}),
+        ...(e.location_en ? { en: e.location_en } : {}),
       },
       eventType: e.event_type,
       regionSlug: e.region_slug,

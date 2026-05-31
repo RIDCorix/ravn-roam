@@ -208,12 +208,23 @@ storefrontRouter.get("/region-stats", async (c) => {
 //   GET /storefront/events                      → all active events
 //   GET /storefront/events?type=festival        → tab filter
 //   GET /storefront/events?region=japan         → region detail page
+//   GET /storefront/events?regions=italy,france → aggregate region detail page
 //   GET /storefront/events?upcoming=1           → only future/current
 storefrontRouter.get("/events", async (c) => {
   const db = getDb();
   const url = new URL(c.req.url);
   const type = url.searchParams.get("type");
   const region = url.searchParams.get("region");
+  const regions = Array.from(
+    new Set(
+      [
+        ...url.searchParams.getAll("region"),
+        ...(url.searchParams.get("regions") ?? "").split(","),
+      ]
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  );
   const upcoming = url.searchParams.get("upcoming") === "1";
 
   const conditions = [eq(schema.storefrontEvent.active, true)];
@@ -222,8 +233,10 @@ storefrontRouter.get("/events", async (c) => {
       eq(schema.storefrontEvent.eventType, type as never),
     );
   }
-  if (region) {
-    conditions.push(eq(schema.storefrontEvent.regionSlug, region));
+  if (regions.length > 1) {
+    conditions.push(inArray(schema.storefrontEvent.regionSlug, regions));
+  } else if (regions[0] ?? region) {
+    conditions.push(eq(schema.storefrontEvent.regionSlug, regions[0] ?? region!));
   }
   if (upcoming) {
     // Future explicit dates OR currently in their recurring month window.
@@ -258,6 +271,7 @@ storefrontRouter.get("/events", async (c) => {
       slug: r.slug,
       title_i18n: r.titleI18n,
       subtitle_i18n: r.subtitleI18n,
+      location_i18n: r.locationI18n,
       event_type: r.eventType,
       region_slug: r.regionSlug,
       suggested_days: r.suggestedDays,

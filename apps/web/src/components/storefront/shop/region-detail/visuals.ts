@@ -15,6 +15,7 @@ export function seasonVisual(season: SeasonKey): {
   horizon: string;
   text: string;
   dot: string;
+  activeRing: string;
   line: string;
 } {
   switch (season) {
@@ -26,6 +27,7 @@ export function seasonVisual(season: SeasonKey): {
         horizon: "bg-gradient-to-r from-rose-200/55 via-rose-100/50 to-stone-100/45",
         text: "text-rose-600",
         dot: "border-rose-300",
+        activeRing: "border-rose-400 ring-rose-300/45",
         line: "bg-rose-200",
       };
     case "summer":
@@ -36,6 +38,7 @@ export function seasonVisual(season: SeasonKey): {
         horizon: "bg-gradient-to-r from-sky-200/45 via-cyan-100/50 to-emerald-100/45",
         text: "text-teal-700",
         dot: "border-sky-300",
+        activeRing: "border-teal-500 ring-teal-300/45",
         line: "bg-sky-200",
       };
     case "autumn":
@@ -46,6 +49,7 @@ export function seasonVisual(season: SeasonKey): {
         horizon: "bg-gradient-to-r from-amber-200/55 via-orange-100/50 to-stone-100/45",
         text: "text-orange-700",
         dot: "border-amber-300",
+        activeRing: "border-orange-500 ring-orange-300/45",
         line: "bg-amber-200",
       };
     case "winter":
@@ -56,8 +60,22 @@ export function seasonVisual(season: SeasonKey): {
         horizon: "bg-gradient-to-r from-blue-200/45 via-slate-100/55 to-zinc-100/50",
         text: "text-blue-600",
         dot: "border-blue-300",
+        activeRing: "border-blue-500 ring-blue-300/45",
         line: "bg-blue-200",
       };
+  }
+}
+
+export function seasonCardImageSrc(season: SeasonKey): string {
+  switch (season) {
+    case "spring":
+      return "/illustrations/timeline/seasons/spring.png";
+    case "summer":
+      return "/illustrations/timeline/seasons/summer.png";
+    case "autumn":
+      return "/illustrations/timeline/seasons/autumn.png";
+    case "winter":
+      return "/illustrations/timeline/seasons/winter.png";
   }
 }
 
@@ -78,68 +96,19 @@ export function eventStickerSide(slug: string): "left" | "right" {
   return hash % 3 === 0 ? "right" : "left";
 }
 
-export function eventTimelineVisual(
-  slug: string,
-  eventType: string,
-): { bar: string } {
-  if (slug.includes("fuji-rock")) {
-    return {
-      bar: "border-purple-200/80 bg-gradient-to-r from-purple-400/78 via-violet-300/78 to-purple-200/84 text-purple-950",
-    };
-  }
-  if (slug.includes("gion")) {
-    return {
-      bar: "border-red-200/80 bg-gradient-to-r from-red-400/78 via-orange-300/82 to-amber-200/84 text-red-950",
-    };
-  }
-  if (slug.includes("obon")) {
-    return {
-      bar: "border-red-200/80 bg-gradient-to-r from-red-400/76 via-rose-300/78 to-red-200/84 text-red-950",
-    };
-  }
-  if (slug.includes("korankei") || slug.includes("autumn")) {
-    return {
-      bar: "border-red-200/80 bg-gradient-to-r from-red-500/72 via-orange-400/78 to-amber-300/82 text-red-950",
-    };
-  }
-  if (slug.includes("marathon")) {
-    return {
-      bar: "border-amber-200/80 bg-gradient-to-r from-amber-300/84 via-yellow-300/76 to-amber-200/84 text-amber-950",
-    };
-  }
+export function eventTimelineVisual(index: number): { bar: string } {
+  const palette = [
+    "border-rose-200/70 bg-gradient-to-r from-rose-200/92 via-pink-100/92 to-rose-100/94 text-rose-950",
+    "border-emerald-200/70 bg-gradient-to-r from-emerald-200/90 via-teal-100/84 to-teal-50/94 text-emerald-950",
+    "border-sky-200/70 bg-gradient-to-r from-sky-200/90 via-cyan-100/86 to-blue-100/92 text-sky-950",
+    "border-violet-200/70 bg-gradient-to-r from-violet-200/90 via-purple-100/88 to-fuchsia-100/90 text-violet-950",
+    "border-amber-200/70 bg-gradient-to-r from-amber-200/92 via-yellow-100/90 to-orange-100/88 text-amber-950",
+    "border-orange-200/70 bg-gradient-to-r from-orange-200/90 via-amber-100/86 to-rose-100/88 text-orange-950",
+  ];
 
-  switch (eventType) {
-    case "seasonal":
-      return {
-        bar: "border-rose-200/80 bg-gradient-to-r from-rose-300/82 via-pink-300/78 to-rose-200/82 text-rose-950",
-      };
-    case "music":
-      return {
-        bar: "border-purple-200/80 bg-gradient-to-r from-purple-400/78 via-violet-300/78 to-purple-200/84 text-purple-950",
-      };
-    case "sports":
-      return {
-        bar: "border-amber-200/80 bg-gradient-to-r from-amber-300/84 via-yellow-300/76 to-amber-200/84 text-amber-950",
-      };
-    case "food":
-    case "festival":
-    case "carnival":
-      return {
-        bar: "border-orange-200/80 bg-gradient-to-r from-orange-300/84 via-amber-300/82 to-orange-200/82 text-orange-950",
-      };
-    case "religious":
-      return {
-        bar: "border-violet-200/80 bg-gradient-to-r from-violet-300/78 via-purple-300/76 to-violet-200/82 text-violet-950",
-      };
-    case "cultural":
-      return {
-        bar: "border-amber-200/80 bg-gradient-to-r from-amber-300/82 via-yellow-300/72 to-amber-200/82 text-amber-950",
-      };
-    default:
-      return {
-        bar: "border-teal-200/80 bg-gradient-to-r from-teal-300/82 via-emerald-300/76 to-teal-200/82 text-teal-950",
-      };
-  }
+  return {
+    bar: palette[index % palette.length],
+  };
 }
 
 export function eventVisual(eventType: string): {

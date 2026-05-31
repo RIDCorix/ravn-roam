@@ -36,6 +36,7 @@ export const storefrontEvent = roamPoc.table(
     slug: text("slug").notNull(),
     titleI18n: jsonb("title_i18n").notNull().default(sql`'{}'::jsonb`),
     subtitleI18n: jsonb("subtitle_i18n").notNull().default(sql`'{}'::jsonb`),
+    locationI18n: jsonb("location_i18n").notNull().default(sql`'{}'::jsonb`),
     eventType: storefrontEventType("event_type").notNull().default("other"),
     // FK-ish — matches storefront-regions.ts slug. Not a real FK
     // because regions live in code, not the DB.

@@ -9,20 +9,22 @@ import {
 import type { ApiEvent, SeasonKey } from "./types";
 
 export const GANTT_MONTH_WIDTH = 128;
-export const GANTT_MONTH_HEADER_HEIGHT = 34;
-export const GANTT_SEASON_HEADER_HEIGHT = 40;
+export const GANTT_MONTH_HEADER_HEIGHT = 54;
+export const GANTT_SEASON_HEADER_HEIGHT = 0;
 export const GANTT_HEADER_HEIGHT =
   GANTT_MONTH_HEADER_HEIGHT + GANTT_SEASON_HEADER_HEIGHT;
-export const GANTT_ROW_HEIGHT = 62;
+export const GANTT_ROW_HEIGHT = 56;
+export const TIMELINE_MONTH_COUNT = 13;
 
 export interface EventTimelineData {
   months: TimelineMonth[];
-  seasonBands: TimelineSeasonBand[];
   events: TimelineEvent[];
   totalWidth: number;
   chartWidth: number;
   rowCount: number;
-  year: number;
+  startYear: number;
+  startMonth: number;
+  todayX: number | null;
 }
 
 interface TimelineMonth {
@@ -31,13 +33,7 @@ interface TimelineMonth {
   season: SeasonKey;
   left: number;
   width: number;
-}
-
-interface TimelineSeasonBand {
-  key: SeasonKey;
-  left: number;
-  width: number;
-  showLabel?: boolean;
+  tickLabels: TimelineTickLabel[];
 }
 
 interface TimelineEvent {
@@ -49,6 +45,13 @@ interface TimelineEvent {
   width: number;
   row: number;
   dateLabel: string;
+}
+
+interface TimelineTickLabel {
+  key: string;
+  label: string;
+  left: number;
+  edge: "start" | "middle" | "end";
 }
 
 interface TimelineSourceEvent {
@@ -64,26 +67,30 @@ export function buildEventTimeline(
   events: ApiEvent[],
   localeKey: LocaleKey,
   eventTypes: Record<string, string>,
+  now = new Date(),
 ): EventTimelineData | null {
+  const timelineStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const timelineEnd = endOfMonth(
+    new Date(timelineStart.getFullYear(), timelineStart.getMonth() + 12, 1),
+  );
   const sourceEvents = events
-    .map((event) => toTimelineSourceEvent(event, localeKey, eventTypes))
+    .map((event) =>
+      toTimelineSourceEvent(event, localeKey, eventTypes, timelineStart),
+    )
     .filter((event): event is TimelineSourceEvent => event !== null)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
   if (sourceEvents.length === 0) return null;
 
-  const year = sourceEvents[0].start.getFullYear();
-  const timelineStart = new Date(year, 0, 1);
-  const timelineEnd = new Date(year, 11, 31);
-  const chartWidth = GANTT_MONTH_WIDTH * 12;
+  const chartWidth = GANTT_MONTH_WIDTH * TIMELINE_MONTH_COUNT;
   const timelineEvents: TimelineEvent[] = [];
 
   sourceEvents.forEach((event) => {
     if (event.end < timelineStart || event.start > timelineEnd) return;
     const start = clampDate(event.start, timelineStart, timelineEnd);
     const end = clampDate(event.end, timelineStart, timelineEnd);
-    const left = dateToTimelineX(start);
-    const actualWidth = dateToTimelineEndX(end) - left;
+    const left = dateToTimelineX(start, timelineStart);
+    const actualWidth = dateToTimelineEndX(end, timelineStart) - left;
     const width = Math.min(Math.max(168, actualWidth), chartWidth - left);
     const row = timelineEvents.length;
 
@@ -100,58 +107,84 @@ export function buildEventTimeline(
   });
 
   return {
-    months: buildTimelineMonths(year, localeKey),
-    seasonBands: buildTimelineSeasonBands(),
+    months: buildTimelineMonths(timelineStart, localeKey),
     events: timelineEvents,
     totalWidth: chartWidth,
     chartWidth,
     rowCount: timelineEvents.length,
-    year,
+    startYear: timelineStart.getFullYear(),
+    startMonth: timelineStart.getMonth() + 1,
+    todayX: now >= timelineStart && now <= timelineEnd
+      ? dateToTimelineX(now, timelineStart)
+      : null,
   };
 }
 
-function buildTimelineMonths(year: number, localeKey: LocaleKey): TimelineMonth[] {
-  return Array.from({ length: 12 }, (_, index) => {
-    const month = index + 1;
+function buildTimelineMonths(
+  timelineStart: Date,
+  localeKey: LocaleKey,
+): TimelineMonth[] {
+  return Array.from({ length: TIMELINE_MONTH_COUNT }, (_, index) => {
+    const date = new Date(
+      timelineStart.getFullYear(),
+      timelineStart.getMonth() + index,
+      1,
+    );
+    const month = date.getMonth() + 1;
     return {
-      key: `${year}-${month}`,
+      key: `${date.getFullYear()}-${month}`,
       label: monthName(month, localeKey),
       season: seasonForMonth(month),
       left: index * GANTT_MONTH_WIDTH,
       width: GANTT_MONTH_WIDTH,
+      tickLabels: buildTickLabels(date),
     };
   });
 }
 
-function buildTimelineSeasonBands(): TimelineSeasonBand[] {
-  return [
-    { key: "winter", left: 0, width: GANTT_MONTH_WIDTH * 2 },
-    { key: "spring", left: GANTT_MONTH_WIDTH * 2, width: GANTT_MONTH_WIDTH * 3 },
-    { key: "summer", left: GANTT_MONTH_WIDTH * 5, width: GANTT_MONTH_WIDTH * 3 },
-    { key: "autumn", left: GANTT_MONTH_WIDTH * 8, width: GANTT_MONTH_WIDTH * 3 },
-    {
-      key: "winter",
-      left: GANTT_MONTH_WIDTH * 11,
-      width: GANTT_MONTH_WIDTH,
-      showLabel: false,
-    },
-  ];
+function buildTickLabels(monthDate: Date): TimelineTickLabel[] {
+  const days = daysInMonth(monthDate.getFullYear(), monthDate.getMonth());
+  const anchors = [1, 10, 20, days];
+  return anchors.map((day) => ({
+    key: `${monthDate.getFullYear()}-${monthDate.getMonth() + 1}-${day}`,
+    label: String(day),
+    left:
+      day === days
+        ? GANTT_MONTH_WIDTH - 10
+        : ((day - 1) / days) * GANTT_MONTH_WIDTH,
+    edge: day === 1 ? "start" : day === days ? "end" : "middle",
+  }));
 }
 
-function dateToTimelineX(date: Date): number {
+function dateToTimelineX(date: Date, timelineStart: Date): number {
+  const monthOffset = monthDiff(timelineStart, date);
   const month = date.getMonth();
   const days = daysInMonth(date.getFullYear(), month);
-  return month * GANTT_MONTH_WIDTH + ((date.getDate() - 1) / days) * GANTT_MONTH_WIDTH;
+  return (
+    monthOffset * GANTT_MONTH_WIDTH +
+    ((date.getDate() - 1) / days) * GANTT_MONTH_WIDTH
+  );
 }
 
-function dateToTimelineEndX(date: Date): number {
+function dateToTimelineEndX(date: Date, timelineStart: Date): number {
+  const monthOffset = monthDiff(timelineStart, date);
   const month = date.getMonth();
   const days = daysInMonth(date.getFullYear(), month);
-  return month * GANTT_MONTH_WIDTH + (date.getDate() / days) * GANTT_MONTH_WIDTH;
+  return (
+    monthOffset * GANTT_MONTH_WIDTH +
+    (date.getDate() / days) * GANTT_MONTH_WIDTH
+  );
 }
 
 function daysInMonth(year: number, monthIndex: number): number {
   return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function monthDiff(start: Date, date: Date): number {
+  return (
+    (date.getFullYear() - start.getFullYear()) * 12 +
+    (date.getMonth() - start.getMonth())
+  );
 }
 
 function clampDate(date: Date, min: Date, max: Date): Date {
@@ -175,6 +208,7 @@ function toTimelineSourceEvent(
   event: ApiEvent,
   localeKey: LocaleKey,
   eventTypes: Record<string, string>,
+  timelineStart: Date,
 ): TimelineSourceEvent | null {
   const title =
     event.title_i18n?.[localeKey] ?? event.title_i18n?.["zh-TW"] ?? event.slug;
@@ -197,11 +231,24 @@ function toTimelineSourceEvent(
   }
 
   if (event.recurring_month_start && event.recurring_month_end) {
-    const year = new Date().getFullYear();
+    let year = timelineStart.getFullYear();
     const start = new Date(year, event.recurring_month_start - 1, 1);
     const endYear =
       event.recurring_month_end < event.recurring_month_start ? year + 1 : year;
-    const end = endOfMonth(new Date(endYear, event.recurring_month_end - 1, 1));
+    let end = endOfMonth(new Date(endYear, event.recurring_month_end - 1, 1));
+    if (end < timelineStart) {
+      year += 1;
+      start.setFullYear(year);
+      end = endOfMonth(
+        new Date(
+          event.recurring_month_end < event.recurring_month_start
+            ? year + 1
+            : year,
+          event.recurring_month_end - 1,
+          1,
+        ),
+      );
+    }
     return {
       slug: event.slug,
       title,
