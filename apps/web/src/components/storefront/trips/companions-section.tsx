@@ -87,7 +87,6 @@ export function CompanionsSection({
         {companions.map((c) => (
           <CompanionCard
             key={c.id}
-            tripId={tripId}
             companion={c}
             editing={editingId === c.id}
             onEdit={() => setEditingId(c.id)}
@@ -113,7 +112,6 @@ export function CompanionsSection({
 }
 
 function CompanionCard({
-  tripId,
   companion,
   editing,
   onEdit,
@@ -123,7 +121,6 @@ function CompanionCard({
   busy,
   labels,
 }: {
-  tripId: string;
   companion: ApiCompanion;
   editing: boolean;
   onEdit: () => void;

@@ -3,6 +3,7 @@
 // middleware can resolve the user.
 
 import { createSupabaseServerClient } from "@roam/shared";
+import { serverApiBase } from "@/lib/server-api-base";
 
 export interface ApiTrip {
   id: string;
@@ -130,7 +131,7 @@ export class TripApiError extends Error {
 }
 
 function apiBase(): string {
-  return process.env.ROAM_API_URL ?? "http://localhost:3001";
+  return serverApiBase();
 }
 
 async function authedFetch<T>(
@@ -143,15 +144,23 @@ async function authedFetch<T>(
   } = await supabase.auth.getSession();
   if (!session) throw new TripApiError(401, "no_session");
 
-  const res = await fetch(`${apiBase()}${path}`, {
-    cache: "no-store",
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${session.access_token}`,
-      ...(init.headers as Record<string, string> | undefined),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase()}${path}`, {
+      cache: "no-store",
+      ...init,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${session.access_token}`,
+        ...(init.headers as Record<string, string> | undefined),
+      },
+    });
+  } catch (err) {
+    throw new TripApiError(
+      503,
+      err instanceof Error ? err.message : "api_unreachable",
+    );
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new TripApiError(res.status, text);

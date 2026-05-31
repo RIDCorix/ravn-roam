@@ -23,7 +23,6 @@ import { formatDateTime } from "@/lib/format";
 
 import type { AdminDict } from "@/components/admin/dict";
 
-import { Badge } from "@/components/ui/badge";
 import {
   ContextMenuItem,
   ContextMenuSeparator,

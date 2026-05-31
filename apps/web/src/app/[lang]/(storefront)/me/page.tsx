@@ -32,7 +32,9 @@ export default async function MePage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/${lang}/login?next=/${lang}/me`);
+  if (!user) {
+    redirect(`/${lang}/login?next=${encodeURIComponent(`/${lang}/me`)}`);
+  }
 
   const currentAvatarId =
     (user.user_metadata?.lumi_avatar as string | undefined) ?? null;
@@ -122,7 +124,9 @@ async function loadFootprintEntries(): Promise<FootprintEntry[]> {
     }
     return Array.from(byIso, ([iso, visited]) => ({ iso, visited }));
   } catch (err) {
-    if (err instanceof TripApiError && err.status === 401) return [];
+    if (err instanceof TripApiError && (err.status === 401 || err.status === 503)) {
+      return [];
+    }
     return [];
   }
 }

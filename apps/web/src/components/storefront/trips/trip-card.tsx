@@ -4,9 +4,9 @@
 import { ChevronRight } from "lucide-react";
 
 import { MotionLink } from "@/components/storefront/motion";
-import type { Trip, TripStatus } from "@/lib/mock/consumer";
-import { uniqueCities } from "@/lib/mock/consumer";
 import { tripCoverUrl } from "@/lib/trip-cover";
+import type { Trip, TripStatus } from "@/lib/trip-types";
+import { uniqueTripCities } from "@/lib/trip-types";
 import { cn } from "@/lib/utils";
 
 export function TripCard({
@@ -22,7 +22,7 @@ export function TripCard({
   daysUnit: string;
   activeBadgeLabel: string;
 }) {
-  const cities = uniqueCities(trip);
+  const cities = uniqueTripCities(trip);
   const done = trip.checklist.filter((t) => t.done).length;
   const total = trip.checklist.length;
   const isPast = trip.status === "past";

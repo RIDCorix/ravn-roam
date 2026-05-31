@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  buildPlanningContract,
   normalizeTripDraftCalendar,
   tripDraftFromLooseDays,
 } from "./openai.js";
@@ -69,5 +70,50 @@ describe("normalizeTripDraftCalendar", () => {
     expect(draft.days[0]?.day_date).toBe("2026-09-25");
     expect(draft.days[16]?.day_date).toBe("2026-10-11");
     expect(draft.days[16]?.city).toBe("Milan");
+  });
+});
+
+describe("buildPlanningContract", () => {
+  test("forces whole-trip editor prompts to emit every current trip date", () => {
+    const contract = buildPlanningContract({
+      prompt: "幫我簡單規劃每一天 2~3 個行程加上一個餐廳",
+      editableTrip: {
+        title: "台北到米蘭",
+        start_date: "2026-09-25",
+        end_date: "2026-09-27",
+        days: [
+          { day_date: "2026-09-25", city: "米蘭", note: "", stops: [] },
+          { day_date: "2026-09-26", city: "米蘭", note: "", stops: [] },
+          { day_date: "2026-09-27", city: "米蘭", note: "", stops: [] },
+        ],
+        cities: [],
+        companions: [],
+      },
+    });
+
+    expect(contract).toContain("day patches");
+    expect(contract).toContain("2026-09-25, 2026-09-26, 2026-09-27");
+    expect(contract).toContain("Do not ask which day");
+    expect(contract).toContain("Do not answer with summary only");
+    expect(contract).toContain("only say you planned/updated EVERY day");
+    expect(contract).toContain("REAL restaurant name");
+  });
+
+  test("does not add a planning contract for non-planning chat", () => {
+    const contract = buildPlanningContract({
+      prompt: "這趟需要買多少流量？",
+      editableTrip: {
+        title: "台北到米蘭",
+        start_date: "2026-09-25",
+        end_date: "2026-09-27",
+        days: [
+          { day_date: "2026-09-25", city: "米蘭", note: "", stops: [] },
+        ],
+        cities: [],
+        companions: [],
+      },
+    });
+
+    expect(contract).toBeNull();
   });
 });

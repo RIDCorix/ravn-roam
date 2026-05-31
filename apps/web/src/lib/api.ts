@@ -11,15 +11,16 @@ import type {
   SupplierPlanSyncLog,
   SupplierStatus,
 } from "@roam/catalog";
+import { serverApiBase } from "@/lib/server-api-base";
 
 function apiBase(): string {
   // In the browser `process.env.ROAM_API_URL` is undefined (only
   // NEXT_PUBLIC_* vars get exposed client-side), so direct calls to the
-  // upstream would fall back to localhost:3001 and miss the real API on
-  // 4000. Instead, client calls go same-origin through the catch-all
+  // upstream would fall back to a local API URL that may not exist in
+  // deployed browsers. Instead, client calls go same-origin through the catch-all
   // proxy at /api/admin/[...path], which reads the env server-side.
   if (typeof window !== "undefined") return "/api";
-  return process.env.ROAM_API_URL ?? "http://localhost:3001";
+  return serverApiBase();
 }
 
 function adminUser(): string {

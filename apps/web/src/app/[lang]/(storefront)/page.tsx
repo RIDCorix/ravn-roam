@@ -1,6 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, Plus } from "lucide-react";
 
 import { createSupabaseServerClient } from "@roam/shared";
 
@@ -15,18 +16,16 @@ import {
   HomeSearchPill,
   HomeSearchProvider,
   HomeTrendingCarousel,
+  type HomeSearchEvent,
 } from "@/components/storefront/home/home-search-discovery";
 import { PopularDestinationsRail } from "@/components/storefront/home/popular-destinations-rail";
-import { SHOP_REGIONS } from "@/lib/storefront-regions";
+import { serverApiBase } from "@/lib/server-api-base";
+import { loadRegionStats } from "@/lib/storefront-region-stats";
+import { formatTemplate } from "@/lib/text-template";
 import { apiToTrip } from "@/lib/trip-mapping";
 import { tripCoverUrl } from "@/lib/trip-cover";
 import { listChecklists, listTrips, TripApiError } from "@/lib/trips-api";
 import type { ApiChecklistItem } from "@/lib/trips-api";
-
-interface RegionStat {
-  plan_count: number;
-  min_retail: number | null;
-}
 
 // "Near-term" window for the home-screen todo list. Items due within
 // this many days from today are surfaced; everything else (no due
@@ -53,6 +52,7 @@ export default async function StorefrontHomePage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const isSignedIn = Boolean(user);
   const displayName =
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.user_metadata?.name as string | undefined) ??
@@ -60,13 +60,15 @@ export default async function StorefrontHomePage({
     t.default_name;
 
   const localeKey: "zh-TW" | "en" = lang === "en" ? "en" : "zh-TW";
-  const [trips, regionStats] = await Promise.all([
-    loadRealTrips(),
+  const [trips, regionStats, searchEvents] = await Promise.all([
+    isSignedIn ? loadRealTrips() : Promise.resolve([]),
     loadRegionStats(),
+    loadSearchEvents(),
   ]);
-  const today = isoDate(new Date());
+  const now = new Date();
+  const today = isoDate(now);
   const horizonISO = isoDate(
-    new Date(Date.now() + TODO_HORIZON_DAYS * 86_400_000),
+    new Date(now.getTime() + TODO_HORIZON_DAYS * 86_400_000),
   );
   const activeTrip =
     trips.find((trip) => trip.start <= today && today <= trip.end) ??
@@ -96,41 +98,34 @@ export default async function StorefrontHomePage({
     });
   return (
     <div className="min-h-full">
-      <UserHeader
-        name={displayName}
-        level={1}
-        levelTitle={t.level_title}
-        xp={120}
-        xpToNext={500}
-        right={
-          <button
-            type="button"
-            aria-label={t.notifications_aria}
-            className="relative ml-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg-secondary transition-colors hover:bg-surface-hover"
-          >
-            <Bell className="h-[18px] w-[18px]" />
-            <span
-              className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full"
-              style={{
-                background: "var(--accent)",
-                boxShadow: "0 0 0 3px var(--bg)",
-              }}
-            />
-          </button>
-        }
-      />
+      {isSignedIn && (
+        <UserHeader
+          name={displayName}
+          level={1}
+          levelTitle={t.level_title}
+          xp={120}
+          xpToNext={500}
+          right={
+            <button
+              type="button"
+              aria-label={t.notifications_aria}
+              className="relative ml-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg-secondary transition-colors hover:bg-surface-hover"
+            >
+              <Bell className="h-[18px] w-[18px]" />
+              <span
+                className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full"
+                style={{
+                  background: "var(--accent)",
+                  boxShadow: "0 0 0 3px var(--bg)",
+                }}
+              />
+            </button>
+          }
+        />
+      )}
 
       <HomeSearchProvider>
-      <div className="flex flex-col gap-5 px-5 pt-1 pb-6">
-        <HomeSearchPill
-          lang={lang}
-          localeKey={localeKey}
-          stats={regionStats}
-          labels={shopLabels}
-          placeholder={t.search_placeholder}
-          badgeLabel={t.quick_actions.ask_lumi}
-        />
-
+      <div className="flex flex-col gap-5 px-5 pt-5 pb-6">
         {(activeTrip || upcoming) && (
           <div className="flex flex-col gap-3">
             <SectionHeader title={t.continue_planning} />
@@ -143,7 +138,7 @@ export default async function StorefrontHomePage({
                     cities: activeTrip.days.map((d) => d.city),
                   })}
                   title={activeTrip.title}
-                  subtitle={format(t.current_trip_meta, {
+                  subtitle={formatTemplate(t.current_trip_meta, {
                     date: `${activeTrip.start.slice(5)} – ${activeTrip.end.slice(5)}`,
                     tasks: String(
                       activeTrip.checklist.filter((item) => !item.done).length,
@@ -159,7 +154,7 @@ export default async function StorefrontHomePage({
                     cities: upcoming.days.map((d) => d.city),
                   })}
                   title={upcoming.title}
-                  subtitle={`${upcoming.start.slice(5)} – ${upcoming.end.slice(5)} · ${format(
+                  subtitle={`${upcoming.start.slice(5)} – ${upcoming.end.slice(5)} · ${formatTemplate(
                     t.next_trip.label_with_countdown,
                     { days: String(daysUntil(upcoming.start, today)) },
                   )}`}
@@ -185,8 +180,10 @@ export default async function StorefrontHomePage({
                       title: trip.title,
                       cities: trip.days.map((d) => d.city),
                     })}
-                    countLabel={format(t.task_count, { count: String(incomplete.length) })}
-                    viewAllLabel={format(t.view_all_tasks, {
+                    countLabel={formatTemplate(t.task_count, {
+                      count: String(incomplete.length),
+                    })}
+                    viewAllLabel={formatTemplate(t.view_all_tasks, {
                       count: String(incomplete.length),
                     })}
                   />
@@ -195,6 +192,15 @@ export default async function StorefrontHomePage({
             </div>
           </div>
         )}
+
+        <HomeSearchPill
+          lang={lang}
+          localeKey={localeKey}
+          stats={regionStats}
+          events={searchEvents}
+          labels={shopLabels}
+          placeholder={t.search_placeholder}
+        />
 
         <HomeTrendingCarousel
           lang={lang}
@@ -208,7 +214,7 @@ export default async function StorefrontHomePage({
           stats={regionStats}
         />
 
-        {trips.length === 0 && !activeTrip && !upcoming && (
+        {isSignedIn && trips.length === 0 && !activeTrip && !upcoming && (
           <div
             className="flex flex-col items-center rounded-2xl bg-surface px-5 pt-4 pb-6 text-center"
             style={{ boxShadow: "var(--shadow-card)" }}
@@ -227,6 +233,13 @@ export default async function StorefrontHomePage({
             <div className="mt-1 max-w-[260px] text-[13px] text-fg-secondary">
               {t.empty_secondary}
             </div>
+            <Link
+              href={`/${lang}/trips`}
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 text-[13px] font-semibold text-white shadow-[0_10px_20px_-12px_rgba(15,184,181,0.9)] transition-transform active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" />
+              {t.quick_actions.new_trip}
+            </Link>
           </div>
         )}
       </div>
@@ -235,34 +248,17 @@ export default async function StorefrontHomePage({
   );
 }
 
-async function loadRegionStats(): Promise<Record<string, RegionStat>> {
-  const base = process.env.ROAM_API_URL ?? "http://localhost:3001";
+async function loadSearchEvents(): Promise<HomeSearchEvent[]> {
+  const base = serverApiBase();
+  const url = new URL("/storefront/events", base);
+  url.searchParams.set("upcoming", "1");
   try {
-    const res = await fetch(`${base}/storefront/region-stats`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return {};
-    const data = (await res.json()) as {
-      stats: Array<{ iso: string; plan_count: number; min_retail: number | null }>;
-    };
-    const byIso = new Map(data.stats.map((s) => [s.iso, s]));
-    const out: Record<string, RegionStat> = {};
-    for (const region of SHOP_REGIONS) {
-      let count = 0;
-      let min: number | null = null;
-      for (const iso of region.destinations) {
-        const s = byIso.get(iso);
-        if (!s) continue;
-        count = Math.max(count, s.plan_count);
-        if (s.min_retail != null) {
-          min = min == null ? s.min_retail : Math.min(min, s.min_retail);
-        }
-      }
-      out[region.slug] = { plan_count: count, min_retail: min };
-    }
-    return out;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { events?: HomeSearchEvent[] };
+    return (data.events ?? []).slice(0, 60);
   } catch {
-    return {};
+    return [];
   }
 }
 
@@ -287,7 +283,9 @@ async function loadRealTrips() {
       apiToTrip(summary, [], itemsByTrip.get(summary.id) ?? []),
     );
   } catch (err) {
-    if (err instanceof TripApiError && err.status === 401) return [];
+    if (err instanceof TripApiError && (err.status === 401 || err.status === 503)) {
+      return [];
+    }
     throw err;
   }
 }
@@ -303,10 +301,4 @@ function daysUntil(dateISO: string, fromISO: string): number {
   const a = new Date(`${fromISO}T00:00:00`).getTime();
   const b = new Date(`${dateISO}T00:00:00`).getTime();
   return Math.max(0, Math.round((b - a) / 86_400_000));
-}
-
-// Tiny i18n templating: replace {key} tokens. Keeps Phase B free of a
-// runtime dep; revisit when we need plurals / ICU.
-function format(template: string, vars: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
 }

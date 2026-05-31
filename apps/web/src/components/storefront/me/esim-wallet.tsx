@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatTemplate } from "@/lib/text-template";
 import { cn } from "@/lib/utils";
 
 interface WalletOrder {
@@ -69,7 +70,6 @@ export function EsimWallet({
   );
 
   async function load() {
-    setLoading(true);
     try {
       const res = await fetch("/api/storefront/orders", { cache: "no-store" });
       if (!res.ok) return;
@@ -132,7 +132,7 @@ export function EsimWallet({
           {labels.title}
         </h2>
         <span className="text-[12px] text-fg-muted tabular-nums">
-          {format(labels.summary, {
+          {formatTemplate(labels.summary, {
             pending: String(counts.pending),
             ready: String(counts.ready),
             shared: String(counts.shared),
@@ -182,7 +182,7 @@ export function EsimWallet({
                         {order.currency} {Math.round(order.total_amount)}
                       </span>
                       <span>
-                        {format(labels.profiles, {
+                        {formatTemplate(labels.profiles, {
                           count: String(order.profile_count),
                         })}
                       </span>
@@ -277,8 +277,4 @@ function StatusPill({
       {labels[status]}
     </span>
   );
-}
-
-function format(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
 }

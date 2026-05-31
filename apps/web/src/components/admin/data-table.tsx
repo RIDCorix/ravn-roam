@@ -151,7 +151,7 @@ export interface FilterValue {
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends unknown, TValue> {
+  interface ColumnMeta<TData, TValue> {
     filterType?: FilterType;
     filterLabel?: string;
     filterOptions?: Array<{ label: string; value: string | number | boolean }>;
@@ -438,6 +438,8 @@ export function DataTable<TData, TValue>({
     return [selectionColumn, ...filterEnhanced];
   }, [filterEnhanced, enableRowSelection]);
 
+  // TanStack Table intentionally returns table methods from this hook.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns: effectiveColumns,
@@ -702,7 +704,6 @@ export function DataTable<TData, TValue>({
                       <HeaderCell
                         key={header.id}
                         header={header}
-                        density={density}
                         enableColumnResizing={enableColumnResizing}
                         enableColumnPinning={enableColumnPinning}
                         enableColumnReorder={enableColumnReorder}
@@ -939,16 +940,18 @@ function DataRow<TData>({
 
 // ─── header cell (sort, resize handle, header menu for pin/hide) ───────
 
+/* eslint-disable react-hooks/refs --
+ * dnd-kit exposes drag listeners, attributes, and setNodeRef through
+ * useSortable. They are intentionally applied during render and do not read
+ * user-managed React refs. */
 function HeaderCell<TData, TValue>({
   header,
-  density: _density,
   enableColumnResizing,
   enableColumnPinning,
   enableColumnReorder,
   headerPadY,
 }: {
   header: Header<TData, TValue>;
-  density: Density;
   enableColumnResizing: boolean;
   enableColumnPinning: boolean;
   enableColumnReorder: boolean;
@@ -1189,6 +1192,7 @@ function HeaderCell<TData, TValue>({
     </ContextMenu>
   );
 }
+/* eslint-enable react-hooks/refs */
 
 // ─── pinning helpers ─────────────────────────────────────────────
 
@@ -1427,7 +1431,7 @@ function AddFilterItem<TData>({
 }: {
   column: Column<TData, unknown>;
 }) {
-  const filterType = column.columnDef.meta?.filterType!;
+  const filterType = column.columnDef.meta?.filterType ?? "text";
   const label = column.columnDef.meta?.filterLabel ?? labelOfColumn(column);
   return (
     <Popover>
@@ -1507,7 +1511,7 @@ function FilterPopoverForm<TData>({
   initial: FilterValue;
   onApply: (v: FilterValue) => void;
 }) {
-  const filterType = column.columnDef.meta?.filterType!;
+  const filterType = column.columnDef.meta?.filterType ?? "text";
   const options = column.columnDef.meta?.filterOptions ?? [];
   const ops = FILTER_OPS_BY_TYPE[filterType];
   const [op, setOp] = React.useState<FilterOp>(initial.op ?? ops[0]);

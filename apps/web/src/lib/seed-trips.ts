@@ -28,7 +28,7 @@ export async function ensureSeededTrips(): Promise<ApiTrip[]> {
       rebasedDays[0]?.d ?? rebaseStart(mock.start, mock.status, today, mock.id);
     const end =
       rebasedDays[rebasedDays.length - 1]?.d ??
-      rebaseEnd(mock.end, mock.status, today, mock.id);
+      rebaseEnd(mock.end, mock.status, today);
 
     const trip = await createTrip({
       title: mock.title,
@@ -98,7 +98,6 @@ function rebaseEnd(
   fallback: string,
   status: string,
   today: string,
-  _tripId: string,
 ): string {
   if (status === "active") return addDays(today, 3);
   return fallback;

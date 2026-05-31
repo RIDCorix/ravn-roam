@@ -15,6 +15,11 @@ import { env } from "../env.js";
 import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
 import { getUser, requireAuth } from "./_auth.js";
+import {
+  readSupplierItems,
+  readSupplierOrderId,
+  readSupplierOrderMode,
+} from "./supplier-metadata.js";
 
 export const storefrontRouter = new Hono();
 
@@ -150,35 +155,6 @@ function storefrontOrderJson(
     },
     upstream,
   };
-}
-
-function readSupplierItems(metadata: unknown): Array<Record<string, unknown>> {
-  if (!metadata || typeof metadata !== "object") return [];
-  const record = metadata as Record<string, unknown>;
-  const recovery = record.supplier_recovery_response;
-  if (!recovery || typeof recovery !== "object") return [];
-  const items = (recovery as { itemList?: unknown; results?: unknown }).itemList ??
-    (recovery as { results?: unknown }).results;
-  return Array.isArray(items)
-    ? items.filter((item): item is Record<string, unknown> =>
-        Boolean(item && typeof item === "object"),
-      )
-    : [];
-}
-
-function readSupplierOrderId(metadata: Record<string, unknown>): string {
-  const response = metadata.supplier_order_response;
-  if (!response || typeof response !== "object") return "";
-  return String((response as { orderId?: unknown }).orderId ?? "");
-}
-
-function readSupplierOrderMode(metadata: Record<string, unknown>): "redemption" | "standard" {
-  if (metadata.supplier_order_mode === "redemption") return "redemption";
-  if (metadata.supplier_order_mode === "standard") return "standard";
-  const request = metadata.supplier_order_request;
-  return request && typeof request === "object" && "qrcodeType" in request
-    ? "redemption"
-    : "standard";
 }
 
 // Aggregate stats for the /shop landing — one row per ISO destination

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getDictionary, hasLocale } from "../../../../dictionaries";
 
 import { ApiError, getOrder } from "@/lib/api";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 
 import {
   Card,
@@ -15,18 +15,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-function formatMoney(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${Math.round(amount)} ${currency}`;
-  }
-}
-
 export default async function OrderDetailPage({
   params,
 }: {
@@ -36,14 +24,21 @@ export default async function OrderDetailPage({
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
 
+  let orderResult: Awaited<ReturnType<typeof getOrder>>;
   try {
-    const { order, items } = await getOrder(id);
-    const margin =
-      order.total_amount === 0
-        ? 0
-        : (order.total_amount - order.cost_amount) / order.total_amount;
+    orderResult = await getOrder(id);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return notFound();
+    throw err;
+  }
 
-    return (
+  const { order, items } = orderResult;
+  const margin =
+    order.total_amount === 0
+      ? 0
+      : (order.total_amount - order.cost_amount) / order.total_amount;
+
+  return (
       <div className="space-y-6">
         <header>
           <Link
@@ -62,11 +57,15 @@ export default async function OrderDetailPage({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Stat
             label={dict.admin.orders.columns.total}
-            value={formatMoney(order.total_amount, order.currency)}
+            value={formatMoney(order.total_amount, order.currency, {
+              maximumFractionDigits: 0,
+            })}
           />
           <Stat
             label={dict.admin.orders.columns.cost}
-            value={formatMoney(order.cost_amount, order.currency)}
+            value={formatMoney(order.cost_amount, order.currency, {
+              maximumFractionDigits: 0,
+            })}
           />
           <Stat
             label={dict.admin.orders.columns.margin}
@@ -115,10 +114,14 @@ export default async function OrderDetailPage({
                       </Td>
                       <Td className="text-right tabular-nums">{it.qty}</Td>
                       <Td className="text-right t-mono tabular-nums">
-                        {formatMoney(it.unit_price, it.currency)}
+                        {formatMoney(it.unit_price, it.currency, {
+                          maximumFractionDigits: 0,
+                        })}
                       </Td>
                       <Td className="text-right t-mono tabular-nums text-fg-secondary">
-                        {formatMoney(it.unit_cost, it.currency)}
+                        {formatMoney(it.unit_cost, it.currency, {
+                          maximumFractionDigits: 0,
+                        })}
                       </Td>
                     </tr>
                   ))}
@@ -144,10 +147,6 @@ export default async function OrderDetailPage({
         ) : null}
       </div>
     );
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return notFound();
-    throw err;
-  }
 }
 
 function Th({

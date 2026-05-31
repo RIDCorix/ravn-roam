@@ -12,6 +12,10 @@ import { geocodeCities } from "../geocode/nominatim.js";
 import { enrichAttachmentUrls } from "../lumi/booking-links.js";
 import { runLumiTurn, type LumiDay, type LumiResult } from "../lumi/openai.js";
 import { getUser, requireAuth } from "./_auth.js";
+import {
+  checklistSubtasksFromDescription,
+  fallbackChecklistKind,
+} from "./trip-shared.js";
 
 export const lumiRouter = new Hono();
 lumiRouter.use("*", requireAuth);
@@ -337,6 +341,7 @@ lumiRouter.post("/chat", async (c) => {
       prompt: parsed.data.prompt,
       days: result.days,
     });
+    result.days = await prepareMappableLumiDays(result.days);
   }
   if (result.days && editableTrip && isAttachmentOnlyPrompt(parsed.data.prompt)) {
     const touched = await applyAttachmentPatch({
@@ -353,6 +358,19 @@ lumiRouter.post("/chat", async (c) => {
       summary =
         "我還沒找到要補票券或訂位資訊的活動。你可以告訴我活動名稱，我再幫你補上。";
     }
+  } else if (
+    result.days &&
+    editableTrip &&
+    isPartialDayPatch(parsed.data.prompt, editableTrip, result.days)
+  ) {
+    const patchedDays = await applyDayPatches({
+      tripId: editableTrip.tripId,
+      editableTrip,
+      days: result.days,
+    });
+    updatedDays = patchedDays;
+    delete result.days;
+    summary = summarizePatchedDays(editableTrip, patchedDays);
   } else if (result.days && editableTrip) {
     if (!isSafeFullDayRewrite(parsed.data.prompt, editableTrip, result.days)) {
       delete result.days;
@@ -435,8 +453,8 @@ lumiRouter.post("/chat", async (c) => {
             durationMin: s.duration_min ?? null,
             note: s.note ?? "",
             attachments,
-            lat: null,
-            lng: null,
+            lat: s.lat ?? null,
+            lng: s.lng ?? null,
           });
         }
       }
@@ -595,6 +613,7 @@ interface LoadedEditableTrip {
   start_date: string;
   end_date: string;
   days: {
+    id: string;
     day_date: string;
     city: string;
     note: string;
@@ -712,6 +731,7 @@ async function loadEditableTrip(
     start_date: trip.startDate,
     end_date: trip.endDate,
     days: days.map((d) => ({
+      id: d.id,
       day_date: d.dayDate,
       city: d.city,
       note: d.note,
@@ -736,14 +756,6 @@ async function loadEditableTrip(
   };
 }
 
-function fallbackChecklistKind(type: string): string {
-  if (type === "reservation") return "stay";
-  if (type === "booking" || type === "flight") return "flight";
-  if (type === "upload" || type === "document") return "doc";
-  if (type === "transit") return "transit";
-  return "ticket";
-}
-
 const ATTACHMENT_ONLY_PROMPT_RE =
   /買票|訂票|門票|票券|定位|訂位|預約|附件|上傳|標記|需要.*票|reservation|reserve|booking|book|ticket|attachment|upload|mark/i;
 
@@ -759,6 +771,44 @@ function isAttachmentOnlyPrompt(prompt: string): boolean {
     ATTACHMENT_ONLY_PROMPT_RE.test(prompt) &&
     !/重新規劃|重排|排程|安排|規劃整天|replan|rewrite|reschedule/i.test(prompt)
   );
+}
+
+function isPartialDayPatch(
+  prompt: string,
+  editableTrip: LoadedEditableTrip,
+  days: LumiDay[],
+): boolean {
+  if (isAttachmentOnlyPrompt(prompt)) return false;
+  if (days.length === 0) return false;
+  const editableDates = new Set(editableTrip.days.map((day) => day.day_date));
+  if (days.some((day) => !editableDates.has(day.day_date))) return false;
+  return missingEditableTripDates(editableTrip, days).length > 0;
+}
+
+function summarizePatchedDays(
+  editableTrip: LoadedEditableTrip,
+  patchedDays: Array<{ day_date: string; city: string; note: string }>,
+): string {
+  if (patchedDays.length === 0) return "這次沒有更新到日期。";
+  const indexByDate = new Map(
+    editableTrip.days.map((day, index) => [day.day_date, index + 1]),
+  );
+  const labels = patchedDays
+    .map((day) => indexByDate.get(day.day_date))
+    .filter((index): index is number => index != null)
+    .sort((a, b) => a - b)
+    .map((index) => `Day ${index}`);
+
+  if (labels.length === 0) return "我更新了這幾天的行程。";
+  if (labels.length === editableTrip.days.length) {
+    return "我更新了全部天數的行程。";
+  }
+  return `我更新了 ${formatDayList(labels)} 的行程。`;
+}
+
+function formatDayList(labels: string[]): string {
+  if (labels.length <= 2) return labels.join("、");
+  return `${labels.slice(0, -1).join("、")} 和 ${labels[labels.length - 1]}`;
 }
 
 function isSafeFullDayRewrite(
@@ -793,6 +843,267 @@ function missingEditableTripDates(
   return editableTrip.days
     .map((d) => d.day_date)
     .filter((date) => !nextDates.has(date));
+}
+
+async function prepareMappableLumiDays(days: LumiDay[]): Promise<LumiDay[]> {
+  const cityGeocoded = await geocodeCities(
+    Array.from(new Set(days.map((day) => day.city.trim()).filter(Boolean))),
+    { fetchMisses: true },
+  ).catch(() => []);
+  const countryByCity = new Map(
+    cityGeocoded.map((g) => [g.name.trim().toLowerCase(), g.country_code]),
+  );
+  const coordsByCountry = new Map<string, Map<string, { lat: number; lng: number }>>();
+
+  return Promise.all(
+    days.map(async (day) => {
+      const preciseStops = (day.stops ?? []).filter((stop) =>
+        isSpecificMappableStopName(stop.name),
+      );
+      const country =
+        countryByCity.get(day.city.trim().toLowerCase()) ?? null;
+      let coords = new Map<string, { lat: number; lng: number }>();
+      if (country && preciseStops.length > 0) {
+        const cached = coordsByCountry.get(country);
+        if (cached) {
+          coords = cached;
+        } else {
+          const geocoded = await geocodeCities(
+            preciseStops.map((stop) => stop.name),
+            { strictCountry: country, fetchMisses: true },
+          ).catch(() => []);
+          coords = new Map(
+            geocoded.map((g) => [
+              normalizeStopLookup(g.name),
+              { lat: g.lat, lng: g.lng },
+            ]),
+          );
+          coordsByCountry.set(country, coords);
+        }
+      }
+
+      return {
+        ...day,
+        stops: preciseStops.map((stop) => {
+          const resolved = coords.get(normalizeStopLookup(stop.name));
+          return {
+            ...stop,
+            lat: stop.lat ?? resolved?.lat ?? null,
+            lng: stop.lng ?? resolved?.lng ?? null,
+          };
+        }),
+      };
+    }),
+  );
+}
+
+const VAGUE_STOP_NAME_RE =
+  /(市中心|中心區|舊城區|老城區|街區|周邊|附近|近郊|散策|散步|漫步|自由活動|購物時間|拍照點|咖啡時間|在地餐廳|當地餐廳|午餐$|晚餐$|早餐$|local restaurant|restaurant nearby|city center|downtown|old town|neighborhood|free time|walk|stroll|wander|shopping time|photo spot|nearby cafe)/i;
+
+function isSpecificMappableStopName(name: string): boolean {
+  const trimmed = name.trim();
+  if (trimmed.length < 2) return false;
+  if (VAGUE_STOP_NAME_RE.test(trimmed)) return false;
+  return true;
+}
+
+function normalizeStopLookup(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+async function applyDayPatches({
+  tripId,
+  editableTrip,
+  days,
+}: {
+  tripId: string;
+  editableTrip: LoadedEditableTrip;
+  days: LumiDay[];
+}): Promise<Array<{ day_date: string; city: string; note: string }>> {
+  const db = getDb();
+  const existingDayByDate = new Map(
+    editableTrip.days.map((day) => [day.day_date, day]),
+  );
+  const patches = days.filter((day) => existingDayByDate.has(day.day_date));
+
+  await db.transaction(async (tx) => {
+    for (const day of patches) {
+      const existingDay = existingDayByDate.get(day.day_date);
+      if (!existingDay) continue;
+
+      await tx
+        .update(schema.tripDay)
+        .set({
+          city: day.city,
+          note: day.note,
+        })
+        .where(eq(schema.tripDay.id, existingDay.id));
+
+      await tx
+        .delete(schema.tripDayStop)
+        .where(eq(schema.tripDayStop.dayId, existingDay.id));
+
+      const effective =
+        day.stops && day.stops.length > 0
+          ? day.stops
+          : [{ name: day.city, kind: "other", note: "", attachments: [] }];
+
+      const stopRows = [];
+      for (let i = 0; i < effective.length; i++) {
+        const stop = effective[i]!;
+        const attachments = [];
+        for (const attachment of stop.attachments ?? []) {
+          let checklistItemId = attachment.checklist_item_id ?? null;
+          if (!checklistItemId) {
+            const [item] = await tx
+              .insert(schema.tripChecklistItem)
+              .values({
+                tripId,
+                text:
+                  attachment.checklist_text?.trim() ||
+                  `${stop.name}：${attachment.label}`,
+                description: attachment.checklist_description ?? null,
+                kind:
+                  attachment.checklist_kind ??
+                  fallbackChecklistKind(attachment.type ?? "ticket"),
+                startDate: day.day_date,
+                phase: "on_trip",
+                groupLabel: "抵達當地",
+                subtasks: checklistSubtasksFromDescription(
+                  attachment.checklist_description,
+                ),
+                done:
+                  attachment.status === "completed" ||
+                  attachment.status === "uploaded",
+                suggested: true,
+                suggestedBy: "Lumi",
+                dueDate: day.day_date,
+              })
+              .returning({ id: schema.tripChecklistItem.id });
+            checklistItemId = item?.id ?? null;
+          }
+          attachments.push({ ...attachment, checklist_item_id: checklistItemId });
+        }
+
+        stopRows.push({
+          dayId: existingDay.id,
+          sortOrder: i,
+          name: stop.name,
+          kind: stop.kind ?? "other",
+          arrivalTime: stop.arrival_time ?? null,
+          durationMin: stop.duration_min ?? null,
+          note: stop.note ?? "",
+          attachments,
+          lat: stop.lat ?? null,
+          lng: stop.lng ?? null,
+        });
+      }
+
+      if (stopRows.length > 0) {
+        await tx.insert(schema.tripDayStop).values(stopRows);
+      }
+    }
+
+    if (patches.length > 0) {
+      await tx
+        .update(schema.trip)
+        .set({ updatedAt: new Date() })
+        .where(eq(schema.trip.id, tripId));
+    }
+  });
+
+  return patches.map((day) => ({
+    day_date: day.day_date,
+    city: day.city,
+    note: day.note,
+  }));
+}
+
+function completeMissingPlanningDays({
+  prompt,
+  editableTrip,
+  days,
+}: {
+  prompt: string;
+  editableTrip: LoadedEditableTrip;
+  days: LumiDay[];
+}): LumiDay[] {
+  const incomingByDate = new Map(days.map((day) => [day.day_date, day]));
+  const wantsRestaurant =
+    /餐廳|餐馆|吃飯|吃饭|晚餐|午餐|早餐|restaurant|lunch|dinner|breakfast|meal/i.test(
+      prompt,
+    );
+
+  return editableTrip.days.map((existingDay) => {
+    const incoming = incomingByDate.get(existingDay.day_date);
+    if (incoming) return incoming;
+
+    const existingStops = existingDay.stops.map((stop) => ({
+      name: stop.name,
+      kind: stop.kind,
+      arrival_time: stop.arrival_time,
+      duration_min: stop.duration_min,
+      note: stop.note,
+      attachments: stop.attachments.map((attachment) => ({
+        type: attachment.type,
+        label: attachment.label,
+        url: attachment.url,
+        amount: attachment.amount,
+        action_label: attachment.action_label,
+        checklist_text: attachment.checklist_text,
+        checklist_description: attachment.checklist_description,
+        checklist_kind: attachment.checklist_kind,
+        checklist_item_id: attachment.checklist_item_id,
+        status: attachment.status,
+      })),
+    }));
+
+    const hasRealStops =
+      existingStops.length > 1 ||
+      existingStops.some((stop) => stop.name.trim() !== existingDay.city.trim());
+    if (hasRealStops) {
+      return {
+        day_date: existingDay.day_date,
+        city: existingDay.city,
+        note: existingDay.note || `${existingDay.city}行程`,
+        stops: existingStops,
+      };
+    }
+
+    return {
+      day_date: existingDay.day_date,
+      city: existingDay.city,
+      note: `${existingDay.city}輕旅行`,
+      stops: [
+        {
+          name: `${existingDay.city}市中心散策`,
+          kind: "sight",
+          arrival_time: "10:00",
+          duration_min: 120,
+          note: "先用輕鬆的市區路線熟悉周邊。",
+          attachments: [],
+        },
+        {
+          name: wantsRestaurant
+            ? `${existingDay.city}在地餐廳`
+            : `${existingDay.city}午餐`,
+          kind: "meal",
+          arrival_time: "12:30",
+          duration_min: 90,
+          note: wantsRestaurant ? "出發前可再挑一間想訂位的餐廳。" : "",
+          attachments: [],
+        },
+        {
+          name: `${existingDay.city}傍晚街區散步`,
+          kind: "sight",
+          arrival_time: "15:00",
+          duration_min: 120,
+          note: "保留彈性，適合安排購物、咖啡或拍照點。",
+          attachments: [],
+        },
+      ],
+    };
+  });
 }
 
 async function applyAttachmentPatch({
@@ -968,16 +1279,6 @@ function normalizeMatchText(value: string): string {
 
 function attachmentKey(type: string, text: string): string {
   return `${type.trim().toLowerCase()}::${normalizeMatchText(text)}`;
-}
-
-function checklistSubtasksFromDescription(description: string | null | undefined) {
-  if (!description) return [];
-  return description
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("- ") || line.startsWith("* "))
-    .map((line) => ({ text: line.slice(2).trim(), done: false }))
-    .filter((item) => item.text);
 }
 
 function normalizeLoadedAttachments(value: unknown) {

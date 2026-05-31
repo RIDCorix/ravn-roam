@@ -10,15 +10,21 @@ export function formatValidity(days: number): string {
   return `${days}d`;
 }
 
-export function formatMoney(amount: number, currency: string): string {
+export function formatMoney(
+  amount: number,
+  currency: string,
+  options: { maximumFractionDigits?: number } = {},
+): string {
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
-      maximumFractionDigits: 2,
+      maximumFractionDigits: options.maximumFractionDigits ?? 2,
     }).format(amount);
   } catch {
-    return `${amount} ${currency}`;
+    const rounded =
+      options.maximumFractionDigits === 0 ? Math.round(amount) : amount;
+    return `${rounded} ${currency}`;
   }
 }
 

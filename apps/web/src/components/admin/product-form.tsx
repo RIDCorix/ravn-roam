@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { LockKeyhole } from "lucide-react";
 
 import {
   type ProductWithMappings,
@@ -17,6 +18,9 @@ import {
   updateProductAction,
   type ActionResult,
 } from "@/lib/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const CATEGORIES = ["single_country", "regional", "global", "addon_topup"] as const;
 const ACTIVATION_POLICIES = ["on_install", "on_first_use", "fixed_date"] as const;
@@ -245,7 +249,7 @@ export function ProductForm(props: ProductFormProps) {
             hint={dict.admin.products.form.slug_hint}
             locked={productLocked("slug")}
           >
-            <input
+            <Input
               type="text"
               value={form.slug}
               onChange={(e) => update("slug", e.target.value)}
@@ -277,7 +281,7 @@ export function ProductForm(props: ProductFormProps) {
           <Field
             label={`${dict.admin.products.form.display_name} (en)`}
           >
-            <input
+            <Input
               type="text"
               value={form.display_name_en}
               onChange={(e) => update("display_name_en", e.target.value)}
@@ -287,7 +291,7 @@ export function ProductForm(props: ProductFormProps) {
           <Field
             label={`${dict.admin.products.form.display_name} (zh-TW)`}
           >
-            <input
+            <Input
               type="text"
               value={form.display_name_zh_TW}
               onChange={(e) => update("display_name_zh_TW", e.target.value)}
@@ -298,7 +302,7 @@ export function ProductForm(props: ProductFormProps) {
 
         <Grid>
           <Field label={`${dict.admin.products.form.description} (en)`}>
-            <textarea
+            <Textarea
               rows={3}
               value={form.description_en}
               onChange={(e) => update("description_en", e.target.value)}
@@ -306,7 +310,7 @@ export function ProductForm(props: ProductFormProps) {
             />
           </Field>
           <Field label={`${dict.admin.products.form.description} (zh-TW)`}>
-            <textarea
+            <Textarea
               rows={3}
               value={form.description_zh_TW}
               onChange={(e) => update("description_zh_TW", e.target.value)}
@@ -320,7 +324,7 @@ export function ProductForm(props: ProductFormProps) {
           hint={dict.admin.products.form.marketing_destinations_hint}
           locked={productLocked("marketing_destinations")}
         >
-          <input
+          <Input
             type="text"
             value={form.marketing_destinations}
             onChange={(e) =>
@@ -338,7 +342,7 @@ export function ProductForm(props: ProductFormProps) {
             hint={dict.admin.products.form.data_amount_mb_hint}
             locked={productLocked("data_amount_mb")}
           >
-            <input
+            <Input
               type="number"
               value={form.data_amount_mb}
               onChange={(e) => update("data_amount_mb", e.target.value)}
@@ -350,7 +354,7 @@ export function ProductForm(props: ProductFormProps) {
             label={dict.admin.products.form.validity_days}
             locked={productLocked("validity_days")}
           >
-            <input
+            <Input
               type="number"
               min="1"
               value={form.validity_days}
@@ -384,7 +388,7 @@ export function ProductForm(props: ProductFormProps) {
           <Field
             label={dict.admin.products.form.sales_window_start}
           >
-            <input
+            <Input
               type="datetime-local"
               value={form.sales_window_start}
               onChange={(e) => update("sales_window_start", e.target.value)}
@@ -392,7 +396,7 @@ export function ProductForm(props: ProductFormProps) {
             />
           </Field>
           <Field label={dict.admin.products.form.sales_window_end}>
-            <input
+            <Input
               type="datetime-local"
               value={form.sales_window_end}
               onChange={(e) => update("sales_window_end", e.target.value)}
@@ -403,7 +407,7 @@ export function ProductForm(props: ProductFormProps) {
 
         <Grid>
           <Field label={dict.admin.products.form.sales_region_allow}>
-            <input
+            <Input
               type="text"
               value={form.sales_region_allow}
               onChange={(e) => update("sales_region_allow", e.target.value)}
@@ -412,7 +416,7 @@ export function ProductForm(props: ProductFormProps) {
             />
           </Field>
           <Field label={dict.admin.products.form.sales_region_deny}>
-            <input
+            <Input
               type="text"
               value={form.sales_region_deny}
               onChange={(e) => update("sales_region_deny", e.target.value)}
@@ -424,7 +428,7 @@ export function ProductForm(props: ProductFormProps) {
 
         <Grid>
           <Field label={dict.admin.products.form.purchase_cap_per_user}>
-            <input
+            <Input
               type="number"
               min="1"
               value={form.purchase_cap_per_user}
@@ -435,7 +439,7 @@ export function ProductForm(props: ProductFormProps) {
             />
           </Field>
           <Field label={dict.admin.products.form.purchase_cap_total}>
-            <input
+            <Input
               type="number"
               min="1"
               value={form.purchase_cap_total}
@@ -446,7 +450,7 @@ export function ProductForm(props: ProductFormProps) {
         </Grid>
 
         <Field label={dict.admin.products.form.tags}>
-          <input
+          <Input
             type="text"
             value={form.tags}
             onChange={(e) => update("tags", e.target.value)}
@@ -482,7 +486,7 @@ export function ProductForm(props: ProductFormProps) {
 
         <Grid cols={3}>
           <Field label={dict.admin.products.pricing.currency} locked={pricingLocked}>
-            <input
+            <Input
               type="text"
               maxLength={3}
               value={form.currency}
@@ -531,7 +535,7 @@ export function ProductForm(props: ProductFormProps) {
               label={dict.admin.products.pricing.markup_value}
               locked={pricingLocked}
             >
-              <input
+              <Input
                 type="number"
                 step="0.01"
                 value={form.markup_value}
@@ -545,7 +549,7 @@ export function ProductForm(props: ProductFormProps) {
               label={dict.admin.products.pricing.retail}
               locked={pricingLocked}
             >
-              <input
+              <Input
                 type="number"
                 step="0.01"
                 value={form.manual_retail}
@@ -556,7 +560,7 @@ export function ProductForm(props: ProductFormProps) {
             </Field>
           )}
           <Field label={dict.admin.products.pricing.msrp} locked={pricingLocked}>
-            <input
+            <Input
               type="number"
               step="0.01"
               value={form.msrp}
@@ -586,13 +590,12 @@ export function ProductForm(props: ProductFormProps) {
       ) : null}
 
       <div className="flex justify-end gap-2">
-        <button
+        <Button
           type="submit"
           disabled={pending}
-          className="rounded bg-fg text-bg px-4 py-2 text-sm hover:opacity-90 disabled:opacity-50"
         >
           {pending ? dict.admin.common.loading : dict.admin.common.save}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -639,7 +642,9 @@ function Field({
     <label className="block">
       <span className="block text-xs font-medium text-fg-secondary mb-1">
         {label}
-        {locked ? <span className="ml-1 text-warning">🔒</span> : null}
+        {locked ? (
+          <LockKeyhole className="ml-1 inline size-3 align-[-1px] text-warning" />
+        ) : null}
       </span>
       {children}
       {hint ? (

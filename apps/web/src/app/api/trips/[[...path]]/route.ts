@@ -5,6 +5,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { createSupabaseServerClient } from "@roam/shared";
+import { proxyToApi } from "@/lib/api-proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -21,34 +22,16 @@ async function forward(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const apiBase = process.env.ROAM_API_URL ?? "http://localhost:4000";
-  const search = request.nextUrl.search ?? "";
   /* `path` is `undefined` when the request hits `/api/trips` with no
      extra segment (which happens on POST /api/trips for trip creation).
      Treat that as the empty tail so we forward to `<api>/trips`. */
   const tail = (path ?? []).join("/");
-  const target = `${apiBase}/trips${tail ? `/${tail}` : ""}${search}`;
-  const init: RequestInit = {
-    method: request.method,
+  return proxyToApi(request, {
+    path: `/trips${tail ? `/${tail}` : ""}`,
     headers: {
       authorization: `Bearer ${session.access_token}`,
-      ...(request.method !== "GET" && request.method !== "HEAD"
-        ? { "content-type": "application/json" }
-        : {}),
     },
-  };
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.text();
-  }
-  const res = await fetch(target, init);
-  const text = await res.text();
-  /* Preserve the upstream content-type — when the backend returns an
-     HTML error page (e.g. Railway 502), labelling it as JSON makes the
-     client misparse and surface the raw HTML in the UI. */
-  const contentType = res.headers.get("content-type") ?? "application/json";
-  return new NextResponse(text, {
-    status: res.status,
-    headers: { "content-type": contentType },
+    contentType: "json",
   });
 }
 

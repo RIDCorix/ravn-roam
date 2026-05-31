@@ -9,7 +9,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, Settings, Trash2 } from "lucide-react";
 
 import { MotionButton, MotionLink, popIn } from "@/components/storefront/motion";

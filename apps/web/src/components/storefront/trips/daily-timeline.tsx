@@ -6,8 +6,8 @@
 
 import dynamic from "next/dynamic";
 
-import type { Trip } from "@/lib/mock/consumer";
-import { TODAY } from "@/lib/mock/consumer";
+import { isoDate } from "@/lib/date";
+import type { Trip } from "@/lib/trip-types";
 import { cn } from "@/lib/utils";
 
 import type { TripMapCity } from "./trip-map";
@@ -36,6 +36,7 @@ export function DailyTimeline({
   // Format template for the per-day label, e.g. "第 {n} 天" or "Day {n}".
   dayLabelTemplate: string;
 }) {
+  const today = isoDate(new Date());
   return (
     <div className="flex flex-col gap-5">
       <TripMap cities={cities} />
@@ -48,7 +49,7 @@ export function DailyTimeline({
           <ol className="relative grid grid-cols-[72px_22px_minmax(0,1fr)] gap-x-3">
             <span className="absolute bottom-4 left-[82px] top-4 w-px bg-divider" />
             {trip.days.map((d, i) => {
-              const isToday = d.d === TODAY;
+              const isToday = d.d === today;
               return (
                 <li
                   key={`${d.d}-${i}`}

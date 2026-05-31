@@ -1,17 +1,24 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
-
-import { createSupabaseServerClient } from "@roam/shared";
+import { ArrowRight, Map, Sparkles } from "lucide-react";
 
 import { getDictionary, hasLocale } from "../../../dictionaries";
 import { findRegionBySlug } from "@/lib/storefront-regions";
-import { ShopRegionClient } from "@/components/storefront/shop/shop-region-client";
+import {
+  buildPlansHref,
+  loadRegionEvents,
+  timelineBackgroundForRegion,
+} from "@/lib/storefront-region-events";
+import { formatTemplate } from "@/lib/text-template";
+import { RegionEventCard } from "@/components/storefront/shop/region-detail/event-card";
+import { EventTimeline } from "@/components/storefront/shop/region-detail/event-timeline";
+import { RegionHero } from "@/components/storefront/shop/region-detail/hero";
+import { buildEventTimeline } from "@/components/storefront/shop/region-detail/timeline-data";
+import type { LocaleKey } from "@/components/storefront/shop/region-detail/date";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopRegionPage({
+export default async function ShopRegionDetailPage({
   params,
   searchParams,
 }: {
@@ -20,116 +27,115 @@ export default async function ShopRegionPage({
 }) {
   const { lang, region: regionSlug } = await params;
   if (!hasLocale(lang)) notFound();
+
   const dict = await getDictionary(lang);
-  const t = dict.storefront.shop;
+  const detail = dict.storefront.shop.region_detail;
   const region = findRegionBySlug(regionSlug);
   if (!region) notFound();
-  const localeKey: "zh-TW" | "en" = lang === "en" ? "en" : "zh-TW";
+
+  const localeKey: LocaleKey = lang === "en" ? "en" : "zh-TW";
   const sp = await searchParams;
-  const initialDays = pickNum(sp.days);
-  const initialGb = pickNum(sp.gb);
-  const initialQuantity = pickNum(sp.qty);
-  const tripId = pickString(sp.trip_id);
-  const checklistItemId = pickString(sp.checklist_id);
-  const initialCoverageSlugs = pickList(sp.coverage).filter((slug) =>
-    Boolean(findRegionBySlug(slug)),
-  );
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const checkoutProfile = user
-    ? {
-        email: user.email ?? "",
-        name:
-          (user.user_metadata?.full_name as string | undefined) ??
-          (user.user_metadata?.name as string | undefined) ??
-          "",
-      }
-    : null;
+  const plansHref = buildPlansHref(lang, region, sp);
+  const destination = region.name[localeKey];
+  const planTripHref = `/${lang}/trips?destination=${encodeURIComponent(destination)}`;
+  const events = await loadRegionEvents(region.slug);
+  const timeline = buildEventTimeline(events, localeKey, detail.event_types);
+  const timelineBackgroundSrc = timelineBackgroundForRegion(region.slug);
 
   return (
-    <div className="min-h-full">
-      {/* Hero with region photo */}
-      <header className="relative h-[180px] overflow-hidden">
-        <Image
-          src={region.cover}
-          alt=""
-          fill
-          sizes="100vw"
-          priority
-          className="object-cover"
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%)",
-          }}
-        />
-        <div className="absolute inset-x-0 top-0 flex items-start px-4 pt-3">
-          <Link
-            href={`/${lang}/shop`}
-            aria-label="back"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-fg transition-colors hover:bg-surface-hover"
-            style={{ boxShadow: "var(--shadow-card)" }}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-4 text-white">
-          <h1 className="text-[22px] font-semibold tracking-[-0.02em] drop-shadow-sm">
-            {region.name[localeKey]}
-          </h1>
-          <div className="mt-0.5 text-[12.5px] opacity-90">
-            {region.destinations.length} {t.destinations}
-            {" · "}
-            {region.destinations.slice(0, 6).join(" · ")}
-            {region.destinations.length > 6 ? "…" : ""}
-          </div>
-        </div>
-      </header>
+    <div className="min-h-full pb-28">
+      <RegionHero
+        region={region}
+        lang={lang}
+        localeKey={localeKey}
+        labels={detail}
+        plansHref={plansHref}
+        planTripHref={planTripHref}
+      />
 
-      <div className="pt-4">
-        <ShopRegionClient
-          lang={lang}
-          region={region}
-          labels={t}
-          initialDays={initialDays}
-          initialGb={initialGb}
-          initialCoverageSlugs={initialCoverageSlugs}
-          initialQuantity={initialQuantity}
-          checkoutTripContext={
-            tripId
-              ? {
-                  tripId,
-                  checklistItemId,
-                }
-              : null
-          }
-          checkoutProfile={checkoutProfile}
-        />
-      </div>
+      <main className="space-y-6 px-5 pt-5">
+        <section id="events" className="scroll-mt-6 space-y-3">
+          <div className="flex items-end justify-between gap-3 px-1">
+            <div>
+              <h2 className="text-[18px] font-semibold tracking-[-0.015em] text-fg">
+                {detail.events_title}
+              </h2>
+              <p className="mt-0.5 text-[12.5px] text-fg-muted">
+                {formatTemplate(detail.events_subtitle, {
+                  region: region.name[localeKey],
+                })}
+              </p>
+            </div>
+            <span className="text-[11px] text-fg-muted tabular-nums">
+              {events.length}
+            </span>
+          </div>
+
+          {events.length > 0 ? (
+            <>
+              <EventTimeline
+                item={timeline}
+                labels={detail}
+                backgroundSrc={timelineBackgroundSrc}
+              />
+              <div className="flex items-end justify-between gap-3 px-1 pt-2">
+                <div>
+                  <div className="flex items-center gap-2 text-[18px] font-semibold tracking-[-0.015em] text-fg">
+                    {detail.featured_events_title}
+                    <Sparkles className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                  </div>
+                  <p className="mt-0.5 text-[12.5px] text-fg-muted">
+                    {detail.featured_events_subtitle}
+                  </p>
+                </div>
+              </div>
+              <div
+                className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-2 md:mx-0 md:px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                aria-label={detail.featured_events_title}
+              >
+                {events.map((event) => (
+                  <RegionEventCard
+                    key={event.id}
+                    event={event}
+                    regionCover={region.cover}
+                    regionName={region.name[localeKey]}
+                    localeKey={localeKey}
+                    labels={detail}
+                    planTripHref={planTripHref}
+                  />
+                ))}
+              </div>
+              <Link
+                href={planTripHref}
+                className="mx-auto flex max-w-[720px] items-center gap-3 rounded-2xl border border-divider bg-surface px-4 py-3 text-fg shadow-xs transition-colors hover:bg-surface-hover"
+              >
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                  <Map className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold">
+                    {detail.trip_prompt_title}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] leading-snug text-fg-muted">
+                    {detail.trip_prompt_body}
+                  </span>
+                </span>
+                <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-[12.5px] font-semibold text-white">
+                  {detail.plan_trip_cta}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </span>
+              </Link>
+            </>
+          ) : (
+            <div
+              className="rounded-2xl bg-surface px-4 py-5 text-[13px] leading-relaxed text-fg-muted"
+              style={{ boxShadow: "var(--shadow-card)" }}
+            >
+              {detail.events_empty}
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
-}
-
-function pickString(v: string | string[] | undefined): string | undefined {
-  const s = Array.isArray(v) ? v[0] : v;
-  return s && s.trim() ? s.trim() : undefined;
-}
-
-function pickNum(v: string | string[] | undefined): number | undefined {
-  const s = Array.isArray(v) ? v[0] : v;
-  if (s == null || s === "") return undefined;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : undefined;
-}
-
-function pickList(v: string | string[] | undefined): string[] {
-  const values = Array.isArray(v) ? v : v ? [v] : [];
-  return values
-    .flatMap((value) => value.split(","))
-    .map((value) => value.trim())
-    .filter(Boolean);
 }

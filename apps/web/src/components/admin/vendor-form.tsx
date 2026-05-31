@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { CommissionProductPicker } from "@/components/admin/commission-product-picker";
 import { CommissionSlider } from "@/components/admin/commission-slider";
 import { FormSelect } from "@/components/admin/form-select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface VendorFormProps {
   lang: string;
@@ -124,21 +126,20 @@ export function VendorForm({
       ) : null}
 
       <Field label={dict.vendors.form.code} hint={dict.vendors.form.code_hint}>
-        <input
+        <Input
           name="code"
           required
           defaultValue={v?.code ?? ""}
           disabled={mode === "edit"}
-          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono disabled:bg-muted disabled:text-muted-foreground"
+          className="font-mono"
         />
       </Field>
 
       <Field label={dict.vendors.form.display_name}>
-        <input
+        <Input
           name="display_name"
           required
           defaultValue={v?.display_name ?? ""}
-          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
       </Field>
 
@@ -175,20 +176,18 @@ export function VendorForm({
       </Field>
 
       <Field label={dict.vendors.form.contact_email}>
-        <input
+        <Input
           type="email"
           name="contact_email"
           defaultValue={v?.contact_email ?? ""}
-          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
       </Field>
 
       <Field label={dict.vendors.form.notes}>
-        <textarea
+        <Textarea
           name="notes"
           rows={4}
           defaultValue={v?.notes ?? ""}
-          className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
       </Field>
 

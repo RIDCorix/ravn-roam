@@ -1,6 +1,5 @@
-// Tab placeholder. Used by trips / tasks / shop / me until their
-// Phase C ports land. Keep this calm — design-system tone is "quiet,
-// declarative, second-person" so no spinners, no marketing copy.
+// Calm empty-state shell for low-data storefront tabs. Keep the tone quiet and
+// direct: one explanation, one implied next action, no marketing copy.
 
 export function ComingSoon({ title, body }: { title: string; body: string }) {
   return (

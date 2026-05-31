@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from "@roam/shared";
 
 import { AcceptInviteButton } from "./accept-button";
 
+import { serverApiBase } from "@/lib/server-api-base";
+import { formatTemplate } from "@/lib/text-template";
 import { getDictionary, hasLocale } from "../../dictionaries";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +35,7 @@ export default async function InvitePage({
   // Hit the API directly with the same host's bridge; on the server we
   // can also talk to the Hono API directly. Use the bridge so cookies
   // ride along for any future auth checks.
-  const apiBase = process.env.ROAM_API_URL ?? "http://localhost:4000";
+  const apiBase = serverApiBase();
   const res = await fetch(`${apiBase}/invite/${token}`, { cache: "no-store" });
   if (!res.ok) {
     const reason = res.status === 409 ? t.already_joined : t.invalid;
@@ -49,7 +51,7 @@ export default async function InvitePage({
   const signedIn = !!user;
   const nextPath = `/${lang}/invite/${token}`;
 
-  const headerText = format(t.title_template, {
+  const headerText = formatTemplate(t.title_template, {
     name: invite.display_name,
     title: invite.trip_title,
   });
@@ -93,8 +95,4 @@ function InviteError({ reason }: { reason: string }) {
       <div className="text-center text-[14px] text-fg-muted">{reason}</div>
     </div>
   );
-}
-
-function format(template: string, vars: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
 }

@@ -34,8 +34,9 @@ import {
   UNREAD_CHANGED_EVENT,
 } from "@/lib/lumi-unread";
 import { Input } from "@/components/ui/input";
-import type { ChecklistItem, Trip, TripDay, TripStop } from "@/lib/mock/consumer";
+import { compressImageToDataUrl } from "@/lib/image-compression";
 import { refreshTrip } from "@/lib/trip-cache";
+import type { ChecklistItem, Trip, TripDay, TripStop } from "@/lib/trip-types";
 import { cn } from "@/lib/utils";
 
 import type { ApiCompanion } from "@/lib/trips-api";
@@ -428,20 +429,16 @@ function QuickInfoModal({
   const imageDataUrl = attachment?.imageDataUrl ?? item.imageDataUrl ?? null;
   const imageName = attachment?.imageName ?? item.imageName ?? null;
   const [copied, setCopied] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const isIOS =
+    typeof window !== "undefined" &&
+    (/iPad|iPhone|iPod/.test(window.navigator.userAgent) ||
+      (window.navigator.platform === "MacIntel" &&
+        window.navigator.maxTouchPoints > 1));
   const isEsim = item.type === "esim" && item.ready;
   const activationCode = normalizeLpaActivationCode(attachment?.amount);
   const appleInstallUrl = activationCode
     ? `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(activationCode)}`
     : null;
-  useEffect(() => {
-    const ua = window.navigator.userAgent;
-    const platform = window.navigator.platform;
-    setIsIOS(
-      /iPad|iPhone|iPod/.test(ua) ||
-        (platform === "MacIntel" && window.navigator.maxTouchPoints > 1),
-    );
-  }, []);
   async function copyActivationCode() {
     if (!activationCode) return;
     await navigator.clipboard.writeText(activationCode);
@@ -847,6 +844,17 @@ function DayView({
   dayLabelTemplate: string;
   cities: TripMapCity[];
 }) {
+  const [activeStop, setActiveStop] = useState<{
+    day: string;
+    index: number;
+  } | null>(null);
+  const activeStopIndex =
+    activeStop && activeStop.day === day?.d ? activeStop.index : null;
+  const focusStop = (stopIndex: number) => {
+    if (!day) return;
+    setActiveStop({ day: day.d, index: stopIndex });
+  };
+
   if (!day) {
     return (
       <div className="rounded-2xl border border-dashed border-divider-strong px-4 py-10 text-center text-[13px] text-fg-muted">
@@ -874,6 +882,7 @@ function DayView({
         activeCity={day.city}
         activeLegFrom={prevDay?.city ?? null}
         dayStops={dayStops}
+        activeStopIndex={activeStopIndex}
       />
       <div className="flex flex-col gap-3 px-1">
         <div
@@ -903,7 +912,12 @@ function DayView({
           );
         })()}
         {day.stops && day.stops.length > 0 && (
-          <StopsTimeline tripId={tripId} stops={day.stops} />
+          <StopsTimeline
+            tripId={tripId}
+            stops={day.stops}
+            activeStopIndex={activeStopIndex}
+            onFocusStop={focusStop}
+          />
         )}
       </div>
     </div>
@@ -925,9 +939,13 @@ const STOPS_VIEW_KEY = "roam-trip-stops-view";
 function StopsTimeline({
   tripId,
   stops,
+  activeStopIndex,
+  onFocusStop,
 }: {
   tripId: string;
   stops: NonNullable<TripDay["stops"]>;
+  activeStopIndex: number | null;
+  onFocusStop: (index: number) => void;
 }) {
   const [view, setView] = useState<StopsView>("list");
   // Hydrate the toggle from localStorage after mount so SSR markup
@@ -951,9 +969,19 @@ function StopsTimeline({
         <ViewToggle view={view} onChange={setView} />
       </div>
       {view === "list" ? (
-        <StopsList tripId={tripId} stops={stops} />
+        <StopsList
+          tripId={tripId}
+          stops={stops}
+          activeStopIndex={activeStopIndex}
+          onFocusStop={onFocusStop}
+        />
       ) : (
-        <StopsCalendar tripId={tripId} stops={stops} />
+        <StopsCalendar
+          tripId={tripId}
+          stops={stops}
+          activeStopIndex={activeStopIndex}
+          onFocusStop={onFocusStop}
+        />
       )}
     </div>
   );
@@ -1018,9 +1046,13 @@ function ToggleButton({
 function StopsList({
   tripId,
   stops,
+  activeStopIndex,
+  onFocusStop,
 }: {
   tripId: string;
   stops: NonNullable<TripDay["stops"]>;
+  activeStopIndex?: number | null;
+  onFocusStop?: (index: number) => void;
 }) {
   return (
     <ol className="relative grid grid-cols-[58px_32px_minmax(0,1fr)_40px] gap-x-2">
@@ -1062,7 +1094,17 @@ function StopsList({
               {i + 1}
             </span>
             <div className="min-w-0 pt-0.5">
-              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+              <button
+                type="button"
+                onClick={() => onFocusStop?.(i)}
+                className={cn(
+                  "w-full rounded-xl px-1 py-0.5 text-left transition-colors",
+                  activeStopIndex === i
+                    ? "bg-accent-softer"
+                    : "hover:bg-surface-sunken",
+                )}
+              >
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="min-w-0 break-words text-[15px] font-semibold leading-tight text-fg">
                     {s.name}
                   </span>
@@ -1072,15 +1114,16 @@ function StopsList({
                       · {formatDuration(s.duration_min)}
                     </span>
                   ) : null}
-              </div>
-              {s.note ? (
-                <div className="text-[13px] leading-relaxed text-fg-secondary">
-                  {s.note}
                 </div>
-              ) : null}
+                {s.note ? (
+                  <div className="text-[13px] leading-relaxed text-fg-secondary">
+                    {s.note}
+                  </div>
+                ) : null}
+              </button>
             </div>
             <div className="flex justify-end pt-0">
-              <AttachmentBadges
+              <StopActions
                 tripId={tripId}
                 stop={s}
                 attachments={s.attachments ?? []}
@@ -1099,9 +1142,13 @@ function StopsList({
 function StopsCalendar({
   tripId,
   stops,
+  activeStopIndex,
+  onFocusStop,
 }: {
   tripId: string;
   stops: NonNullable<TripDay["stops"]>;
+  activeStopIndex: number | null;
+  onFocusStop: (index: number) => void;
 }) {
   const PX_PER_MIN = 1.2; // → 1 hour = 72px, ~17h visible window ≈ 1224px tall
   const HOUR_PX = PX_PER_MIN * 60;
@@ -1127,7 +1174,14 @@ function StopsCalendar({
   if (scheduled.length === 0) {
     // Nothing has a real time — fall back to the list view rather than
     // an empty grid.
-    return <StopsList tripId={tripId} stops={stops} />;
+    return (
+      <StopsList
+        tripId={tripId}
+        stops={stops}
+        activeStopIndex={activeStopIndex}
+        onFocusStop={onFocusStop}
+      />
+    );
   }
 
   const earliest = Math.min(...scheduled.map((s) => s.start));
@@ -1175,8 +1229,22 @@ function StopsCalendar({
           const height = Math.max(28, (end - start) * PX_PER_MIN - 2);
           return (
             <div
+              role="button"
+              tabIndex={0}
               key={`s-${index}`}
-              className="absolute right-2 overflow-visible rounded-lg border border-accent/40 bg-[rgba(15,184,180,0.08)] px-2 py-1.5"
+              onClick={() => onFocusStop(index)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onFocusStop(index);
+                }
+              }}
+              className={cn(
+                "absolute right-2 overflow-visible rounded-lg border px-2 py-1.5 text-left transition-colors",
+                activeStopIndex === index
+                  ? "border-accent bg-accent-softer"
+                  : "border-accent/40 bg-[rgba(15,184,180,0.08)] hover:bg-accent-softer",
+              )}
               style={{ top, height, left: 56 }}
             >
               <div className="flex items-start gap-1.5">
@@ -1201,7 +1269,7 @@ function StopsCalendar({
                       stop.arrival_time}
                   </div>
                   <div className="mt-1">
-                    <AttachmentBadges
+                    <StopActions
                       tripId={tripId}
                       stop={stop}
                       attachments={stop.attachments ?? []}
@@ -1220,7 +1288,14 @@ function StopsCalendar({
           <div className="px-1 text-[10.5px] font-medium uppercase tracking-[0.05em] text-fg-muted">
             未排定時間
           </div>
-          <StopsList tripId={tripId} stops={unscheduled.map((u) => u.stop)} />
+          <StopsList
+            tripId={tripId}
+            stops={unscheduled.map((u) => u.stop)}
+            activeStopIndex={unscheduled.findIndex(
+              (u) => u.index === activeStopIndex,
+            )}
+            onFocusStop={(idx) => onFocusStop(unscheduled[idx]?.index ?? idx)}
+          />
         </div>
       )}
     </div>
@@ -1282,6 +1357,53 @@ function KindChip({ kind }: { kind: string }) {
       {meta.label}
     </span>
   );
+}
+
+function StopActions({
+  tripId,
+  stop,
+  attachments,
+  compact,
+}: {
+  tripId: string;
+  stop: TripStop;
+  attachments: NonNullable<TripStop["attachments"]>;
+  compact?: boolean;
+}) {
+  const mapUrl = googleMapsUrl(stop);
+  return (
+    <div className="flex shrink-0 items-center justify-end gap-1">
+      <a
+        href={mapUrl}
+        target="_blank"
+        rel="noreferrer"
+        title="Google Maps"
+        aria-label={`${stop.name} Google Maps`}
+        onClick={(event) => event.stopPropagation()}
+        className={cn(
+          "inline-flex items-center justify-center rounded-full border border-divider bg-white text-fg-muted shadow-xs transition-colors hover:border-accent/40 hover:text-accent",
+          compact ? "h-7 w-7" : "h-8 w-8",
+        )}
+      >
+        <ExternalLink className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+      </a>
+      <AttachmentBadges
+        tripId={tripId}
+        stop={stop}
+        attachments={attachments}
+        compact={compact}
+      />
+    </div>
+  );
+}
+
+function googleMapsUrl(stop: TripStop): string {
+  if (stop.lat != null && stop.lng != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${stop.lat},${stop.lng}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    stop.name,
+  )}`;
 }
 
 function AttachmentBadges({
@@ -1347,7 +1469,10 @@ function AttachmentIconButton({
     startTransition(async () => {
       let imageDataUrl: string;
       try {
-        imageDataUrl = await compressImageToDataUrl(file);
+        imageDataUrl = await compressImageToDataUrl(file, {
+          maxDataUrlLength: 1_800_000,
+          fallbackQuality: 0.45,
+        });
       } catch {
         setError("圖片處理失敗");
         return;
@@ -1579,31 +1704,6 @@ function TicketField({
       />
     </label>
   );
-}
-
-async function compressImageToDataUrl(file: File): Promise<string> {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("not_image");
-  }
-  const bitmap = await createImageBitmap(file);
-  const maxSide = 1600;
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas_unavailable");
-  ctx.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close();
-
-  for (const quality of [0.82, 0.72, 0.62, 0.52]) {
-    const dataUrl = canvas.toDataURL("image/jpeg", quality);
-    if (dataUrl.length <= 1_800_000) return dataUrl;
-  }
-
-  return canvas.toDataURL("image/jpeg", 0.45);
 }
 
 const ATTACHMENT_ICONS: Record<string, typeof Ticket> = {

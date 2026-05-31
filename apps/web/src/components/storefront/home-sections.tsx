@@ -30,8 +30,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { ActiveESIM, ChecklistItem, Trip } from "@/lib/mock/consumer";
 import { buildChecklistEsimShopHref } from "@/lib/shop-link";
+import type { ActiveESIM, ChecklistItem, Trip } from "@/lib/trip-types";
 
 const CHECKLIST_KIND_ICON: Record<ChecklistItem["kind"], LucideIcon> = {
   esim: Signal,

@@ -26,10 +26,15 @@ export default async function VendorDetailPage({
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
 
+  let vendor: Awaited<ReturnType<typeof getVendor>>;
   try {
-    const vendor = await getVendor(id);
+    vendor = await getVendor(id);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return notFound();
+    throw err;
+  }
 
-    return (
+  return (
       <div className="space-y-6">
         <header className="flex items-center justify-between">
           <div>
@@ -140,10 +145,6 @@ export default async function VendorDetailPage({
         </Card>
       </div>
     );
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return notFound();
-    throw err;
-  }
 }
 
 function SummaryCard({

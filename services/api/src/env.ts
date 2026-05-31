@@ -24,6 +24,12 @@ const schema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
   OPENAI_SEARCH_MODEL: z.string().min(1).default("gpt-4o-mini-search-preview"),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODEL: z.string().min(1).default("gemini-2.5-flash"),
+  GEMINI_SEARCH_MODEL: z.string().min(1).default("gemini-2.5-flash"),
+  EVENT_CRAWLER_PROVIDER: z.enum(["gemini", "openai"]).optional(),
+  EVENT_CRAWLER_REQUEST_DELAY_MS: z.coerce.number().int().min(0).default(0),
+  EVENT_CRAWLER_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(4),
 
   // Supabase project URL + anon key. The /trips/* routes call
   // `supabase.auth.getUser(bearerToken)` to resolve the caller's user_id

@@ -10,23 +10,18 @@
 // itself — the page passes only the sectioned grid as children.
 
 import * as React from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Search, Sparkles, X } from "lucide-react";
+import { Search, Sparkles, X } from "lucide-react";
 
 import { MotionButton, popIn } from "@/components/storefront/motion";
 import {
-  REGION_GROUPS,
-  findRegionBySlug,
-  type ShopRegion,
-} from "@/lib/storefront-regions";
-import { cn } from "@/lib/utils";
-
-interface RegionStat {
-  plan_count: number;
-  min_retail: number | null;
-}
+  RegionResultRow,
+  findMatchingRegions,
+  useSearchPopover,
+  type RegionStat,
+} from "@/components/storefront/search/search-popover";
+import { formatTemplate } from "@/lib/text-template";
 
 export function ShopSearchPill({
   lang,
@@ -51,72 +46,22 @@ export function ShopSearchPill({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [q, setQ] = React.useState("");
-  const [open, setOpen] = React.useState(false);
-  const [focusedIdx, setFocusedIdx] = React.useState(0);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const popoverRef = React.useRef<HTMLDivElement>(null);
-  const trimmed = q.trim().toLowerCase();
-
-  const matches: ShopRegion[] = React.useMemo(() => {
-    if (!trimmed) return [];
-    const all = REGION_GROUPS.flatMap((g) =>
-      g.slugs.map((s) => findRegionBySlug(s)).filter((r): r is ShopRegion => !!r),
-    );
-    const seen = new Set<string>();
-    return all.filter((r) => {
-      if (seen.has(r.slug)) return false;
-      seen.add(r.slug);
-      const hay = [r.name["zh-TW"], r.name.en, r.slug, ...r.destinations]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(trimmed);
-    });
-  }, [trimmed]);
-
-  React.useEffect(() => {
-    setFocusedIdx(0);
-  }, [trimmed]);
-
-  // Close the popover when clicking outside.
-  React.useEffect(() => {
-    if (!open) return;
-    function onDocClick(e: MouseEvent) {
-      const t = e.target as Node;
-      if (popoverRef.current?.contains(t)) return;
-      if (inputRef.current?.contains(t)) return;
-      setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
-
-  function commit(region: ShopRegion) {
-    router.push(`/${lang}/shop/${region.slug}`);
-    setOpen(false);
-  }
-
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setOpen(true);
-      setFocusedIdx((i) => Math.min(i + 1, matches.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setFocusedIdx((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter") {
-      const r = matches[focusedIdx];
-      if (r) {
-        e.preventDefault();
-        commit(r);
-      }
-    } else if (e.key === "Escape") {
-      setOpen(false);
-      inputRef.current?.blur();
-    }
-  }
-
-  const showPopover = open && trimmed.length > 0;
+  const {
+    q,
+    setQ,
+    setOpen,
+    focusedIdx,
+    setFocusedIdx,
+    inputRef,
+    popoverRef,
+    results: matches,
+    showPopover,
+    commit,
+    onKeyDown,
+  } = useSearchPopover({
+    getResults: findMatchingRegions,
+    onCommit: (region) => router.push(`/${lang}/shop/${region.slug}`),
+  });
 
   return (
     <>
@@ -136,6 +81,7 @@ export function ShopSearchPill({
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);
+                setFocusedIdx(0);
                 setOpen(true);
               }}
               onFocus={() => setOpen(true)}
@@ -149,6 +95,7 @@ export function ShopSearchPill({
                 aria-label={labels.clear_search}
                 onClick={() => {
                   setQ("");
+                  setFocusedIdx(0);
                   setOpen(false);
                   inputRef.current?.focus();
                 }}
@@ -181,7 +128,7 @@ export function ShopSearchPill({
                 ) : (
                   <>
                     <div className="px-4 pb-1.5 text-[10.5px] font-medium uppercase tracking-wide text-fg-muted">
-                      {format(labels.regions_count, {
+                      {formatTemplate(labels.regions_count, {
                         count: String(matches.length),
                       })}
                     </div>
@@ -189,42 +136,16 @@ export function ShopSearchPill({
                       const stat = stats[r.slug];
                       const focused = i === focusedIdx;
                       return (
-                        <MotionButton
+                        <RegionResultRow
                           key={r.slug}
-                          type="button"
-                          role="option"
-                          aria-selected={focused}
-                          onMouseEnter={() => setFocusedIdx(i)}
-                          onClick={() => commit(r)}
-                          className={cn(
-                            "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
-                            focused ? "bg-surface-hover" : "hover:bg-surface-hover",
-                          )}
-                        >
-                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                            <Image
-                              src={r.cover}
-                              alt=""
-                              fill
-                              sizes="40px"
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-[14px] font-semibold text-fg">
-                              {r.name[localeKey]}
-                            </div>
-                            <div className="truncate text-[11px] text-fg-muted">
-                              {stat?.plan_count
-                                ? `${stat.plan_count} ${labels.plans}`
-                                : r.name[localeKey === "en" ? "zh-TW" : "en"]}
-                              {stat?.min_retail
-                                ? ` · ${labels.from} NT$${Math.round(stat.min_retail).toLocaleString()}`
-                                : ""}
-                            </div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 shrink-0 text-fg-muted" />
-                        </MotionButton>
+                          region={r}
+                          localeKey={localeKey}
+                          stat={stat}
+                          labels={labels}
+                          focused={focused}
+                          onFocus={() => setFocusedIdx(i)}
+                          onSelect={() => commit(r)}
+                        />
                       );
                     })}
                   </>
@@ -238,8 +159,4 @@ export function ShopSearchPill({
       {children}
     </>
   );
-}
-
-function format(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
 }

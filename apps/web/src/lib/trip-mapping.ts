@@ -2,7 +2,6 @@
 // `Trip` UI shape the storefront components already render. Lets us swap
 // data sources without rewriting trip-card, daily-timeline, etc.
 
-import type { ChecklistItem, Trip, TripStop } from "@/lib/mock/consumer";
 import type {
   ApiChecklistItem,
   ApiTrip,
@@ -10,6 +9,7 @@ import type {
   ApiTripStop,
   TripDetailPayload,
 } from "@/lib/trips-api";
+import type { ChecklistItem, Trip, TripStop } from "@/lib/trip-types";
 
 export function apiToTrip(
   trip: ApiTrip,

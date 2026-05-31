@@ -10,7 +10,7 @@ import {
   type Order,
   type Vendor,
 } from "@/lib/api";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { FormSelect } from "@/components/admin/form-select";
 
 import {
@@ -23,18 +23,6 @@ export const dynamic = "force-dynamic";
 function pickString(v: string | string[] | undefined): string | undefined {
   if (Array.isArray(v)) return v[0];
   return v;
-}
-
-function formatMoney(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${Math.round(amount)} ${currency}`;
-  }
 }
 
 function marginPct(o: Order): number {
@@ -109,11 +97,11 @@ export default async function OrdersPage({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <MiniStat
           label={dict.admin.orders.summary.today_revenue}
-          value={formatMoney(todayRev, currency)}
+          value={formatMoney(todayRev, currency, { maximumFractionDigits: 0 })}
         />
         <MiniStat
           label={dict.admin.orders.summary.month_revenue}
-          value={formatMoney(monthRev, currency)}
+          value={formatMoney(monthRev, currency, { maximumFractionDigits: 0 })}
         />
         <MiniStat
           label={dict.admin.orders.summary.pending}
@@ -257,10 +245,14 @@ export default async function OrdersPage({
                           />
                         </Td>
                         <Td className="text-right t-mono tabular-nums">
-                          {formatMoney(o.total_amount, o.currency)}
+                          {formatMoney(o.total_amount, o.currency, {
+                            maximumFractionDigits: 0,
+                          })}
                         </Td>
                         <Td className="text-right t-mono tabular-nums text-fg-secondary">
-                          {formatMoney(o.cost_amount, o.currency)}
+                          {formatMoney(o.cost_amount, o.currency, {
+                            maximumFractionDigits: 0,
+                          })}
                         </Td>
                         <Td className="text-right t-mono tabular-nums">
                           <span

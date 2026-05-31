@@ -17,6 +17,7 @@ import {
   Polyline,
   Popup,
   TileLayer,
+  Tooltip,
   useMap,
 } from "react-leaflet";
 
@@ -30,6 +31,7 @@ interface LocatedCity {
   name: string;
   lat: number;
   lng: number;
+  sourceIndex?: number;
 }
 
 const PIN_ICON = L.divIcon({
@@ -60,6 +62,13 @@ const PIN_ICON_STOP = L.divIcon({
   html: `<span class="roam-trip-pin__dot roam-trip-pin__dot--stop"></span>`,
   iconSize: [12, 12],
   iconAnchor: [6, 6],
+});
+
+const PIN_ICON_STOP_ACTIVE = L.divIcon({
+  className: "roam-trip-pin",
+  html: `<span class="roam-trip-pin__dot roam-trip-pin__dot--stop-active"></span>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
 
 const PIN_CSS = `
@@ -95,6 +104,17 @@ const PIN_CSS = `
   border-width: 2px;
   box-shadow: 0 0 0 3px rgba(15,184,180,0.25), 0 1px 4px rgba(0,0,0,0.20);
 }
+.roam-trip-pin__dot--stop-active {
+  width: 20px;
+  height: 20px;
+  background: #0FB8B4;
+  border-color: #fff;
+  border-width: 3px;
+  box-shadow:
+    0 0 0 6px rgba(15,184,180,0.28),
+    0 0 0 12px rgba(15,184,180,0.12),
+    0 3px 12px rgba(0,0,0,0.24);
+}
 .leaflet-container { background: #DCF4F3; font: inherit; }
 .roam-trip-map .leaflet-tile-pane {
   filter: saturate(0.54) contrast(0.82) brightness(1.08);
@@ -104,6 +124,17 @@ const PIN_CSS = `
   mix-blend-mode: multiply;
 }
 .leaflet-popup-content { margin: 8px 12px; font-size: 12px; }
+.roam-trip-stop-label {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.96);
+  color: #202124;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+}
+.roam-trip-stop-label::before { display: none; }
 `;
 
 /* Case- and whitespace-insensitive comparison so user-entered cities match
@@ -117,6 +148,7 @@ export function TripMap({
   activeCity,
   activeLegFrom,
   dayStops,
+  activeStopIndex,
 }: {
   cities: TripMapCity[];
   /* When set, that pin renders larger with a brighter halo. The rest fade. */
@@ -129,6 +161,7 @@ export function TripMap({
      provided, the map zooms tighter, city pins dim, and the day's stops
      render as accent pins with a solid polyline between them. */
   dayStops?: TripMapCity[];
+  activeStopIndex?: number | null;
 }) {
   const located = useMemo<LocatedCity[]>(
     () =>
@@ -164,14 +197,18 @@ export function TripMap({
      the FitToCities target so the map zooms tight onto the day's pins. */
   const locatedStops = useMemo<LocatedCity[]>(
     () =>
-      (dayStops ?? []).flatMap((s) =>
+      (dayStops ?? []).flatMap((s, sourceIndex) =>
         s.lat != null && s.lng != null
-          ? [{ name: s.name, lat: s.lat, lng: s.lng }]
+          ? [{ name: s.name, lat: s.lat, lng: s.lng, sourceIndex }]
           : [],
       ),
     [dayStops],
   );
   const hasDayStops = locatedStops.length > 0;
+  const activeStop =
+    activeStopIndex != null
+      ? locatedStops.find((stop) => stop.sourceIndex === activeStopIndex) ?? null
+      : null;
 
   if (located.length === 0) {
     return (
@@ -206,6 +243,7 @@ export function TripMap({
         {/* FitToCities targets dayStops when present so the day-level view
             zooms tighter onto today's pins; otherwise fit the whole trip. */}
         <FitToCities cities={hasDayStops ? locatedStops : located} />
+        {activeStop && <FocusToStop stop={activeStop} />}
         {/* Macro routes (dashed full-trip line + solid "today's move" leg)
             only make sense at the trip-overview zoom. On a day-stops view
             the map is zoomed tight on a single city, so a leg to the
@@ -271,14 +309,48 @@ export function TripMap({
           <Marker
             key={`stop-${i}-${s.name}`}
             position={[s.lat, s.lng]}
-            icon={PIN_ICON_STOP}
+            icon={
+              activeStopIndex === s.sourceIndex
+                ? PIN_ICON_STOP_ACTIVE
+                : PIN_ICON_STOP
+            }
           >
+            {activeStopIndex === s.sourceIndex ? (
+              <Tooltip
+                permanent
+                direction="top"
+                offset={[0, -14]}
+                opacity={1}
+                className="roam-trip-stop-label"
+              >
+                {s.name}
+              </Tooltip>
+            ) : null}
             <Popup>{s.name}</Popup>
           </Marker>
         ))}
       </MapContainer>
     </div>
   );
+}
+
+function FocusToStop({ stop }: { stop: LocatedCity | null }) {
+  const map = useMap();
+  const focusedKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!stop) return;
+    const key = `${stop.name}:${stop.lat}:${stop.lng}`;
+    if (focusedKey.current === key) return;
+    focusedKey.current = key;
+    map.flyTo([stop.lat, stop.lng], Math.max(map.getZoom(), 16), {
+      animate: true,
+      duration: 0.5,
+    });
+    window.setTimeout(() => {
+      map.panBy([0, -28], { animate: true, duration: 0.25 });
+    }, 520);
+  }, [map, stop]);
+  return null;
 }
 
 // Auto-zoom so every city fits the viewport with a bit of padding.

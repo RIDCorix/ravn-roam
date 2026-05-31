@@ -4,12 +4,6 @@ import { getDictionary, hasLocale } from "../../../dictionaries";
 
 import { ApiError, listVendors, type Vendor } from "@/lib/api";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FormSelect } from "@/components/admin/form-select";
 import { VendorCreateDialog } from "@/components/admin/vendor-create-dialog";
@@ -129,4 +123,3 @@ export default async function VendorsPage({
     </div>
   );
 }
-

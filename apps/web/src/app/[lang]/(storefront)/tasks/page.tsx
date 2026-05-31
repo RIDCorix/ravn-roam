@@ -1,4 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+
+import { createSupabaseServerClient } from "@roam/shared";
 
 import {
   TasksPageClient,
@@ -18,6 +20,13 @@ export default async function TasksPage({
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect(`/${lang}/login?next=${encodeURIComponent(`/${lang}/tasks`)}`);
+  }
   const { tasks, tripsById } = await loadTasks();
   const t = dict.storefront.tasks;
 
@@ -71,7 +80,7 @@ async function loadTasks() {
     );
     return { tasks, tripsById };
   } catch (err) {
-    if (err instanceof TripApiError && err.status === 401) {
+    if (err instanceof TripApiError && (err.status === 401 || err.status === 503)) {
       return { tasks: [], tripsById: new Map<string, TaskTripSummary>() };
     }
     throw err;

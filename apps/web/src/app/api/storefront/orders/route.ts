@@ -1,32 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 import { createSupabaseServerClient } from "@roam/shared";
+import { proxyToApi } from "@/lib/api-proxy";
 
 export const dynamic = "force-dynamic";
-
-function apiBase(): string {
-  return process.env.ROAM_API_URL ?? "http://localhost:4000";
-}
 
 async function forwardWithAuth(req: NextRequest, method: "GET" | "POST") {
   const supabase = await createSupabaseServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const upstream = new URL("/storefront/orders", apiBase());
-  const res = await fetch(upstream, {
+  return proxyToApi(req, {
+    path: "/storefront/orders",
     method,
-    cache: "no-store",
     headers: {
-      ...(method === "POST" ? { "content-type": "application/json" } : {}),
       ...(session ? { authorization: `Bearer ${session.access_token}` } : {}),
     },
-    body: method === "POST" ? JSON.stringify(await req.json()) : undefined,
+    contentType: "json",
   });
-  const data = await res.json().catch(async () => ({
-    error: await res.text().catch(() => `upstream ${res.status}`),
-  }));
-  return NextResponse.json(data, { status: res.status });
 }
 
 export async function GET(req: NextRequest) {

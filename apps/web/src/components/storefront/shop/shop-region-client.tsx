@@ -8,18 +8,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  Crown,
-  Headphones,
-  Infinity as InfinityIcon,
   Loader2,
-  Signal,
-  Smartphone,
-  Wifi,
-  Zap,
-  type LucideIcon,
 } from "lucide-react";
 
 import { appSpring, fadeUp } from "@/components/storefront/motion";
@@ -52,72 +41,18 @@ import {
   type ShopRegion,
 } from "@/lib/storefront-regions";
 import { cn } from "@/lib/utils";
+import { formatTemplate } from "@/lib/text-template";
 
-interface ShopRegionLabels {
-  no_plans: string;
-  trip_length: string;
-  options: string;
-  day_unit: string;
-  day_aria: string;
-  all: string;
-  plans_for_days: string;
-  no_plan_duration: string;
-  tier_titanium: string;
-  tier_high_speed: string;
-  unlimited: string;
-  per_day: string;
-  throttled: string;
-  coverage_full_title: string;
-  coverage_partial_title: string;
-  readiness_title: string;
-  readiness_phone: string;
-  readiness_install: string;
-  readiness_roaming: string;
-  readiness_support: string;
-  buyer_note_title: string;
-  buyer_note_data_only: string;
-  buyer_note_activation: string;
-  buyer_note_coverage: string;
-  buy: string;
-  checkout_title: string;
-  checkout_body: string;
-  checkout_email: string;
-  checkout_email_placeholder: string;
-  checkout_name: string;
-  checkout_name_placeholder: string;
-  checkout_quantity: string;
-  checkout_total: string;
-  checkout_submit: string;
-  checkout_submitting: string;
-  checkout_success: string;
-  checkout_pending: string;
-  checkout_fulfilled: string;
-  checkout_error: string;
-  checkout_refresh: string;
-  checkout_refreshing: string;
-  checkout_where_to_find: string;
-  checkout_select_trip: string;
-  checkout_trip_placeholder: string;
-  checkout_share_to_companions: string;
-  checkout_sharing: string;
-  checkout_shared: string;
-  order_number: string;
-}
-
-interface CheckoutProfile {
-  email: string;
-  name: string;
-}
-
-interface CheckoutTripContext {
-  tripId: string;
-  checklistItemId?: string;
-}
-
-interface CheckoutTripOption {
-  id: string;
-  title: string;
-}
+import { CoverageChip } from "./shop-coverage-chip";
+import { BuyerNotes, ReadinessPanel } from "./shop-info-panels";
+import { PlanRow } from "./shop-plan-row";
+import { dataAmountAsc, formatDataInline } from "./shop-plan-utils";
+import type {
+  CheckoutProfile,
+  CheckoutTripContext,
+  CheckoutTripOption,
+  ShopRegionLabels,
+} from "./shop-region-types";
 
 export function ShopRegionClient({
   lang,
@@ -447,7 +382,7 @@ export function ShopRegionClient({
           {/* Plans list */}
           <motion.section layout className="space-y-2">
             <div className="px-1 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
-              {format(labels.plans_for_days, {
+              {formatTemplate(labels.plans_for_days, {
                 days: String(days),
                 count: String(plansForDay.length),
               })}
@@ -500,273 +435,7 @@ export function ShopRegionClient({
   );
 }
 
-function ReadinessPanel({ labels }: { labels: ShopRegionLabels }) {
-  const items: Array<{ icon: LucideIcon; text: string }> = [
-    { icon: Smartphone, text: labels.readiness_phone },
-    { icon: CheckCircle2, text: labels.readiness_install },
-    { icon: Wifi, text: labels.readiness_roaming },
-    { icon: Headphones, text: labels.readiness_support },
-  ];
-
-  return (
-    <section
-      className="rounded-2xl bg-surface p-4"
-      style={{ boxShadow: "var(--shadow-card)" }}
-    >
-      <div className="mb-3 flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-softer text-accent">
-          <CheckCircle2 className="h-4 w-4" strokeWidth={2.3} />
-        </span>
-        <h2 className="text-[14px] font-semibold tracking-[-0.01em] text-fg">
-          {labels.readiness_title}
-        </h2>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {items.map(({ icon: Icon, text }) => (
-          <div
-            key={text}
-            className="flex min-h-[58px] items-start gap-2 rounded-xl bg-surface-sunken px-3 py-2.5"
-          >
-            <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-            <span className="text-[11.5px] font-medium leading-snug text-fg-secondary">
-              {text}
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function BuyerNotes({ labels }: { labels: ShopRegionLabels }) {
-  const items = [
-    labels.buyer_note_data_only,
-    labels.buyer_note_activation,
-    labels.buyer_note_coverage,
-  ];
-
-  return (
-    <section className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4">
-      <div className="mb-2 flex items-center gap-2 text-amber-800">
-        <AlertTriangle className="h-4 w-4 shrink-0" />
-        <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
-          {labels.buyer_note_title}
-        </h2>
-      </div>
-      <ul className="space-y-1.5">
-        {items.map((item) => (
-          <li
-            key={item}
-            className="flex gap-2 text-[12px] leading-relaxed text-fg-secondary"
-          >
-            <span className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-amber-700" />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-// Tier-based visual identity. Drives the left-edge color strip, icon
-// background and badge so titanium / high-speed / standard plans don't
-// blur together in a long list.
-type PlanTier = "titanium" | "high-speed" | "unlimited" | "large" | "standard";
-function pickTier(product: ShopProduct): PlanTier {
-  const tagSet = new Set(product.tags ?? []);
-  if (tagSet.has("tier:titanium-unlimited")) return "titanium";
-  if (tagSet.has("tier:high-speed-unlimited")) return "high-speed";
-  if (product.data_amount_mb < 0) return "unlimited";
-  if (product.data_amount_mb >= 3 * 1024) return "large";
-  return "standard";
-}
-
-interface TierStyle {
-  strip: string; // CSS background for the left vertical accent
-  iconBg: string; // tailwind class for the icon halo
-  iconColor: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  ribbon?: { text: string; bg: string };
-}
-
-const TIER_STYLES: Record<PlanTier, TierStyle> = {
-  titanium: {
-    strip: "linear-gradient(180deg, #f59e0b 0%, #d97706 100%)",
-    iconBg: "bg-amber-100",
-    iconColor: "text-amber-700",
-    Icon: Crown,
-    ribbon: { text: "鈦金", bg: "bg-amber-500 text-white" },
-  },
-  "high-speed": {
-    strip: "linear-gradient(180deg, #6366f1 0%, #4338ca 100%)",
-    iconBg: "bg-indigo-100",
-    iconColor: "text-indigo-700",
-    Icon: Zap,
-    ribbon: { text: "高速", bg: "bg-indigo-500 text-white" },
-  },
-  unlimited: {
-    strip: "linear-gradient(180deg, var(--accent-light) 0%, var(--accent) 100%)",
-    iconBg: "bg-accent-softer",
-    iconColor: "text-accent",
-    Icon: InfinityIcon,
-  },
-  large: {
-    strip: "var(--accent)",
-    iconBg: "bg-accent-softer",
-    iconColor: "text-accent",
-    Icon: Signal,
-  },
-  standard: {
-    strip: "transparent",
-    iconBg: "bg-muted",
-    iconColor: "text-muted-foreground",
-    Icon: Signal,
-  },
-};
-
-function PlanRow({
-  product,
-  localeKey,
-  labels,
-  highlighted,
-  region,
-  onSelect,
-}: {
-  product: ShopProduct;
-  localeKey: "zh-TW" | "en";
-  labels: ShopRegionLabels;
-  highlighted?: boolean;
-  region: ShopRegion;
-  onSelect: () => void;
-}) {
-  const coverage = getCoverageInfo(
-    product.marketing_destinations,
-    region,
-    localeKey,
-  );
-  const rowRef = React.useRef<HTMLButtonElement | null>(null);
-  React.useEffect(() => {
-    if (highlighted && rowRef.current) {
-      rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [highlighted]);
-  const retail = Number(product.pricing?.retail ?? 0);
-  const isUnlimited = product.data_amount_mb < 0;
-  const isPerDay = (product.tags ?? []).includes("per-day");
-  const isThrottled = (product.tags ?? []).includes("throttled");
-
-  const tier = pickTier(product);
-  const tierStyle = TIER_STYLES[tier];
-  const TierIcon = tierStyle.Icon;
-  const { primary, suffix } = formatDataSplit(
-    product.data_amount_mb,
-    isPerDay,
-    labels,
-  );
-
-  return (
-    <motion.button
-      ref={rowRef}
-      type="button"
-      onClick={onSelect}
-      layout
-      whileHover={{ y: -2, scale: 1.01 }}
-      whileTap={{ scale: 0.985 }}
-      transition={appSpring}
-      className={cn(
-        "group relative flex w-full items-stretch overflow-hidden rounded-xl text-left transition-colors duration-150",
-        highlighted
-          ? "bg-accent-softer ring-2 ring-accent/40"
-          : "bg-surface",
-      )}
-      style={{ boxShadow: "var(--shadow-card)" }}
-    >
-      {/* Tier strip — vertical color bar on the left edge */}
-      <div
-        aria-hidden
-        className="w-1 shrink-0"
-        style={{ background: tierStyle.strip }}
-      />
-
-      {/* Content column */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5">
-        <div
-          className={cn(
-            "grid h-11 w-11 shrink-0 place-items-center rounded-xl",
-            tierStyle.iconBg,
-            tierStyle.iconColor,
-          )}
-        >
-          <TierIcon className="h-5 w-5" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          {/* Headline: big data amount + small unit + tier ribbon */}
-          <div className="flex items-baseline gap-1.5">
-            <span
-              className={cn(
-                "text-[22px] font-bold tracking-[-0.02em] tabular-nums text-fg",
-                tier === "standard" && "text-[18px]",
-              )}
-            >
-              {primary}
-            </span>
-            {suffix ? (
-              <span className="text-[12px] text-fg-muted">{suffix}</span>
-            ) : null}
-            {tierStyle.ribbon ? (
-              <span
-                className={cn(
-                  "ml-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-                  tierStyle.ribbon.bg,
-                )}
-              >
-                {tier === "titanium"
-                  ? labels.tier_titanium
-                  : labels.tier_high_speed}
-              </span>
-            ) : null}
-          </div>
-
-          {/* Meta row: coverage + tags */}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px]">
-            <CoverageBadge coverage={coverage} labels={labels} />
-            {isUnlimited && !tierStyle.ribbon ? <Tag accent>{labels.unlimited}</Tag> : null}
-            {isThrottled ? <Tag>{labels.throttled}</Tag> : null}
-          </div>
-        </div>
-      </div>
-
-      {/* Price + CTA */}
-      <div className="flex shrink-0 items-center gap-2 pr-3 pl-1">
-        <div className="text-right leading-none">
-          <div className="text-[9.5px] uppercase tracking-wide text-fg-muted">
-            NT$
-          </div>
-          <div className="mt-0.5 text-[22px] font-bold tabular-nums tracking-tight text-fg">
-            {Math.round(retail).toLocaleString()}
-          </div>
-        </div>
-        <div
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-white transition-transform group-hover:translate-x-0.5"
-          aria-label={labels.buy}
-        >
-          <ArrowRight className="h-4 w-4" />
-        </div>
-      </div>
-    </motion.button>
-  );
-}
-
-function CheckoutSheet({
-  product,
-  localeKey,
-  labels,
-  checkoutProfile,
-  initialQuantity,
-  tripContext,
-  onOpenChange,
-}: {
+type CheckoutSheetProps = {
   product: ShopProduct | null;
   localeKey: "zh-TW" | "en";
   labels: ShopRegionLabels;
@@ -774,7 +443,32 @@ function CheckoutSheet({
   initialQuantity?: number;
   tripContext?: CheckoutTripContext | null;
   onOpenChange: (open: boolean) => void;
-}) {
+};
+
+type CheckoutSheetContentProps = Omit<CheckoutSheetProps, "product"> & {
+  product: ShopProduct;
+};
+
+function CheckoutSheet(props: CheckoutSheetProps) {
+  if (!props.product) return null;
+  return (
+    <CheckoutSheetContent
+      key={props.product.id}
+      {...props}
+      product={props.product}
+    />
+  );
+}
+
+function CheckoutSheetContent({
+  product,
+  localeKey,
+  labels,
+  checkoutProfile,
+  initialQuantity,
+  tripContext,
+  onOpenChange,
+}: CheckoutSheetContentProps) {
   const [email, setEmail] = React.useState(checkoutProfile?.email ?? "");
   const [name, setName] = React.useState(checkoutProfile?.name ?? "");
   const [quantity, setQuantity] = React.useState(initialQuantity ?? 1);
@@ -789,28 +483,6 @@ function CheckoutSheet({
   const [selectedTripId, setSelectedTripId] = React.useState(
     tripContext?.tripId ?? "",
   );
-
-  React.useEffect(() => {
-    if (!product) {
-      setResult(null);
-      setError(null);
-      setSubmitting(false);
-      setQuantity(initialQuantity ?? 1);
-      setEmail(checkoutProfile?.email ?? "");
-      setName(checkoutProfile?.name ?? "");
-      setSharing(false);
-      setRefreshing(false);
-      setShared(false);
-      setTripOptions([]);
-      setSelectedTripId(tripContext?.tripId ?? "");
-    }
-  }, [
-    product,
-    checkoutProfile?.email,
-    checkoutProfile?.name,
-    initialQuantity,
-    tripContext?.tripId,
-  ]);
 
   React.useEffect(() => {
     if (!result || tripContext?.tripId) return;
@@ -832,8 +504,6 @@ function CheckoutSheet({
     };
   }, [result, selectedTripId, tripContext?.tripId]);
 
-  if (!product) return null;
-
   const productName =
     product.display_name_i18n[localeKey] ??
     product.display_name_i18n["zh-TW"] ??
@@ -844,7 +514,6 @@ function CheckoutSheet({
 
   async function submit() {
     const currentProduct = product;
-    if (!currentProduct) return;
     setSubmitting(true);
     setError(null);
     setResult(null);
@@ -930,7 +599,7 @@ function CheckoutSheet({
   }
 
   return (
-    <Sheet open={Boolean(product)} onOpenChange={onOpenChange}>
+    <Sheet open onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
         className="mx-auto max-h-[88vh] max-w-[430px] overflow-y-auto rounded-t-[28px] border-x bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-2"
@@ -1097,145 +766,4 @@ function CheckoutSheet({
       </SheetContent>
     </Sheet>
   );
-}
-
-/** Split the formatted data into a big primary number + small suffix. */
-function formatDataSplit(
-  amountMb: number,
-  perDay: boolean,
-  labels: ShopRegionLabels,
-): { primary: string; suffix: string } {
-  if (amountMb < 0) {
-    return {
-      primary: "∞",
-      suffix: labels.unlimited,
-    };
-  }
-  const perDaySuffix = perDay ? labels.per_day : "";
-  if (amountMb >= 1024) {
-    const gb = amountMb / 1024;
-    return {
-      primary: gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1),
-      suffix: `GB${perDaySuffix ? " " + perDaySuffix : ""}`,
-    };
-  }
-  return {
-    primary: String(amountMb),
-    suffix: `MB${perDaySuffix ? " " + perDaySuffix : ""}`,
-  };
-}
-
-function formatDataInline(amountMb: number): string {
-  if (amountMb < 0) return "Unlimited";
-  if (amountMb >= 1024) {
-    const gb = amountMb / 1024;
-    return `${gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1)}GB`;
-  }
-  return `${amountMb}MB`;
-}
-
-function CoverageChip({
-  label,
-  count,
-  active,
-  full,
-  onClick,
-}: {
-  label: string;
-  count?: number;
-  active: boolean;
-  full?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      layout
-      whileHover={{ y: -1, scale: 1.03 }}
-      whileTap={{ scale: 0.96 }}
-      transition={appSpring}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
-        active
-          ? full
-            ? "bg-success text-white"
-            : "bg-accent text-white"
-          : "bg-surface text-fg-secondary hover:bg-surface-hover",
-      )}
-      style={!active ? { boxShadow: "var(--shadow-card)" } : undefined}
-    >
-      {full && active ? <span className="text-[10px]">✓</span> : null}
-      {label}
-      {count != null ? (
-        <span
-          className={cn(
-            "text-[10px] tabular-nums",
-            active ? "opacity-80" : "text-fg-muted",
-          )}
-        >
-          {count}
-        </span>
-      ) : null}
-    </motion.button>
-  );
-}
-
-function CoverageBadge({
-  coverage,
-  labels,
-}: {
-  coverage: ReturnType<typeof getCoverageInfo>;
-  labels: ShopRegionLabels;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-        coverage.isFullCoverage
-          ? "bg-success/15 text-success"
-          : "bg-amber-500/15 text-amber-700",
-      )}
-      title={
-        coverage.isFullCoverage
-          ? labels.coverage_full_title
-          : labels.coverage_partial_title
-      }
-    >
-      {coverage.isFullCoverage ? "✓ " : "⚠ "}
-      {coverage.label}
-    </span>
-  );
-}
-
-function Tag({
-  children,
-  accent,
-}: {
-  children: React.ReactNode;
-  accent?: boolean;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-1.5 py-0.5",
-        accent
-          ? "bg-accent-soft text-accent"
-          : "bg-surface-sunken text-fg-muted",
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-function dataAmountAsc(a: ShopProduct, b: ShopProduct): number {
-  // Unlimited (-1) sorts last; otherwise ascending by MB.
-  const av = a.data_amount_mb < 0 ? Infinity : a.data_amount_mb;
-  const bv = b.data_amount_mb < 0 ? Infinity : b.data_amount_mb;
-  return av - bv;
-}
-
-function format(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
 }

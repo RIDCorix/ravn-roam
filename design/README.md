@@ -45,17 +45,17 @@ cd design && python3 -m http.server 8080
 | `app/components/Shell.jsx` BottomNav + DesktopRail | `(storefront)/layout.tsx` + `apps/web/src/components/storefront/shell.tsx` — RWD via Tailwind `md:` breakpoint |
 | `app/components/Home.jsx` | `(storefront)/page.tsx`（root tab）|
 | `app/components/Trips.jsx` + Trip Detail | `(storefront)/trips/page.tsx`、`(storefront)/trips/[id]/page.tsx` |
-| `app/components/Lumi.jsx` chat | `(storefront)/trips/[id]/lumi/page.tsx` 或內嵌 client component；**接 OpenAI 最便宜 model**（Ray 拍板，不是 Anthropic SDK）— 預期用 `gpt-4o-mini` 或 `gpt-5-nano` 之類 |
+| `app/components/Lumi.jsx` chat | 由 `apps/web/src/components/storefront/trips/lumi-assistant.tsx` 與 `services/api/src/lumi/openai.ts` 承接；模型名稱以 API env/config 為準，不在設計文件硬編 |
 | `app/components/Tasks.jsx` | `(storefront)/tasks/page.tsx` |
 | `app/components/Shop.jsx`（含 prefilter） | `(storefront)/shop/page.tsx`，filter 走 URL query (`?country=JP&days=7`)|
 | `app/components/Profile.jsx` | `(storefront)/me/page.tsx` |
 | `app/colors_and_type.css` | **已落** 在 `apps/web/src/app/globals.css`（mirrors Lume，含 shadcn token bridge）|
 | Lucide CDN inline SVG | 用已安裝的 `lucide-react`（v1.14.0 in `apps/web/package.json`）|
-| `app/components/Data.jsx` mock 資料 | 暫放 `apps/web/src/lib/mock/`；後續換成 `services/api` 的 Drizzle queries |
+| `app/components/Data.jsx` mock 資料 | 僅作 demo fixture。production context 應優先走 `services/api` / Supabase，不直接把 mock 注入使用者請求 |
 | Babel CDN runtime | Next.js 16 / SWC 直接吃 TSX；port `.jsx` 時轉 `.tsx` + 加型別 |
 | iPhone phone frame mode | **不需移植**，那是 prototype 的預覽工具 |
 | Tweaks panel | **不需移植**，那是 prototype 的開發工具 |
-| Intel One Mono | **要切回**（Ray 拍板）— `apps/web` 目前用 Geist Mono，Phase B 改用 `next/font/local` 載入 `design/app/fonts/IntelOneMono-VariableFont_wght.ttf` |
+| Intel One Mono | `apps/web` 已有本地 font setup；調整字體時以 `apps/web/src/app/fonts` 與 `globals.css` 的現況為準 |
 
 > Tailwind v4 + shadcn 的 token 已從 Lume tokens bridge 過來，所以 shadcn primitives (`Button`, `Card`, `Tabs`, …) 直接套用就符合品牌色。**不要**在 component 裡寫死 hex，永遠用 `var(--accent)` 或 Tailwind `bg-primary` / `text-accent-foreground`。
 
@@ -67,19 +67,12 @@ cd design && python3 -m http.server 8080
 4. **RWD 切換**：`< 900px` 用底部 tab bar，`≥ 900px` 用左側 rail（220px 寬）。在 Tailwind 等價是 `md:` (768px) 或自訂 breakpoint。
 5. **語言預設 zh-TW**，幣別預設 TWD（已有 `[lang]` segment 支援 i18n）。
 
-## Phase 5 落地策略（Ray 已 confirm 拆解）
+## 落地狀態
 
-| Phase | 內容 | 狀態 |
-|---|---|---|
-| A | Land design bundle + 對照表（本 PR）| **完成** |
-| B | 擴充 `(storefront)`：Shell（bottom nav + desktop rail）+ Home + Intel One Mono via `next/font/local`，mock 資料先放 `apps/web/src/lib/mock/`| 一張 follow-up issue |
-| C-1 | port Trips 列表 + Trip Detail（不含 Lumi tab）| issue |
-| C-2 | port Lumi chat tab + 接 OpenAI `gpt-4o-mini` 或同級最便宜 model（streaming, server actions）| issue |
-| C-3 | port Tasks | issue |
-| C-4 | port Shop（含 URL-query prefilter）| issue |
-| C-5 | port Profile | issue |
-| D | 把 mock data 換成 `services/api` 的 Drizzle queries（trips、checklist、orders schema 需新增 migration）| 在 services/api 補 schema + routes |
-| E | 下單金流 + active eSIM 真實狀態 | 後期 |
+這份 design bundle 是視覺與互動意圖參考，不再是待辦清單。主要
+storefront surfaces（home、trips、tasks、shop、me、Lumi、public region/activity
+pages）已在 `apps/web` 有 production TSX 版本；後續請以實際程式、
+`docs/ARCHITECTURE.md`、`docs/DEVELOPMENT.md` 為準。
 
 > **Port 原則**：視覺逐 pixel 重現，但內部結構**不照抄** prototype 的 single-file Babel runtime。`.jsx` → `.tsx`，inline style → Tailwind utility（除非有動態 token 需要走 CSS var），React class → shadcn / 自寫 component。Tokens 一律走 `globals.css` 的 CSS variables，**不要**手抄 hex。
 
@@ -87,6 +80,6 @@ cd design && python3 -m http.server 8080
 
 - 沒有 Figma 來源，整套設計是 AI 生的，logo / illustrations 都是 placeholder。
 - Sans 用 Inter 代 Geist / Satoshi。
-- Mono 用 Intel One Mono variable font（`.ttf` 已內含；`apps/web` 目前用 Geist Mono，Phase B 會切回 Intel One Mono — Ray 拍板）。
+- Mono 用 Intel One Mono variable font（`.ttf` 已內含）；production 字體載入以 `apps/web` 現況為準。
 - Lucide：prototype 用 CDN inline SVG；production 用 `lucide-react` package。
 - 沒有 dark mode。

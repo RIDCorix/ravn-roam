@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Reveal } from "./reveal";
 import type { Dictionary, Locale } from "@/app/[lang]/dictionaries";
 
@@ -7,8 +5,6 @@ export function PageHeader({
   eyebrow,
   title,
   subtitle,
-  homeLabel,
-  currentLocale,
 }: {
   eyebrow: string;
   title: string;

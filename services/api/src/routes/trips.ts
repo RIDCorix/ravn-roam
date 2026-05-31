@@ -20,6 +20,11 @@ import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
 import { getUser, requireAuth } from "./_auth.js";
 import { companionsRouter, placeholderCompanions } from "./companions.js";
+import { readSupplierItems } from "./supplier-metadata.js";
+import {
+  checklistSubtasksFromDescription,
+  fallbackChecklistKind,
+} from "./trip-shared.js";
 import { geocodeCities } from "../geocode/nominatim.js";
 
 export const tripsRouter = new Hono();
@@ -211,20 +216,6 @@ interface ChecklistOrderState {
   assigned_count: number;
 }
 
-function readSupplierItems(metadata: unknown): Array<Record<string, unknown>> {
-  if (!metadata || typeof metadata !== "object") return [];
-  const recovery = (metadata as Record<string, unknown>).supplier_recovery_response;
-  if (!recovery || typeof recovery !== "object") return [];
-  const items =
-    (recovery as { itemList?: unknown; results?: unknown }).itemList ??
-    (recovery as { results?: unknown }).results;
-  return Array.isArray(items)
-    ? items.filter((item): item is Record<string, unknown> =>
-        Boolean(item && typeof item === "object"),
-      )
-    : [];
-}
-
 async function loadChecklistOrderStates(
   db: ReturnType<typeof getDb>,
   checklistRows: ChecklistRow[],
@@ -353,16 +344,6 @@ function normalizeChecklistSubtasks(value: unknown) {
     );
 }
 
-function checklistSubtasksFromDescription(description: string | null | undefined) {
-  if (!description) return [];
-  return description
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("- ") || line.startsWith("* "))
-    .map((line) => ({ text: line.slice(2).trim(), done: false }))
-    .filter((item) => item.text);
-}
-
 function normalizeStopAttachments(
   value: unknown,
   checklistById: Map<string, ChecklistRow>,
@@ -403,14 +384,6 @@ function normalizeStopAttachments(
       },
     ];
   });
-}
-
-function fallbackChecklistKind(type: string): string {
-  if (type === "reservation") return "stay";
-  if (type === "booking" || type === "flight") return "flight";
-  if (type === "upload" || type === "document") return "doc";
-  if (type === "transit") return "transit";
-  return "ticket";
 }
 
 function attachmentChecklistText(

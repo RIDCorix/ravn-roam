@@ -6,7 +6,7 @@ export const DEFAULT_LOCALE = "en";
 
 export type Locale = (typeof LOCALES)[number];
 
-const PROTECTED_PATH = /^\/(en|zh-TW)\/trips(\/|$)/;
+const PROTECTED_PATH = /^\/(en|zh-TW)\/(trips|tasks|me)(\/|$)/;
 
 function pickLocale(acceptLanguage: string | null): Locale {
   if (!acceptLanguage) return DEFAULT_LOCALE;
@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Step 2: refresh Supabase auth cookies + gate /trips/*.
+  // Step 2: refresh Supabase auth cookies + gate member routes.
   const response = NextResponse.next({ request });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -72,7 +72,8 @@ export async function proxy(request: NextRequest) {
   if (PROTECTED_PATH.test(pathname) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = `/${currentLocale}/login`;
-    url.searchParams.set("next", pathname);
+    url.search = "";
+    url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
 

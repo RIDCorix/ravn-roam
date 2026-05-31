@@ -76,16 +76,9 @@ function withAlpha(hex: string, alpha: number): string {
 
 export function TweaksPanel({ dict }: { dict: TweaksDict }) {
   const [open, setOpen] = React.useState(false);
-  const [state, setState] = React.useState<TweakState>(DEFAULTS);
-  const [hydrated, setHydrated] = React.useState(false);
+  const [state, setState] = React.useState<TweakState>(() => loadState());
 
   React.useEffect(() => {
-    setState(loadState());
-    setHydrated(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (!hydrated) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     document.documentElement.style.setProperty("--accent", state.accent);
     document.documentElement.style.setProperty(
@@ -103,7 +96,7 @@ export function TweaksPanel({ dict }: { dict: TweaksDict }) {
     document.body.dataset.ambient = state.ambient ? "on" : "off";
     document.body.dataset.density = state.density;
     document.body.dataset.currency = state.currency;
-  }, [state, hydrated]);
+  }, [state]);
 
   function patch<K extends keyof TweakState>(key: K, value: TweakState[K]) {
     setState((s) => ({ ...s, [key]: value }));

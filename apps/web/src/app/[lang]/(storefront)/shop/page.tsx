@@ -14,49 +14,16 @@ import {
 import { getDictionary, hasLocale } from "../../dictionaries";
 import {
   REGION_GROUPS,
-  SHOP_REGIONS,
   findRegionBySlug,
   type ShopRegion,
 } from "@/lib/storefront-regions";
+import {
+  loadRegionStats,
+  type RegionStat,
+} from "@/lib/storefront-region-stats";
 import { ShopSearchPill } from "@/components/storefront/shop/shop-search-pill";
 
 export const dynamic = "force-dynamic";
-
-interface RegionStat {
-  plan_count: number;
-  min_retail: number | null;
-}
-
-async function loadRegionStats(): Promise<Record<string, RegionStat>> {
-  const base = process.env.ROAM_API_URL ?? "http://localhost:3001";
-  try {
-    const res = await fetch(`${base}/storefront/region-stats`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return {};
-    const data = (await res.json()) as {
-      stats: Array<{ iso: string; plan_count: number; min_retail: number | null }>;
-    };
-    const byIso = new Map(data.stats.map((s) => [s.iso, s]));
-    const out: Record<string, RegionStat> = {};
-    for (const region of SHOP_REGIONS) {
-      let count = 0;
-      let min: number | null = null;
-      for (const iso of region.destinations) {
-        const s = byIso.get(iso);
-        if (!s) continue;
-        count = Math.max(count, s.plan_count);
-        if (s.min_retail != null) {
-          min = min == null ? s.min_retail : Math.min(min, s.min_retail);
-        }
-      }
-      out[region.slug] = { plan_count: count, min_retail: min };
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
 
 export default async function ShopPage({
   params,

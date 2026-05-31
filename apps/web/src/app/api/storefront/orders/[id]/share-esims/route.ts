@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@roam/shared";
+import { proxyToApi } from "@/lib/api-proxy";
 
 export const dynamic = "force-dynamic";
-
-function apiBase(): string {
-  return process.env.ROAM_API_URL ?? "http://localhost:4000";
-}
 
 export async function POST(
   req: NextRequest,
@@ -20,21 +17,12 @@ export async function POST(
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const upstream = new URL(
-    `/storefront/orders/${encodeURIComponent(id)}/share-esims`,
-    apiBase(),
-  );
-  const res = await fetch(upstream, {
+  return proxyToApi(req, {
+    path: `/storefront/orders/${encodeURIComponent(id)}/share-esims`,
     method: "POST",
-    cache: "no-store",
     headers: {
-      "content-type": "application/json",
       authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify(await req.json()),
+    contentType: "json",
   });
-  const data = await res.json().catch(async () => ({
-    error: await res.text().catch(() => `upstream ${res.status}`),
-  }));
-  return NextResponse.json(data, { status: res.status });
 }

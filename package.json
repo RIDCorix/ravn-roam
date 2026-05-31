@@ -3,10 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @roam/landing dev",
-    "build": "pnpm --filter @roam/landing build",
-    "start": "pnpm --filter @roam/landing start",
-    "lint": "pnpm -r lint",
+    "dev": "pnpm --filter @roam/web dev",
+    "dev:web": "pnpm --filter @roam/web dev",
+    "dev:landing": "pnpm --filter @roam/landing dev",
+    "dev:api": "pnpm --filter @roam/api dev",
+    "build": "pnpm -r --if-present build",
+    "build:web": "pnpm --filter @roam/web build",
+    "build:landing": "pnpm --filter @roam/landing build",
+    "build:api": "pnpm --filter @roam/api build",
+    "start": "pnpm --filter @roam/web start",
+    "start:web": "pnpm --filter @roam/web start",
+    "start:landing": "pnpm --filter @roam/landing start",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r typecheck"
   }
 }

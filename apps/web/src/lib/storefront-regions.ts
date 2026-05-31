@@ -1,3 +1,15 @@
+import {
+  EUROPE_COUNTRY_REGIONS,
+  EUROPE_COUNTRY_REGION_SLUGS,
+} from "@/lib/storefront-destinations";
+import type { ShopRegion } from "@/lib/storefront-region-types";
+
+export type { ShopRegion } from "@/lib/storefront-region-types";
+export {
+  EUROPE_COUNTRY_REGIONS,
+  EUROPE_COUNTRY_REGION_SLUGS,
+} from "@/lib/storefront-destinations";
+
 // Canonical region catalog for the storefront shop. Mirrors the slugs
 // used by the cleaned Caffeine catalog importer
 // (services/api/src/cli/import-caffeine-catalog.ts) so a region card on
@@ -6,15 +18,6 @@
 //
 // Single source of truth — both the region grid (/shop) and the
 // detail page (/shop/[region]) read from here.
-
-export interface ShopRegion {
-  slug: string;
-  name: { "zh-TW": string; en: string };
-  destinations: string[]; // ISO 3166-1 alpha-2 codes
-  // Relative path under /public — we already shipped these via the
-  // Wikipedia photo importer.
-  cover: string;
-}
 
 export const SHOP_REGIONS: ShopRegion[] = [
   { slug: "japan",       name: { "zh-TW": "日本",   en: "Japan"  }, destinations: ["JP"],       cover: "/illustrations/cities/tokyo.jpg" },
@@ -34,6 +37,7 @@ export const SHOP_REGIONS: ShopRegion[] = [
   { slug: "western-northern-europe", name: { "zh-TW": "西歐 / 北歐", en: "Western & Northern Europe" }, destinations: ["FR","DE","NL","BE","LU","GB","IE","DK","SE","NO","FI","IS","CH","AT"], cover: "/illustrations/cities/paris.jpg" },
   { slug: "central-eastern-europe-balkans", name: { "zh-TW": "中歐 / 東歐 / 巴爾幹", en: "Central, Eastern Europe & Balkans" }, destinations: ["PL","CZ","SK","HU","RO","BG","HR","SI","RS","BA","ME","MK","AL","GR","EE","LV","LT"], cover: "/illustrations/cities/prague.jpg" },
   { slug: "spain-camino", name: { "zh-TW": "西班牙朝聖", en: "Spain – Camino" }, destinations: ["ES"], cover: "/illustrations/cities/barcelona.jpg" },
+  ...EUROPE_COUNTRY_REGIONS,
   { slug: "turkey",      name: { "zh-TW": "土耳其", en: "Turkey"    }, destinations: ["TR"],    cover: "/illustrations/cities/istanbul.jpg" },
   { slug: "usa",         name: { "zh-TW": "美國",   en: "USA"       }, destinations: ["US"],    cover: "/illustrations/cities/new-york.jpg" },
   { slug: "north-america", name: { "zh-TW": "北美", en: "North America" }, destinations: ["US","CA","MX"], cover: "/illustrations/cities/los-angeles.jpg" },
@@ -81,6 +85,11 @@ export const REGION_GROUPS: RegionGroup[] = [
     ],
   },
   {
+    id: "europe-countries",
+    name: { "zh-TW": "歐洲國家", en: "European countries" },
+    slugs: EUROPE_COUNTRY_REGION_SLUGS,
+  },
+  {
     id: "americas-oceania",
     name: { "zh-TW": "美洲 & 大洋洲", en: "Americas & Oceania" },
     slugs: ["usa", "north-america", "south-america", "anz", "saipan-guam"],
@@ -94,6 +103,16 @@ export const REGION_GROUPS: RegionGroup[] = [
 
 export function findRegionBySlug(slug: string): ShopRegion | undefined {
   return SHOP_REGIONS.find((r) => r.slug === slug);
+}
+
+export function getRegionSearchText(region: ShopRegion): string {
+  return [
+    region.name["zh-TW"],
+    region.name.en,
+    region.slug,
+    ...region.destinations,
+    ...(region.aliases ?? []),
+  ].join(" ");
 }
 
 /**

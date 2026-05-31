@@ -4,14 +4,12 @@
 // tab — carries the same situational awareness.
 //
 // Sources today:
-//   * active_trip  — first trip whose [start_date, end_date] covers today
-//   * today_tasks  — that active trip's checklist (done + open + due dates)
-//   * active_esim  — mock data from consumer.ts; the real eSIM activation
-//                    flow doesn't exist yet, so this is curated for the
-//                    seeded user. Drop to `null` if no real session info
-//                    is available.
+//   * active_trip — first trip whose [start_date, end_date] covers today
+//   * today_tasks — that active trip's checklist (done + open + due dates)
+//
+// Keep this resolver production-shaped: demo fixtures belong under
+// `lib/mock/*` and should not be injected into Lumi request context.
 
-import { ACTIVE_ESIM, USER } from "@/lib/mock/consumer";
 import { isoDate } from "@/lib/date";
 import { getTrip, listTrips, TripApiError } from "@/lib/trips-api";
 
@@ -65,7 +63,7 @@ export async function getLumiContext(): Promise<LumiContext> {
   const today = isoDate(new Date());
   const ctx: LumiContext = {
     current_date: today,
-    user_name: USER.name,
+    user_name: null,
     active_trip: null,
     active_esim: null,
     today_tasks: null,
@@ -104,27 +102,6 @@ export async function getLumiContext(): Promise<LumiContext> {
         })),
       };
 
-      // Mock eSIM: only surface it if the active trip is in Japan, since
-      // that's what the seeded ACTIVE_ESIM describes. Real activation
-      // state will replace this once the eSIM flow is built.
-      const looksJP =
-        active.title.includes("東京") ||
-        active.title.includes("京都") ||
-        active.title.includes("日本") ||
-        active.title.toLowerCase().includes("jp");
-      if (looksJP) {
-        ctx.active_esim = {
-          country_name: ACTIVE_ESIM.countryName,
-          plan: ACTIVE_ESIM.plan,
-          used_gb: ACTIVE_ESIM.used,
-          total_gb: ACTIVE_ESIM.total,
-          days_left: ACTIVE_ESIM.daysLeft,
-          days_total: ACTIVE_ESIM.daysTotal,
-          network: ACTIVE_ESIM.network,
-          signal: ACTIVE_ESIM.signal,
-          speed: ACTIVE_ESIM.speed,
-        };
-      }
     }
   } catch (err) {
     // Unauthenticated, network blip, etc. — best-effort context, never

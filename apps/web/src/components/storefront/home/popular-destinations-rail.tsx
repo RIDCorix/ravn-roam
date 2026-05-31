@@ -80,12 +80,6 @@ export function PopularDestinationsRail({
                   <div className="truncate text-[14.5px] font-semibold drop-shadow-sm">
                     {r.name[localeKey]}
                   </div>
-                  {stat?.min_retail ? (
-                    <div className="mt-0.5 text-[10.5px] opacity-90 tabular-nums">
-                      {localeKey === "en" ? "from" : "起價"} NT$
-                      {Math.round(stat.min_retail).toLocaleString()}
-                    </div>
-                  ) : null}
                 </div>
               </Link>
             );

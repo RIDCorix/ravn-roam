@@ -1,84 +1,63 @@
-# Roam — eSIM landing page
+# Roam
 
-Roam is the brand identity for Ravn's new eSIM product (ROA-13). This repo
-holds the marketing site built on a modern frontend stack.
+Roam is RAVN's eSIM travel product. This repository is a pnpm monorepo for
+the public marketing site, consumer storefront, admin tools, API, and shared
+catalog logic.
 
-The repo is becoming a pnpm workspace as Phase 1 monorepo work lands
-(ROA-88). The first workspace member is the backend in `services/api/`
-(see [§Backend](#backend--servicesapi-roa-91)).
+## Workspace
 
-## Stack
+| Package | Path | Purpose |
+| --- | --- | --- |
+| `@roam/web` | `apps/web` | Consumer storefront, public shop/region pages, admin UI, i18n app |
+| `@roam/landing` | `apps/landing` | Public marketing site |
+| `@roam/api` | `services/api` | Hono API, Drizzle, Fastmove integration, Lumi/event crawlers |
+| `@roam/catalog` | `packages/catalog` | Shared catalog schema, pricing, publication logic |
+| `@roam/shared` | `packages/shared` | Shared Supabase/env utilities |
 
-- **Next.js 16** (App Router, Turbopack, static export-ready)
-- **React 19** + **TypeScript** (strict)
-- **Tailwind CSS v4** with CSS-variable design tokens
-- **ESLint 9** + Next core-web-vitals + TypeScript rules
-- **pnpm** package manager
-
-## Getting started
+## Local Development
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:3000
-pnpm build        # production build
-pnpm typecheck    # tsc --noEmit
-pnpm lint         # eslint
+
+pnpm dev          # web app at http://localhost:3010
+pnpm dev:api      # API at http://localhost:3001/healthz
+pnpm dev:landing  # landing app at http://localhost:3011
 ```
 
-## Project layout
-
-```
-src/
-  app/
-    layout.tsx        # html shell, metadata, fonts
-    page.tsx          # composes the landing-page sections
-    globals.css       # design tokens + tailwind import
-  components/
-    site-nav.tsx      # sticky header
-    hero.tsx          # hero with animated globe visual
-    how-it-works.tsx  # 3-step onboarding
-    features.tsx      # 6-up feature grid
-    coverage.tsx      # destination teasers
-    pricing.tsx       # 3-tier plans
-    testimonials.tsx  # quotes
-    faq.tsx           # native <details> accordion
-    cta-banner.tsx    # closing call-to-action
-    site-footer.tsx   # footer
-public/
-  favicon.svg
-```
-
-## Design tokens
-
-Tokens live in `src/app/globals.css` as CSS custom properties and are exposed
-to Tailwind via `@theme inline`. Light and dark schemes share the same token
-names — only the values flip — so components stay scheme-agnostic.
-
-Core tokens: `background`, `foreground`, `surface`, `surface-muted`, `border`,
-`border-strong`, `muted`, `subtle`, `brand`, `brand-strong`, `accent`,
-`accent-strong`.
-
-## Backend — `services/api` (ROA-91)
-
-Hono on Node 22 + Drizzle ORM skeleton + Fastmove (`@世界移動`) supplier
-client skeleton. Targets Railway via the package's `Procfile`.
+Useful checks:
 
 ```bash
-pnpm install                       # installs root + services/api
-pnpm --filter @roam/api dev        # http://localhost:3001/healthz
-pnpm --filter @roam/api build      # → services/api/dist/index.js
-pnpm --filter @roam/api start      # node dist/index.js
-pnpm --filter @roam/api test       # vitest (incl. signer golden test)
-pnpm --filter @roam/api typecheck  # tsc --noEmit
+pnpm typecheck
+pnpm lint
+pnpm test
+
+pnpm --filter @roam/web typecheck
+pnpm --filter @roam/web lint
+pnpm --filter @roam/api typecheck
+pnpm --filter @roam/api test
 ```
 
-`services/api/.env.example` documents every env var. All are optional —
-the service boots for `/healthz` even without credentials; vars are
-re-validated at the point of use (e.g., inside `getDb()` and
-`FastmoveClient`).
+## Product Boundaries
 
-Out of scope for ROA-91:
+Public users can browse the landing site, storefront, region pages, activity
+pages, and plan discovery. Authenticated users get trip planning, tasks, Lumi
+context, profile/me, wallet-style eSIM views, and full account navigation.
 
-- Real Fastmove HTTP wiring (every client method throws `not implemented`)
-- Drizzle migrations / table definitions (lands in Sub-6)
-- Any business endpoint or catalog logic
+The default consumer locale is `zh-TW`; English is maintained alongside it.
+Any user-facing string in `apps/web` should go through
+`apps/web/src/i18n/dictionaries/`.
+
+## Docs
+
+- `AGENTS.md` is the operating manual for coding agents.
+- `docs/DEVELOPMENT.md` covers local commands, ports, and verification.
+- `docs/ARCHITECTURE.md` covers app boundaries and data-flow decisions.
+- `docs/ASSETS.md` covers image/icon asset rules.
+- `docs/INFRA.md` covers Vercel, Supabase, env vars, and deploy constraints.
+
+## Infra Posture
+
+This repo is main-only: production deploys from `main`, preview deploys from
+other branches. Railway is deferred until a long-running backend service or
+worker actually needs it. Secrets must flow through the RAVN hub process
+documented in `docs/INFRA.md`; do not paste real credentials into this repo.

@@ -18,21 +18,9 @@ import {
   type DashboardAggregates,
   type Vendor,
 } from "@/lib/api";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function formatMoney(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${Math.round(amount)} ${currency}`;
-  }
-}
 
 export default async function AdminPage({
   params,
@@ -82,13 +70,21 @@ export default async function AdminPage({
         <KPI
           label={dict.admin.dashboard.kpi.revenue}
           value={
-            totals ? formatMoney(totals.revenue, currency) : "—"
+            totals
+              ? formatMoney(totals.revenue, currency, {
+                  maximumFractionDigits: 0,
+                })
+              : "—"
           }
         />
         <KPI
           label={dict.admin.dashboard.kpi.cost}
           value={
-            totals ? formatMoney(totals.cost, currency) : "—"
+            totals
+              ? formatMoney(totals.cost, currency, {
+                  maximumFractionDigits: 0,
+                })
+              : "—"
           }
           subtle
         />
@@ -141,7 +137,9 @@ export default async function AdminPage({
                           {v.vendor_name}
                         </Link>
                         <span className="t-mono tabular-nums whitespace-nowrap">
-                          {formatMoney(v.revenue, currency)}
+                          {formatMoney(v.revenue, currency, {
+                            maximumFractionDigits: 0,
+                          })}
                         </span>
                       </div>
                       <div className="mt-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
@@ -182,7 +180,9 @@ export default async function AdminPage({
                           {s.supplier_name}
                         </Link>
                         <span className="t-mono tabular-nums text-fg-secondary whitespace-nowrap">
-                          {formatMoney(s.cost, currency)}
+                          {formatMoney(s.cost, currency, {
+                            maximumFractionDigits: 0,
+                          })}
                         </span>
                       </div>
                       <div className="mt-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
@@ -263,7 +263,9 @@ export default async function AdminPage({
                           </span>
                         </Td>
                         <Td className="text-right t-mono tabular-nums">
-                          {formatMoney(o.total_amount, o.currency)}
+                          {formatMoney(o.total_amount, o.currency, {
+                            maximumFractionDigits: 0,
+                          })}
                         </Td>
                         <Td>
                           <span className="t-mono text-xs text-fg-secondary">

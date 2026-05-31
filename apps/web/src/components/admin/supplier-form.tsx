@@ -18,6 +18,9 @@ import {
 
 import type { AdminDict } from "./dict";
 import { FormSelect } from "./form-select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const STATUSES: SupplierStatus[] = ["active", "paused", "terminated"];
 const INTEGRATIONS: SupplierIntegrationType[] = ["api", "manual_csv"];
@@ -160,7 +163,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
         hint={dict.admin.suppliers.form.code_hint}
         error={fieldErrors.code}
       >
-        <input
+        <Input
           name="code"
           type="text"
           required
@@ -170,7 +173,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
             setCode(e.target.value);
             clearFieldError("code");
           }}
-          className="w-full rounded border border-border bg-bg px-2 py-1 text-sm font-mono disabled:opacity-60"
+          className="font-mono"
         />
       </Field>
 
@@ -178,7 +181,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
         label={dict.admin.suppliers.form.display_name}
         error={fieldErrors.display_name}
       >
-        <input
+        <Input
           name="display_name"
           type="text"
           required
@@ -187,7 +190,6 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
             setDisplayName(e.target.value);
             clearFieldError("display_name");
           }}
-          className="w-full rounded border border-border bg-bg px-2 py-1 text-sm"
         />
       </Field>
 
@@ -221,7 +223,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
         label={dict.admin.suppliers.form.default_currency}
         error={fieldErrors.default_currency}
       >
-        <input
+        <Input
           name="default_currency"
           type="text"
           maxLength={3}
@@ -231,7 +233,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
             setDefaultCurrency(e.target.value.toUpperCase());
             clearFieldError("default_currency");
           }}
-          className="w-24 rounded border border-border bg-bg px-2 py-1 text-sm font-mono uppercase"
+          className="w-24 font-mono uppercase"
         />
       </Field>
 
@@ -240,7 +242,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
         hint={dict.admin.suppliers.form.credentials_ref_hint}
         error={fieldErrors.credentials_ref}
       >
-        <input
+        <Input
           name="credentials_ref"
           type="text"
           value={credentialsRef}
@@ -249,7 +251,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
             clearFieldError("credentials_ref");
           }}
           placeholder="vault://roam/fastmove"
-          className="w-full rounded border border-border bg-bg px-2 py-1 text-sm font-mono"
+          className="font-mono"
         />
       </Field>
 
@@ -258,7 +260,7 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
         hint={dict.admin.suppliers.form.contact_json_hint}
         error={fieldErrors.contact}
       >
-        <textarea
+        <Textarea
           name="contact"
           rows={5}
           value={contactText}
@@ -266,25 +268,24 @@ export function SupplierForm({ lang, dict, mode, initial }: SupplierFormProps) {
             setContactText(e.target.value);
             clearFieldError("contact");
           }}
-          className="w-full rounded border border-border bg-bg px-2 py-1 text-xs font-mono"
+          className="font-mono text-xs"
         />
       </Field>
 
       <div className="flex gap-2">
-        <button
+        <Button
           type="submit"
           disabled={isPending}
-          className="rounded bg-fg text-bg px-4 py-1.5 text-sm hover:opacity-90 disabled:opacity-60"
         >
           {dict.admin.common.save}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           onClick={() => router.back()}
-          className="rounded border border-border bg-surface px-4 py-1.5 text-sm hover:border-border-strong"
         >
           {dict.admin.common.cancel}
-        </button>
+        </Button>
       </div>
     </form>
   );

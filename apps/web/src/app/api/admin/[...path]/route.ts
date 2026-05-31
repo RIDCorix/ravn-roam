@@ -7,13 +7,11 @@
 // land on, and it forwards to the real upstream with the auth headers
 // only available to the server.
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+
+import { proxyToApi } from "@/lib/api-proxy";
 
 export const dynamic = "force-dynamic";
-
-function upstreamBase(): string {
-  return process.env.ROAM_API_URL ?? "http://localhost:3001";
-}
 
 function adminHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
@@ -24,50 +22,13 @@ function adminHeaders(): Record<string, string> {
   return headers;
 }
 
-async function proxy(
-  req: NextRequest,
-  segments: string[],
-): Promise<NextResponse> {
+async function proxy(req: NextRequest, segments: string[]) {
   const path = segments.join("/");
-  const url = new URL(`/admin/${path}`, upstreamBase());
-  for (const [key, value] of req.nextUrl.searchParams) {
-    url.searchParams.append(key, value);
-  }
-
-  const headers: Record<string, string> = { ...adminHeaders() };
-  const contentType = req.headers.get("content-type");
-  if (contentType) headers["content-type"] = contentType;
-
-  const init: RequestInit = {
-    method: req.method,
-    headers,
-    cache: "no-store",
-  };
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    init.body = await req.text();
-  }
-
-  try {
-    const res = await fetch(url, init);
-    const body = await res.text();
-    return new NextResponse(body, {
-      status: res.status,
-      headers: {
-        "content-type":
-          res.headers.get("content-type") ?? "application/json",
-      },
-    });
-  } catch (err) {
-    return NextResponse.json(
-      {
-        error:
-          err instanceof Error
-            ? `upstream unreachable: ${err.message}`
-            : String(err),
-      },
-      { status: 502 },
-    );
-  }
+  return proxyToApi(req, {
+    path: `/admin/${path}`,
+    headers: adminHeaders(),
+    contentType: "request",
+  });
 }
 
 type Ctx = { params: Promise<{ path: string[] }> };

@@ -1,13 +1,13 @@
 # Infra setup
 
-End-to-end checklist for getting the Roam marketing site running on
-**Vercel** (web hosting + previews) and the **shared Supabase project**
+End-to-end checklist for getting Roam running on **Vercel** (web hosting
++ previews) and the **shared Supabase project**
 (`ravn-shared`). Items marked _dashboard_ must be done by a human with
 the right account access — they cannot be driven from this repo.
 
-This repo is **main-only** (per `CLAUDE.md` — rule 8's
-`ravn/integration` overlay does NOT apply here). Production deploy
-target = `main`; previews = every other branch.
+This repo is **main-only**. The older RAVN `ravn/integration` overlay
+does NOT apply here. Production deploy target = `main`; previews = every
+other branch.
 
 Railway is deferred — see [§4](#4--railway-deferred).
 
@@ -94,8 +94,8 @@ role, **not** a separate Supabase project. See
 
 **Client usage in this repo:**
 
-- Browser components: `import { createSupabaseBrowserClient } from "@/lib/supabase/client"`.
-- Server components / Route Handlers: `import { createSupabaseServerClient } from "@/lib/supabase/server"`.
+- Browser components: `import { createSupabaseBrowserClient } from "@roam/shared"`.
+- Server components / Route Handlers: `import { createSupabaseServerClient } from "@roam/shared"`.
 - Server-side direct Postgres (Prisma / drizzle / pg): connect via
   `process.env.DATABASE_URL` only. **Do NOT** import the shared
   `service_role_key` from app code (rule 06).
@@ -110,13 +110,19 @@ role, **not** a separate Supabase project. See
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `apps/landing`, `apps/web`     | Browser + server | Yes             | `supabase.shared.anon_key`                          |
 | `DATABASE_URL`                  | `services/api`                 | Server only      | Yes (for DB)    | `supabase.shared.poc_roles.roam_poc.connection_url` |
 | `NEXT_PUBLIC_SITE_URL`          | `apps/landing`, `apps/web`     | Browser + server | Yes             | (n/a — env-specific literal)                        |
-| `ROAM_API_URL`                  | `apps/web`                     | Server only      | Yes (in prod)   | (n/a — points at `infra.railway.roam_api.public_url`) |
+| `ROAM_API_URL`                  | `apps/web`                     | Server only      | Yes (in prod)   | (n/a — points at the deployed `services/api` origin) |
 | `ADMIN_API_TOKEN`               | `apps/web`, `services/api`     | Server only      | Yes (for sync)  | `roam.admin_api_token` (TEC-22)                     |
 | `ROAM_ADMIN_USER`               | `apps/web`                     | Server only      | No (default "admin") | (n/a)                                          |
 | `FASTMOVE_BASE_URL`             | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.base_url`                             |
 | `FASTMOVE_MERCHANT_ID`          | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.merchant_id`                          |
 | `FASTMOVE_DEPT_ID`              | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.dept_id`                              |
 | `FASTMOVE_MERCHANT_KEY`         | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.merchant_key`                         |
+| `GEMINI_API_KEY`                | `services/api`                 | Server only      | No (event crawler) | `roam.gemini_api_key`                            |
+| `GEMINI_MODEL`                  | `services/api`                 | Server only      | No              | (n/a — defaults to `gemini-2.5-flash`)              |
+| `GEMINI_SEARCH_MODEL`           | `services/api`                 | Server only      | No              | (n/a — defaults to `gemini-2.5-flash`)              |
+| `EVENT_CRAWLER_PROVIDER`        | `services/api`                 | Server only      | No              | (n/a — `gemini` or `openai`)                        |
+| `EVENT_CRAWLER_REQUEST_DELAY_MS` | `services/api`                 | Server only      | No              | (n/a — optional crawler pacing)                     |
+| `EVENT_CRAWLER_MAX_RETRIES`      | `services/api`                 | Server only      | No              | (n/a — defaults to `4`)                             |
 
 > **`ROAM_API_URL` and `ADMIN_API_TOKEN` are not optional in production.**
 > Without `ROAM_API_URL` the admin pages SSR-fetch `http://localhost:3001`

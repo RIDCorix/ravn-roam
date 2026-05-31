@@ -65,6 +65,9 @@ const COUNTRY_ALIASES: Record<string, string> = {
   義大利: "IT",
   意大利: "IT",
   italy: "IT",
+  羅馬: "IT",
+  rome: "IT",
+  roma: "IT",
   milan: "IT",
   米蘭: "IT",
   法國: "FR",
@@ -126,7 +129,6 @@ export function buildShopHref(
     slug = findRegionByDestination(filter.country) ?? null;
   }
   if (slug) {
-    const region = findRegionBySlug(slug);
     const upperCountry = filter.country?.trim().toUpperCase();
     const isEuropeanIso =
       upperCountry &&
@@ -162,7 +164,9 @@ export function buildShopHref(
   const qs = params.toString();
 
   if (slug) {
-    return qs ? `/${lang}/shop/${slug}?${qs}` : `/${lang}/shop/${slug}`;
+    return qs
+      ? `/${lang}/shop/${slug}/plans?${qs}`
+      : `/${lang}/shop/${slug}/plans`;
   }
   // No resolvable region — drop the user on the grid; query string lives
   // on as a hint for any future cross-region search UI.

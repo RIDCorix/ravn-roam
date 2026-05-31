@@ -54,6 +54,8 @@ export default async function StorefrontLayout({
     <StorefrontShell
       lang={lang}
       labels={dict.storefront.nav}
+      isSignedIn={Boolean(user)}
+      signInLabel={dict.storefront.login.sign_in}
       lumiLabels={user ? lumiLabels : null}
       lumiAvatarId={lumiAvatarId}
     >

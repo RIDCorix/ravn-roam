@@ -8,6 +8,8 @@
 import dynamic from "next/dynamic";
 import { MapPin } from "lucide-react";
 
+import { formatTemplate } from "@/lib/text-template";
+
 import { COUNTRY_CENTROIDS } from "./country-centroids";
 import type { FootprintPin } from "./world-footprints-map";
 
@@ -60,7 +62,9 @@ export function WorldFootprints({
   const visitedCount = pins.filter((p) => p.visited).length;
   const upcomingCount = pins.length - visitedCount;
   const upcomingText =
-    upcomingCount > 0 ? format(labels.upcoming, { count: String(upcomingCount) }) : "";
+    upcomingCount > 0
+      ? formatTemplate(labels.upcoming, { count: String(upcomingCount) })
+      : "";
 
   return (
     <section className="space-y-3">
@@ -69,7 +73,7 @@ export function WorldFootprints({
           {labels.title}
         </h2>
         <span className="text-[12px] text-fg-muted tabular-nums">
-          {format(labels.summary, {
+          {formatTemplate(labels.summary, {
             visited: String(visitedCount),
             upcoming: upcomingText,
           })}
@@ -91,8 +95,4 @@ export function WorldFootprints({
       )}
     </section>
   );
-}
-
-function format(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
 }

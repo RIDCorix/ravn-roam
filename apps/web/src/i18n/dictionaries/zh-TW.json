@@ -449,7 +449,7 @@
       "default_name": "旅人",
       "level_title": "見習旅人",
       "notifications_aria": "通知",
-      "search_placeholder": "想去哪裡玩",
+      "search_placeholder": "搜尋地區或活動",
       "continue_planning": "繼續規劃",
       "upcoming_tasks": "近期待辦",
       "view_all_tasks": "查看全部 {count} 項",
@@ -498,10 +498,10 @@
       }
     },
     "tabs": {
-      "trips_placeholder": "Phase C-1：行程與 Trip Detail 即將推出。",
-      "tasks_placeholder": "Phase C-3：跨行程任務聚合即將推出。",
-      "shop_placeholder": "Phase C-4：eSIM 商店即將推出。",
-      "me_placeholder": "Phase C-5：個人頁與設定即將推出。"
+      "trips_placeholder": "建立行程後，這裡會顯示日期、待辦與 Lumi 建議。",
+      "tasks_placeholder": "所有行程待辦會集中在這裡，方便出發前逐項確認。",
+      "shop_placeholder": "依目的地與天數比較 eSIM 方案。",
+      "me_placeholder": "管理個人資料、語言偏好與已購買的 eSIM。"
     },
     "tasks": {
       "subtitle": "{open} 項待辦 · {done} 項完成 · 共 {all} 項",
@@ -586,9 +586,60 @@
       "clear_search": "清除",
       "ask_lumi": "問 Lumi",
       "no_region_matches": "沒有符合的地區",
+      "no_search_matches": "沒有符合的地區或活動",
       "regions_count": "地區 ({count})",
+      "events_count": "活動 ({count})",
       "trending_now": "現在熱門",
-      "no_events_category": "這個分類目前沒有活動"
+      "no_events_category": "這個分類目前沒有活動",
+      "region_detail": {
+        "back": "回到商店",
+        "destination_count": "{count} 個目的地",
+        "hero_body": "先看 {region} 的季節、祭典、賽事與旅遊節奏，再決定要不要建立旅程或查看 eSIM 方案。",
+        "plan_trip_cta": "規劃前往該地區",
+        "view_plans_cta": "查看 eSIM 方案",
+        "events_title": "這裡有哪些活動",
+        "events_subtitle": "{region} 近期值得留意的活動與季節。",
+        "events_empty": "目前還沒有這個地區的活動資料。你仍然可以先建立旅程，再讓 Lumi 依日期補上活動與待辦。",
+        "timeline_title": "季節時間軸",
+        "timeline_subtitle": "先看季節節奏，再決定適合的出發時間。",
+        "timeline_count": "{count} 個",
+        "timeline_seasons": {
+          "spring": { "name": "春", "range": "3 - 5 月" },
+          "summer": { "name": "夏", "range": "6 - 8 月" },
+          "autumn": { "name": "秋", "range": "9 - 11 月" },
+          "winter": { "name": "冬", "range": "12 - 2 月" }
+        },
+        "featured_events_title": "精選活動",
+        "featured_events_subtitle": "點選活動探索更多資訊與推薦行程。",
+        "trip_prompt_title": "還不知道去哪裡？",
+        "trip_prompt_body": "讓我們根據季節和你的喜好，推薦最適合的目的地。",
+        "plan_with_event": "用這個活動規劃",
+        "highlights": [
+          {
+            "title": "先定旅程",
+            "body": "用地區建立行程，再補日期與同行者。"
+          },
+          {
+            "title": "看活動",
+            "body": "追蹤季節、祭典、演唱會與賽事。"
+          },
+          {
+            "title": "再買網路",
+            "body": "依天數與流量挑合適的 eSIM。"
+          }
+        ],
+        "event_types": {
+          "festival": "祭典",
+          "carnival": "狂歡季",
+          "religious": "宗教",
+          "music": "音樂",
+          "sports": "運動",
+          "food": "美食",
+          "seasonal": "季節",
+          "cultural": "文化",
+          "other": "活動"
+        }
+      }
     },
     "login": {
       "title": "登入 Roam",

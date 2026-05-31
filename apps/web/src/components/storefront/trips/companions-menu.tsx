@@ -155,7 +155,7 @@ export function CompanionsMenu({
             <div className="max-h-[60vh] overflow-y-auto py-1">
               {companions.map((c) => (
                 <CompanionRow
-                  key={c.id}
+                  key={`${c.id}:${c.display_name}`}
                   companion={c}
                   onRename={(name) => rename(c.id, name)}
                   onDelete={() => remove(c.id)}
@@ -202,12 +202,6 @@ function CompanionRow({
   const [pickToast, setPickToast] = useState(false);
   const claimed = !!companion.user_id;
   const owner = companion.role === "owner";
-
-  /* Drift the local draft if the server overwrote display_name (e.g. the
-     companion was renamed in another tab). Cheap effect, idempotent. */
-  useEffect(() => {
-    setDraft(companion.display_name);
-  }, [companion.display_name]);
 
   const inviteUrl =
     typeof window !== "undefined" && companion.invite_token

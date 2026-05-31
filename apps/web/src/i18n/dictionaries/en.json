@@ -449,7 +449,7 @@
       "default_name": "traveler",
       "level_title": "Apprentice traveler",
       "notifications_aria": "Notifications",
-      "search_placeholder": "Where do you want to go?",
+      "search_placeholder": "Search regions or events",
       "continue_planning": "Continue planning",
       "upcoming_tasks": "Upcoming tasks",
       "view_all_tasks": "View all {count}",
@@ -498,10 +498,10 @@
       }
     },
     "tabs": {
-      "trips_placeholder": "Phase C-1: trips list + detail coming soon.",
-      "tasks_placeholder": "Phase C-3: cross-trip task aggregation coming soon.",
-      "shop_placeholder": "Phase C-4: eSIM shop coming soon.",
-      "me_placeholder": "Phase C-5: profile + settings coming soon."
+      "trips_placeholder": "Create a trip to see dates, tasks, and Lumi suggestions here.",
+      "tasks_placeholder": "Trip tasks collect here so you can check them before departure.",
+      "shop_placeholder": "Compare eSIM plans by destination and trip length.",
+      "me_placeholder": "Manage profile details, language preferences, and purchased eSIMs."
     },
     "tasks": {
       "subtitle": "{open} open · {done} done · {all} total",
@@ -586,9 +586,60 @@
       "clear_search": "Clear",
       "ask_lumi": "Ask Lumi",
       "no_region_matches": "No region matches your search.",
+      "no_search_matches": "No destination or event matches your search.",
       "regions_count": "Regions ({count})",
+      "events_count": "Events ({count})",
       "trending_now": "Trending now",
-      "no_events_category": "No events in this category."
+      "no_events_category": "No events in this category.",
+      "region_detail": {
+        "back": "Back to shop",
+        "destination_count": "{count} destinations",
+        "hero_body": "Explore {region}'s seasons, festivals, sports, and travel rhythm before you start a trip or choose an eSIM plan.",
+        "plan_trip_cta": "Plan a trip here",
+        "view_plans_cta": "View eSIM plans",
+        "events_title": "What's happening here",
+        "events_subtitle": "Upcoming events and seasons to watch in {region}.",
+        "events_empty": "No event data for this region yet. You can still start a trip and ask Lumi to fill in timely events and tasks.",
+        "timeline_title": "Seasonal timeline",
+        "timeline_subtitle": "Scan the seasonal rhythm before choosing when to go.",
+        "timeline_count": "{count}",
+        "timeline_seasons": {
+          "spring": { "name": "Spring", "range": "Mar - May" },
+          "summer": { "name": "Summer", "range": "Jun - Aug" },
+          "autumn": { "name": "Autumn", "range": "Sep - Nov" },
+          "winter": { "name": "Winter", "range": "Dec - Feb" }
+        },
+        "featured_events_title": "Featured events",
+        "featured_events_subtitle": "Open an event to explore more context and trip ideas.",
+        "trip_prompt_title": "Not sure where to go?",
+        "trip_prompt_body": "Get a recommendation based on the season and what you like.",
+        "plan_with_event": "Plan with this event",
+        "highlights": [
+          {
+            "title": "Start the trip",
+            "body": "Create the journey first, then add dates and companions."
+          },
+          {
+            "title": "Scan events",
+            "body": "Track seasons, festivals, concerts, and sports."
+          },
+          {
+            "title": "Buy data later",
+            "body": "Pick an eSIM by trip length and data need."
+          }
+        ],
+        "event_types": {
+          "festival": "Festival",
+          "carnival": "Carnival",
+          "religious": "Religious",
+          "music": "Music",
+          "sports": "Sports",
+          "food": "Food",
+          "seasonal": "Seasonal",
+          "cultural": "Cultural",
+          "other": "Event"
+        }
+      }
     },
     "login": {
       "title": "Sign in to Roam",

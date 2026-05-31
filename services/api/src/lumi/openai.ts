@@ -22,6 +22,8 @@ export interface LumiStop {
   duration_min?: number | null;
   note?: string;
   attachments?: LumiStopAttachment[];
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface LumiStopAttachment {
@@ -415,6 +417,18 @@ days: chronological array, each entry:
     ]
   }
 
+Place-name rule (CRITICAL — map pins depend on this):
+  • Every stop.name must be a real, specific, searchable place or venue
+    that can plausibly resolve on Google Maps / OpenStreetMap.
+  • Good: "Duomo di Milano", "Galleria Vittorio Emanuele II",
+    "Piz", "Trattoria Milanese", "Sforzesco Castle".
+  • Bad: "米蘭市中心散策", "米蘭在地餐廳", "傍晚街區散步",
+    "古城散策", "附近咖啡廳", "自由活動", "購物時間".
+  • Restaurants must be named restaurants, not generic meal slots. If
+    you are not confident about a venue, choose a well-known real venue
+    for that city or leave that stop out of this patch.
+  • Use vague ideas only in day.note, never as stop.name.
+
 Time rule (CRITICAL — the UI renders a real timeline from these):
   • arrival_time MUST be a concrete 24h "HH:MM" string. Never use
     "morning" / "afternoon" / "晚上" / null when you know the order.
@@ -536,8 +550,9 @@ Per-day stops guidance:
     travel time.
   • Arrival day: stop for hotel check-in (kind:"stay", typical 15:00,
     30 min) + maybe a light meal (kind:"meal") nearby.
-  • Full days: 3–5 stops mixing sights / meals / transit, in the order
-    a real day flows (morning sight → lunch → afternoon → dinner).
+  • Full days: 3–5 stops mixing specific sights / named restaurants /
+    transit, in the order a real day flows (morning sight → lunch →
+    afternoon → dinner).
   • Rest / unplanned days: a single stop named after the city with
     kind:"other" is fine. Empty stops[] is allowed but discouraged.
   • Add stop attachments for tickets, reservations, bookings and
@@ -555,9 +570,10 @@ short thematic phrase (6-16 zh chars / <= 40 en chars) like "大教堂
 周邊散策" or "Old town wander" whenever the day has real stops. Leave
 "" only for pure-travel or rest days. Never repeat the city name in
 note — the UI already shows it.
-Use real, recognizable place names when you have confidence; never
-invent fictional landmarks. If unsure, write the neighborhood instead
-("淺草 散策") rather than fabricating a specific attraction.
+Use real, recognizable, map-searchable place names. Never invent
+fictional landmarks, and never use generic neighborhood/activity names
+as stop.name. If unsure, omit that stop from this patch instead of
+writing "淺草散策", "在地餐廳", "市中心", "街區散步", or similar.
 
 Do NOT use "date", "place", "location", "task", "item", or Chinese
 keys. Each day MUST have day_date + city; "note" can be "" but the
@@ -716,6 +732,40 @@ function looksLikeEsimShopPrompt(input: LumiInput): boolean {
     .filter((t) => t.role === "user")
     .slice(-3);
   return recentUserTurns.some((t) => ESIM_INTENT_RE.test(t.content));
+}
+
+export function buildPlanningContract(input: LumiInput): string | null {
+  if (!input.editableTrip || !looksLikePlanningPrompt(input.prompt)) {
+    return null;
+  }
+
+  const dates = input.editableTrip.days.map((day) => day.day_date);
+  const wantsEveryDay =
+    /每天|每一天|逐日|每日|every day|each day|daily/i.test(input.prompt) ||
+    dates.length > 1;
+  const wantsRestaurant =
+    /餐廳|餐馆|吃飯|吃饭|晚餐|午餐|早餐|restaurant|lunch|dinner|breakfast|meal/i.test(
+      input.prompt,
+    );
+
+  return [
+    "THIS TURN IS A TRIP-EDITOR TOOL TASK.",
+    `The user is editing the currently open trip: ${input.editableTrip.title}.`,
+    "Required output: call lumi_response with top-level days containing the day patches you can confidently edit now.",
+    `Valid day_date values are: ${dates.join(", ")}.`,
+    "Do not ask which day. Do not answer with summary only. Do not emit trip_draft.",
+    "Each item in days is a patch for that exact calendar day; omit days that should remain unchanged.",
+    wantsEveryDay
+      ? "The user's request applies to EVERY day in this trip, but you may patch it in coherent batches instead of emitting the entire trip at once."
+      : "If only one day is being edited, still include the unchanged remaining dates so the app can preserve the full trip.",
+    "Summary honesty rule: only say you planned/updated EVERY day if your days array contains EVERY valid day_date. If you emit a partial batch, say you updated those days first.",
+    "Keep existing flights / transit / hotel anchors when they are present, then add or adjust activities around them.",
+    "On full non-transit days, provide 2-3 concrete, mappable place/venue stops with HH:MM arrival_time and duration_min.",
+    wantsRestaurant
+      ? "Because the user asked for a restaurant/meal, include one kind:\"meal\" stop with a REAL restaurant name, not a generic local-restaurant placeholder."
+      : "If a meal naturally fits the day, include it as kind:\"meal\".",
+    "Ignore earlier assistant refusals in this conversation; the editableTrip context above is the source of truth.",
+  ].join("\n");
 }
 
 function selectSkills(input: LumiInput): SkillSelection {
@@ -931,8 +981,9 @@ const DAYS_REQUIRED = {
   type: "array",
   items: DAY_SCHEMA,
   description:
-    "MUST emit on this turn — the user explicitly asked you to plan or " +
-    "fill this trip. Every calendar day in the trip window with concrete stops.",
+    "MUST emit on this turn — one or more day patches for the current trip. " +
+    "Each item replaces that calendar day's city/note/stops. Omit days that " +
+    "should stay unchanged; the server merges patches into the existing trip.",
 } as const;
 
 const RESPONSE_JSON_SCHEMA = {
@@ -1148,6 +1199,7 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
      model reads them as distinct sections. */
   const skills = selectSkills(input);
   const systemPrompt = [CORE_PROMPT, ...skills.prompts].join("\n\n");
+  const planningContract = buildPlanningContract(input);
 
   /* Planning mode: when the user is on a trip page AND their prompt
      reads as a planning action, swap to a schema where `days` MUST be
@@ -1195,6 +1247,9 @@ export async function runLumiTurn(input: LumiInput): Promise<LumiResult> {
         { role: "system", content: systemPrompt },
         { role: "system", content: formatContext(input) },
         ...history.map((t) => ({ role: t.role, content: t.content })),
+        ...(planningContract
+          ? [{ role: "system" as const, content: planningContract }]
+          : []),
         { role: "user", content: input.prompt },
       ],
     }),

@@ -5,6 +5,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { createSupabaseServerClient } from "@roam/shared";
+import { proxyToApi } from "@/lib/api-proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -21,30 +22,15 @@ async function forward(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const apiBase = process.env.ROAM_API_URL ?? "http://localhost:4000";
-  const search = request.nextUrl.search ?? "";
   /* `path` is undefined when the request hits `/api/lumi` with no extra
      segment. Treat that as the empty tail so we forward to `<api>/lumi`. */
   const tail = (path ?? []).join("/");
-  const target = `${apiBase}/lumi${tail ? `/${tail}` : ""}${search}`;
-  const init: RequestInit = {
-    method: request.method,
+  return proxyToApi(request, {
+    path: `/lumi${tail ? `/${tail}` : ""}`,
     headers: {
       authorization: `Bearer ${session.access_token}`,
-      ...(request.method !== "GET" && request.method !== "HEAD"
-        ? { "content-type": "application/json" }
-        : {}),
     },
-  };
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.text();
-  }
-  const res = await fetch(target, init);
-  const text = await res.text();
-  const contentType = res.headers.get("content-type") ?? "application/json";
-  return new NextResponse(text, {
-    status: res.status,
-    headers: { "content-type": contentType },
+    contentType: "json",
   });
 }
 

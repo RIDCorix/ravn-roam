@@ -16,7 +16,8 @@ import {
   popIn,
 } from "@/components/storefront/motion";
 import { TripCard } from "@/components/storefront/trips/trip-card";
-import type { Trip } from "@/lib/mock/consumer";
+import { formatTemplate } from "@/lib/text-template";
+import type { Trip } from "@/lib/trip-types";
 
 export interface TripsListLabels {
   title: string;
@@ -53,13 +54,15 @@ export interface TripsListLabels {
 
 export function TripsListClient({
   lang,
+  initialDestination,
   labels,
 }: {
   lang: string;
+  initialDestination?: string;
   labels: TripsListLabels;
 }) {
   const router = useRouter();
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(Boolean(initialDestination));
   const { data, isLoading } = useSWR<{ trips: Trip[] }>(
     "storefront-trips",
     fetchTrips,
@@ -78,7 +81,7 @@ export function TripsListClient({
     .filter((trip) => trip.status === "past")
     .sort((a, b) => b.start.localeCompare(a.start));
   const liveCount = active.length + upcoming.length;
-  const subtitle = format(labels.subtitle, { count: String(liveCount) });
+  const subtitle = formatTemplate(labels.subtitle, { count: String(liveCount) });
 
   return (
     <div>
@@ -136,6 +139,7 @@ export function TripsListClient({
         {createOpen && (
           <CreateTripDialog
             labels={labels.create}
+            initialDestination={initialDestination}
             onClose={() => setCreateOpen(false)}
             onCreated={(id) => {
               setCreateOpen(false);
@@ -194,16 +198,18 @@ function NewTripCta({
 
 function CreateTripDialog({
   labels,
+  initialDestination,
   onClose,
   onCreated,
 }: {
   labels: TripsListLabels["create"];
+  initialDestination?: string;
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [title, setTitle] = useState("");
-  const [destination, setDestination] = useState("");
+  const [destination, setDestination] = useState(initialDestination ?? "");
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [busy, setBusy] = useState(false);
@@ -486,8 +492,4 @@ async function fetchTrips(): Promise<{ trips: Trip[] }> {
     throw new Error(`fetch trips failed: ${res.status} ${text.slice(0, 160)}`);
   }
   return (await res.json()) as { trips: Trip[] };
-}
-
-function format(template: string, vars: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
 }

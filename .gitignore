@@ -43,3 +43,11 @@ next-env.d.ts
 
 # local agent / editor state
 /.claude/
+/.codex/
+/.playwright-cli/
+/.codex-*.png
+__pycache__/
+.pytest_cache/
+.venv/
+services/*/.pytest_cache/
+services/*/.venv/
