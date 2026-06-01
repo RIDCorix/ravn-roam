@@ -450,6 +450,40 @@
       "level_title": "Apprentice traveler",
       "notifications_aria": "Notifications",
       "search_placeholder": "Search regions or events",
+      "landing": {
+        "brand": "Roam",
+        "nav": {
+          "explore": "Explore",
+          "destinations": "Destinations",
+          "calendar": "Event calendar",
+          "planner": "Trip planning",
+          "esim": "eSIM"
+        },
+        "title_lines": ["Let the world's best moments", "become your next trip"],
+        "subtitle": "Explore remarkable events around the world and start a trip that feels like yours.",
+        "search_placeholder": "Where to next? New Zealand, Peru, Iceland...",
+        "search_aria": "Search destinations or events",
+        "search_button_aria": "Search",
+        "favorites_aria": "Favorites",
+        "account_aria": "Account",
+        "menu_aria": "Menu",
+        "explore_cta": "Explore the world",
+        "cards": {
+          "iceland": { "title": "Iceland · Northern lights", "months": "Oct - Mar" },
+          "turkey": { "title": "Turkey · Balloons", "months": "Apr - Oct" },
+          "switzerland": { "title": "Switzerland · Jungfrau", "months": "Jun - Sep" },
+          "japan": { "title": "Japan · Sakura season", "months": "Mar - Apr" },
+          "greece": { "title": "Greece · Santorini", "months": "May - Sep" },
+          "bali": { "title": "Bali · Holiday light", "months": "May - Oct" }
+        },
+        "dock": {
+          "inspiration": "Inspiration",
+          "calendar": "Event calendar",
+          "ai_planner": "AI trip planner",
+          "guide": "Travel guide",
+          "esim": "eSIM plans"
+        }
+      },
       "continue_planning": "Continue planning",
       "upcoming_tasks": "Upcoming tasks",
       "view_all_tasks": "View all {count}",
@@ -520,6 +554,87 @@
       "esim_order_pending": "Processing",
       "esim_order_ready": "Ready to share",
       "esim_order_shared": "Shared"
+    },
+    "explore": {
+      "eyebrow": "World event map",
+      "title": "Find your next trip on the world map",
+      "subtitle": "Start with seasons, festivals, and city rhythms, then open a region page to shape the trip.",
+      "panel_title": "Live inspiration",
+      "panel_count": "5 featured events",
+      "panel_body": "Select an event on the map to scan regional timing, activity context, and trip entry points.",
+      "view_region": "View region guide",
+      "spotlight_title_lines": ["The world is wide.", "The moments are endless."],
+      "spotlight_subtitle": "Explore remarkable events happening around the world, then open the next trip with a clear reason to go.",
+      "spotlight_more": "Explore more",
+      "spotlight_previous": "Previous event",
+      "spotlight_next": "Next event",
+      "spotlight_events": [
+        { "id": "venice-carnival", "title": "Venice Carnival", "category": "Festival event", "location": "Venice, Italy", "description": "Masks, canals, and candlelit palaces turn Venice into a theatrical winter journey with history on every corner." },
+        { "id": "rio-carnival", "title": "Rio Carnival", "category": "Festival event", "location": "Rio de Janeiro, Brazil", "description": "Samba schools, beach days, and late-night street parties create one of the most vivid reasons to cross the Atlantic." },
+        { "id": "iceland-lights", "title": "Northern lights", "category": "Seasonal event", "location": "Reykjavik, Iceland", "description": "Long winter nights, geothermal pools, and aurora windows make Iceland a compact trip built around timing and sky." },
+        { "id": "japan-gion", "title": "Gion Matsuri", "category": "Festival event", "location": "Kyoto, Japan", "description": "A month of historic floats, night markets, and summer rituals turns Kyoto into one of Japan's most atmospheric journeys." },
+        { "id": "singapore-grand-prix", "title": "Singapore Grand Prix", "category": "City event", "location": "Singapore", "description": "Night racing, waterfront concerts, and late city dining make Singapore a compact trip built around high-energy evenings." },
+        { "id": "taiwan-lantern", "title": "Taiwan Lantern Festival", "category": "Seasonal event", "location": "Taiwan", "description": "Large-scale lantern installations and local night markets create an easy route for travelers who want light, food, and culture." }
+      ],
+      "map_title": "Event calendar with map",
+      "map_hint": "Explore seasonal events by date, region, and activity type before opening the region guide.",
+      "filters_label": "Filters",
+      "month_label": "July 2026",
+      "selected_day": "July 19 · Friday",
+      "date_range_title": "Date range",
+      "date_range_empty": "Select a start date, then an end date.",
+      "date_range_single": "Starting July {day}",
+      "date_range_range": "July {start} - July {end}",
+      "today_recommendations": "Today recommendations",
+      "view_more": "View more",
+      "reset_filters": "Reset filters",
+      "no_results_title": "No events match these filters",
+      "no_results_body": "Widen the date range, region, or activity type to bring more events back onto the map.",
+      "featured_only": "Featured only",
+      "visible_count": "{count} events visible",
+      "region_search_placeholder": "Search Asia, Taiwan, Taipei City…",
+      "region_search_empty": "No matching place",
+      "filters": {
+        "time": "Time range",
+        "region": "Region",
+        "type": "Activity type"
+      },
+      "time_options": [
+        { "value": "all", "label": "All dates" },
+        { "value": "jul", "label": "July" },
+        { "value": "aug", "label": "August" },
+        { "value": "summer", "label": "Summer" },
+        { "value": "winter", "label": "Winter" },
+        { "value": "spring", "label": "Spring" }
+      ],
+      "region_options": [
+        { "value": "all", "label": "All regions" },
+        { "value": "asia", "label": "Asia" },
+        { "value": "europe", "label": "Europe" },
+        { "value": "americas", "label": "Americas" },
+        { "value": "oceania", "label": "Oceania" }
+      ],
+      "type_options": [
+        { "value": "all", "label": "All types" },
+        { "value": "festival", "label": "Festival" },
+        { "value": "food", "label": "Food" },
+        { "value": "nature", "label": "Nature" },
+        { "value": "season", "label": "Seasonal" },
+        { "value": "culture", "label": "Culture" }
+      ],
+      "events": [
+        { "id": "tomorrowland", "title": "Tomorrowland weekend", "meta": "Belgium · Music · Jul", "location": "Boom, Belgium", "date": "Jul 19 - Jul 21", "date_short": "Jul 19", "country": "Belgium", "type_label": "Festival", "rating": "4.9" },
+        { "id": "singapore-food", "title": "Singapore food festival", "meta": "Singapore · Food · Jul", "location": "Singapore", "date": "Jul 19 - Jul 28", "date_short": "Jul 22", "country": "Singapore", "type_label": "Food", "rating": "4.6" },
+        { "id": "edinburgh-fringe", "title": "Edinburgh Fringe", "meta": "United Kingdom · Culture · Aug", "location": "Edinburgh, United Kingdom", "date": "Aug 2 - Aug 25", "date_short": "Aug 8", "country": "United Kingdom", "type_label": "Culture", "rating": "4.7" },
+        { "id": "jp-sakura", "title": "Japan sakura season", "meta": "Tokyo · Kyoto · Mar - Apr", "location": "Tokyo and Kyoto, Japan", "date": "Mar 20 - Apr 12", "date_short": "Mar 28", "country": "Japan", "type_label": "Seasonal", "rating": "4.8" },
+        { "id": "turkey-balloons", "title": "Turkey balloons", "meta": "Cappadocia · Apr - Oct", "location": "Cappadocia, Turkey", "date": "Apr 1 - Oct 31", "date_short": "Jul 16", "country": "Turkey", "type_label": "Nature", "rating": "4.8" },
+        { "id": "switzerland-alps", "title": "Switzerland Jungfrau", "meta": "Alps · Jun - Sep", "location": "Jungfrau, Switzerland", "date": "Jun 1 - Sep 30", "date_short": "Jul 9", "country": "Switzerland", "type_label": "Nature", "rating": "4.7" },
+        { "id": "iceland-lights", "title": "Iceland northern lights", "meta": "Reykjavik · Oct - Mar", "location": "Reykjavik, Iceland", "date": "Oct 1 - Mar 31", "date_short": "Jan 3", "country": "Iceland", "type_label": "Seasonal", "rating": "4.8" },
+        { "id": "bali-holiday", "title": "Bali holiday light", "meta": "Indonesia · May - Oct", "location": "Bali, Indonesia", "date": "May 1 - Oct 31", "date_short": "Jul 26", "country": "Indonesia", "type_label": "Nature", "rating": "4.5" },
+        { "id": "rio-carnival", "title": "Rio carnival", "meta": "Brazil · Festival · Spring", "location": "Rio de Janeiro, Brazil", "date": "Feb 13 - Feb 21", "date_short": "Feb 18", "country": "Brazil", "type_label": "Festival", "rating": "4.9" },
+        { "id": "new-york-food", "title": "New York summer food halls", "meta": "United States · Food · Jul", "location": "New York, United States", "date": "Jul 5 - Jul 27", "date_short": "Jul 6", "country": "United States", "type_label": "Food", "rating": "4.4" },
+        { "id": "sydney-light", "title": "Sydney light season", "meta": "Australia · Festival · Winter", "location": "Sydney, Australia", "date": "May 24 - Jun 15", "date_short": "Jun 28", "country": "Australia", "type_label": "Festival", "rating": "4.6" }
+      ]
     },
     "shop": {
       "title": "eSIM Shop",

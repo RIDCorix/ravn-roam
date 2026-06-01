@@ -155,6 +155,12 @@ export function StorefrontShell({
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const tabs = buildTabs({ lang, labels, isSignedIn, signInLabel });
+  const isPublicHome =
+    !isSignedIn && (pathname === `/${lang}` || pathname === `/${lang}/`);
+  const isPublicExplore =
+    !isSignedIn &&
+    (pathname === `/${lang}/explore` || pathname === `/${lang}/explore/`);
+  const isPublicFullBleed = isPublicHome || isPublicExplore;
 
   return (
     <div className="flex min-h-screen bg-bg text-fg">
@@ -168,7 +174,7 @@ export function StorefrontShell({
       ) : null}
 
       <div className="flex flex-1 min-w-0 flex-col">
-        {!isSignedIn ? (
+        {!isSignedIn && !isPublicFullBleed ? (
           <PublicTopNav
             lang={lang}
             tabs={tabs}
@@ -176,19 +182,31 @@ export function StorefrontShell({
             search={search}
           />
         ) : null}
-        <main className="flex-1 min-w-0 pb-28 md:pb-0">
-          <div className="mx-auto w-full max-w-[980px] md:px-6 md:py-6">
+        <main
+          className={cn(
+            "flex-1 min-w-0",
+            isPublicFullBleed ? "pb-0" : "pb-28 md:pb-0",
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto w-full",
+              isPublicFullBleed ? "max-w-none" : "max-w-[980px] md:px-6 md:py-6",
+            )}
+          >
             {children}
           </div>
         </main>
 
         {/* Mobile bottom nav */}
-        <MobileBottomNav
-          tabs={tabs}
-          pathname={pathname}
-          lang={lang}
-          search={search}
-        />
+        {!isPublicFullBleed ? (
+          <MobileBottomNav
+            tabs={tabs}
+            pathname={pathname}
+            lang={lang}
+            search={search}
+          />
+        ) : null}
       </div>
 
       {isSignedIn && lumiLabels && (

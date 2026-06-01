@@ -450,6 +450,40 @@
       "level_title": "見習旅人",
       "notifications_aria": "通知",
       "search_placeholder": "搜尋地區或活動",
+      "landing": {
+        "brand": "Roam",
+        "nav": {
+          "explore": "探索",
+          "destinations": "目的地",
+          "calendar": "活動日曆",
+          "planner": "行程規劃",
+          "esim": "eSIM"
+        },
+        "title_lines": ["讓世界的美好，", "成為你的下一段旅程"],
+        "subtitle": "探索世界的精彩活動，開啟專屬於你的旅程",
+        "search_placeholder": "想去哪裡？例如：紐西蘭、秘魯、冰島",
+        "search_aria": "搜尋目的地或活動",
+        "search_button_aria": "搜尋",
+        "favorites_aria": "收藏",
+        "account_aria": "帳戶",
+        "menu_aria": "選單",
+        "explore_cta": "探索世界",
+        "cards": {
+          "iceland": { "title": "冰島 · 極光之旅", "months": "10 - 3月" },
+          "turkey": { "title": "土耳其 · 熱氣球", "months": "4 - 10月" },
+          "switzerland": { "title": "瑞士 · 少女峰", "months": "6 - 9月" },
+          "japan": { "title": "日本 · 櫻花季", "months": "3 - 4月" },
+          "greece": { "title": "希臘 · 聖托里尼", "months": "5 - 9月" },
+          "bali": { "title": "峇里島 · 度假時光", "months": "5 - 10月" }
+        },
+        "dock": {
+          "inspiration": "靈感探索",
+          "calendar": "活動日曆",
+          "ai_planner": "AI 行程規劃",
+          "guide": "旅遊攻略",
+          "esim": "eSIM 方案"
+        }
+      },
       "continue_planning": "繼續規劃",
       "upcoming_tasks": "近期待辦",
       "view_all_tasks": "查看全部 {count} 項",
@@ -520,6 +554,87 @@
       "esim_order_pending": "處理中",
       "esim_order_ready": "待分享",
       "esim_order_shared": "已分享"
+    },
+    "explore": {
+      "eyebrow": "世界活動地圖",
+      "title": "在世界地圖上尋找下一段旅程",
+      "subtitle": "從季節、祭典與城市節奏出發，先挑想追的活動，再進入地區介紹頁規劃旅程。",
+      "panel_title": "正在發生的靈感",
+      "panel_count": "5 個精選活動",
+      "panel_body": "點選地圖上的活動，查看地區節奏、活動時間軸與適合的旅程入口。",
+      "view_region": "查看地區介紹",
+      "spotlight_title_lines": ["世界很大，", "精彩無限"],
+      "spotlight_subtitle": "探索全球正在發生的精彩活動，找到下一段旅程真正值得出發的理由。",
+      "spotlight_more": "探索更多",
+      "spotlight_previous": "上一個活動",
+      "spotlight_next": "下一個活動",
+      "spotlight_events": [
+        { "id": "venice-carnival", "title": "威尼斯狂歡節", "category": "節慶活動", "location": "義大利・威尼斯", "description": "面具、運河與燭光宮殿，讓威尼斯成為一段充滿戲劇感的冬季旅程。" },
+        { "id": "rio-carnival", "title": "里約嘉年華", "category": "節慶活動", "location": "巴西・里約熱內盧", "description": "森巴遊行、海灘白天與深夜街頭派對，是跨越大西洋最鮮明的旅行理由之一。" },
+        { "id": "iceland-lights", "title": "冰島極光", "category": "季節活動", "location": "冰島・雷克雅維克", "description": "漫長冬夜、地熱溫泉與極光窗口，讓冰島成為很適合用時間規劃的旅程。" },
+        { "id": "japan-gion", "title": "祇園祭", "category": "節慶活動", "location": "日本・京都", "description": "山鉾巡行、宵山夜市與夏日祭典，把京都變成一段充滿歷史感的旅程。" },
+        { "id": "singapore-grand-prix", "title": "新加坡大獎賽", "category": "城市活動", "location": "新加坡", "description": "夜間賽車、濱海演唱會與深夜美食，讓新加坡成為節奏很強的短天數旅程。" },
+        { "id": "taiwan-lantern", "title": "台灣燈會", "category": "季節活動", "location": "台灣", "description": "大型燈飾、地方夜市與城市散步路線，適合用光影和文化串起一段台灣旅程。" }
+      ],
+      "map_title": "行事曆檢視結合地圖",
+      "map_hint": "用時間區間、地區與活動類型探索世界活動，再進入地區介紹頁規劃旅程。",
+      "filters_label": "篩選",
+      "month_label": "2026 年 7 月",
+      "selected_day": "7 月 19 日 週五",
+      "date_range_title": "時間區間",
+      "date_range_empty": "先選開始日期，再選結束日期。",
+      "date_range_single": "從 7 月 {day} 日開始",
+      "date_range_range": "7 月 {start} 日 - 7 月 {end} 日",
+      "today_recommendations": "今日推薦",
+      "view_more": "查看更多",
+      "reset_filters": "重設篩選",
+      "no_results_title": "沒有符合的活動",
+      "no_results_body": "放寬時間、地區或活動類型，就能把更多活動帶回地圖上。",
+      "featured_only": "僅顯示推薦中活動",
+      "visible_count": "顯示 {count} 個活動",
+      "region_search_placeholder": "搜尋亞洲、台灣、台北市…",
+      "region_search_empty": "找不到符合的地點",
+      "filters": {
+        "time": "時間區間",
+        "region": "地區",
+        "type": "活動類型"
+      },
+      "time_options": [
+        { "value": "all", "label": "所有日期" },
+        { "value": "jul", "label": "7 月" },
+        { "value": "aug", "label": "8 月" },
+        { "value": "summer", "label": "夏季" },
+        { "value": "winter", "label": "冬季" },
+        { "value": "spring", "label": "春季" }
+      ],
+      "region_options": [
+        { "value": "all", "label": "所有地區" },
+        { "value": "asia", "label": "亞洲" },
+        { "value": "europe", "label": "歐洲" },
+        { "value": "americas", "label": "美洲" },
+        { "value": "oceania", "label": "大洋洲" }
+      ],
+      "type_options": [
+        { "value": "all", "label": "所有類型" },
+        { "value": "festival", "label": "節慶" },
+        { "value": "food", "label": "美食" },
+        { "value": "nature", "label": "自然景觀" },
+        { "value": "season", "label": "季節限定" },
+        { "value": "culture", "label": "文化藝術" }
+      ],
+      "events": [
+        { "id": "tomorrowland", "title": "Tomorrowland 音樂節", "meta": "比利時 · 音樂 · 7 月", "location": "比利時・Boom", "date": "7/19 - 7/21", "date_short": "7/19", "country": "比利時", "type_label": "節慶", "rating": "4.9" },
+        { "id": "singapore-food", "title": "新加坡美食節", "meta": "新加坡 · 美食 · 7 月", "location": "新加坡", "date": "7/19 - 7/28", "date_short": "7/22", "country": "新加坡", "type_label": "美食", "rating": "4.6" },
+        { "id": "edinburgh-fringe", "title": "愛丁堡藝術節", "meta": "英國 · 文化 · 8 月", "location": "英國・愛丁堡", "date": "8/2 - 8/25", "date_short": "8/8", "country": "英國", "type_label": "文化藝術", "rating": "4.7" },
+        { "id": "jp-sakura", "title": "日本櫻花季", "meta": "東京 · 京都 · 3 - 4月", "location": "日本・東京與京都", "date": "3/20 - 4/12", "date_short": "3/28", "country": "日本", "type_label": "季節限定", "rating": "4.8" },
+        { "id": "turkey-balloons", "title": "土耳其熱氣球", "meta": "卡帕多奇亞 · 4 - 10月", "location": "土耳其・卡帕多奇亞", "date": "4/1 - 10/31", "date_short": "7/16", "country": "土耳其", "type_label": "自然景觀", "rating": "4.8" },
+        { "id": "switzerland-alps", "title": "瑞士少女峰", "meta": "阿爾卑斯 · 6 - 9月", "location": "瑞士・少女峰", "date": "6/1 - 9/30", "date_short": "7/9", "country": "瑞士", "type_label": "自然景觀", "rating": "4.7" },
+        { "id": "iceland-lights", "title": "冰島極光之旅", "meta": "雷克雅維克 · 10 - 3月", "location": "冰島・雷克雅維克", "date": "10/1 - 3/31", "date_short": "1/3", "country": "冰島", "type_label": "季節限定", "rating": "4.8" },
+        { "id": "bali-holiday", "title": "峇里島度假時光", "meta": "印尼 · 5 - 10月", "location": "印尼・峇里島", "date": "5/1 - 10/31", "date_short": "7/26", "country": "印尼", "type_label": "自然景觀", "rating": "4.5" },
+        { "id": "rio-carnival", "title": "里約嘉年華", "meta": "巴西 · 節慶 · 春季", "location": "巴西・里約熱內盧", "date": "2/13 - 2/21", "date_short": "2/18", "country": "巴西", "type_label": "節慶", "rating": "4.9" },
+        { "id": "new-york-food", "title": "紐約夏季美食市集", "meta": "美國 · 美食 · 7 月", "location": "美國・紐約", "date": "7/5 - 7/27", "date_short": "7/6", "country": "美國", "type_label": "美食", "rating": "4.4" },
+        { "id": "sydney-light", "title": "雪梨光影季", "meta": "澳洲 · 節慶 · 冬季", "location": "澳洲・雪梨", "date": "5/24 - 6/15", "date_short": "6/28", "country": "澳洲", "type_label": "節慶", "rating": "4.6" }
+      ]
     },
     "shop": {
       "title": "eSIM 商店",

@@ -687,3 +687,353 @@ body {
   -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0) 70%);
   opacity: 0.7;
 }
+
+@keyframes hero-destination-float {
+  0%, 100% { transform: translate3d(0, -7px, 0); }
+  50% { transform: translate3d(0, 9px, 0); }
+}
+
+@keyframes hero-plane-icon-ready {
+  0%, 100% { transform: translate3d(-1px, 1px, 0); }
+  28% { transform: translate3d(-2px, 1px, 0); }
+  56% { transform: translate3d(0, 0, 0); }
+  78% { transform: translate3d(-1px, 2px, 0); }
+}
+
+@keyframes plane-speed-line {
+  0% { opacity: 0; transform: translate3d(116px, var(--line-y, 0), 0) scaleX(0.18); }
+  16% { opacity: 0.88; }
+  78% { opacity: 0.84; transform: translate3d(-122px, var(--line-y, 0), 0) scaleX(0.92); }
+  88% { opacity: 0.8; transform: translate3d(-150px, var(--line-y, 0), 0) scaleX(1); }
+  100% { opacity: 0; transform: translate3d(-150px, var(--line-y, 0), 0) scaleX(1); }
+}
+
+@keyframes plane-loading-icon-enter {
+  0% { opacity: 0; transform: translate3d(-54vw, 0, 0) scale(0.92); }
+  68% { opacity: 1; transform: translate3d(6px, 0, 0) scale(1.02); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes plane-route-icon-flight {
+  0% { opacity: 0; transform: translate3d(-54vw, 0, 0) scale(0.9); }
+  18% { opacity: 1; transform: translate3d(-20vw, 0, 0) scale(0.96); }
+  46% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  66% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(54vw, 0, 0) scale(1.06); }
+}
+
+@keyframes hero-thrust-line {
+  0% {
+    left: var(--line-start-x, 76px);
+    top: calc(50% + var(--line-start-y, -44px) + var(--line-y, 0px));
+    opacity: 0;
+    transform: rotate(-45deg) scaleX(var(--line-start-scale, 0.18));
+  }
+  22% { opacity: 0.86; }
+  100% {
+    left: var(--line-end-x, -54px);
+    top: calc(50% + var(--line-end-y, 86px) + var(--line-y, 0px));
+    opacity: 0;
+    transform: rotate(-45deg) scaleX(var(--line-end-scale, 1));
+  }
+}
+
+@keyframes hero-plane-launch {
+  0% { opacity: 1; transform: translate3d(-5px, 6px, 0) rotate(0deg) scale(1); }
+  52% { opacity: 1; transform: translate3d(var(--launch-mid-x, 120px), var(--launch-mid-y, -140px), 0) rotate(22deg) scale(1.06); }
+  100% { opacity: 1; transform: translate3d(var(--launch-x, 220px), var(--launch-y, -180px), 0) rotate(0deg) scale(0.92); }
+}
+
+@keyframes hero-route-transition {
+  0% {
+    opacity: 0;
+    clip-path: circle(0% at 50% 50%);
+    filter: blur(10px);
+  }
+  48% {
+    opacity: 0.92;
+    clip-path: circle(18% at 50% 50%);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    clip-path: circle(140% at 50% 50%);
+    filter: blur(0);
+  }
+}
+
+@keyframes explore-map-enter {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes explore-pin-arrive {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.72); }
+  to { opacity: 1; transform: none; }
+}
+
+.plane-loading {
+  position: relative;
+  display: grid;
+  height: 176px;
+  width: 176px;
+  place-items: center;
+  isolation: isolate;
+}
+
+.plane-loading-icon {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  height: 64px;
+  width: 64px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 18px 38px -18px rgba(0, 0, 0, 0.42);
+}
+
+.plane-loading-icon svg {
+  transform: rotate(45deg);
+}
+
+.plane-loading:not(.hero-route-loader) .plane-loading-icon,
+.plane-loading:not(.hero-route-loader) .plane-loading-particles {
+  animation: plane-loading-icon-enter 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.plane-loading-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.plane-loading-particles span,
+.hero-explore-thrust span {
+  --line-y: 0px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.88));
+  transform-origin: right center;
+}
+
+.plane-loading-particles span {
+  width: 118px;
+  animation: plane-speed-line 980ms linear infinite;
+}
+
+.plane-loading-particles span:nth-child(1) { --line-y: -36px; animation-delay: -80ms; }
+.plane-loading-particles span:nth-child(2) { --line-y: -27px; animation-delay: -360ms; }
+.plane-loading-particles span:nth-child(3) { --line-y: -18px; animation-delay: -160ms; }
+.plane-loading-particles span:nth-child(4) { --line-y: -9px; animation-delay: -520ms; }
+.plane-loading-particles span:nth-child(5) { --line-y: 0px; animation-delay: -240ms; }
+.plane-loading-particles span:nth-child(6) { --line-y: 9px; animation-delay: -650ms; }
+.plane-loading-particles span:nth-child(7) { --line-y: 18px; animation-delay: -420ms; }
+.plane-loading-particles span:nth-child(8) { --line-y: 27px; animation-delay: -720ms; }
+.plane-loading-particles span:nth-child(9) { --line-y: 36px; animation-delay: -300ms; }
+
+.hero-explore-button {
+  position: relative;
+  transform-origin: 22px 50%;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-explore-plane {
+  position: relative;
+  z-index: 2;
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-explore-plane svg {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-explore-thrust {
+  pointer-events: none;
+  position: absolute;
+  left: -58px;
+  top: calc(50% - 54px);
+  z-index: 1;
+  height: 146px;
+  width: 154px;
+  overflow: visible;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-explore-thrust span {
+  left: var(--line-start-x, 76px);
+  top: calc(50% + var(--line-y, 0px));
+  width: var(--line-width, 48px);
+  opacity: 0;
+  transform: rotate(-45deg) scaleX(var(--line-start-scale, 0.18));
+}
+
+.hero-explore-thrust span:nth-child(1) { --line-y: -22px; --line-width: 34px; --line-start-x: 70px; --line-end-x: -46px; --line-start-y: -34px; --line-end-y: 82px; --line-end-scale: 0.72; --line-duration: 620ms; --line-delay: -90ms; }
+.hero-explore-thrust span:nth-child(2) { --line-y: -12px; --line-width: 58px; --line-start-x: 82px; --line-end-x: -62px; --line-start-y: -50px; --line-end-y: 94px; --line-end-scale: 1; --line-duration: 480ms; --line-delay: -340ms; }
+.hero-explore-thrust span:nth-child(3) { --line-y: 0px; --line-width: 44px; --line-start-x: 62px; --line-end-x: -52px; --line-start-y: -40px; --line-end-y: 74px; --line-end-scale: 0.86; --line-duration: 560ms; --line-delay: -190ms; }
+.hero-explore-thrust span:nth-child(4) { --line-y: 13px; --line-width: 64px; --line-start-x: 88px; --line-end-x: -70px; --line-start-y: -58px; --line-end-y: 100px; --line-end-scale: 1.08; --line-duration: 700ms; --line-delay: -520ms; }
+.hero-explore-thrust span:nth-child(5) { --line-y: 25px; --line-width: 40px; --line-start-x: 76px; --line-end-x: -48px; --line-start-y: -46px; --line-end-y: 78px; --line-end-scale: 0.76; --line-duration: 520ms; --line-delay: -270ms; }
+
+.hero-explore-button:hover,
+.hero-explore-button:focus-visible {
+  filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.32));
+}
+
+.hero-explore-button:hover .hero-explore-plane,
+.hero-explore-button:focus-visible .hero-explore-plane {
+  transform: translate3d(-5px, 6px, 0);
+  background: rgba(15, 184, 180, 0.38);
+  border-color: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.18) inset,
+    0 0 28px rgba(15, 184, 180, 0.7),
+    0 16px 34px -18px rgba(15, 184, 180, 0.95);
+}
+
+.hero-explore-button:hover .hero-explore-thrust,
+.hero-explore-button:focus-visible .hero-explore-thrust {
+  transform: translate3d(-5px, 6px, 0);
+}
+
+.hero-explore-button:hover .hero-explore-plane svg,
+.hero-explore-button:focus-visible .hero-explore-plane svg {
+  animation: hero-plane-icon-ready 420ms linear infinite;
+}
+
+.hero-explore-button:hover .hero-explore-thrust span,
+.hero-explore-button:focus-visible .hero-explore-thrust span {
+  animation-name: hero-thrust-line;
+  animation-duration: var(--line-duration, 520ms);
+  animation-timing-function: linear;
+  animation-delay: var(--line-delay, 0ms);
+  animation-iteration-count: infinite;
+}
+
+.hero-explore-button[data-launching="true"] {
+  animation: none;
+}
+
+.hero-explore-button[data-launching="true"] .hero-explore-plane {
+  animation: hero-plane-launch 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-explore-button[data-launching="true"] .hero-explore-thrust {
+  animation: hero-plane-launch 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-explore-button[data-launching="true"] .hero-explore-thrust span {
+  animation-duration: 300ms;
+}
+
+.hero-route-transition {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 42% 46%, rgba(15, 184, 180, 0.34), transparent 32%),
+    radial-gradient(circle at 70% 24%, rgba(255, 216, 164, 0.24), transparent 30%),
+    linear-gradient(135deg, rgba(8, 37, 54, 0.92), rgba(5, 18, 26, 0.98));
+}
+
+.hero-route-transition[data-launching="true"] {
+  animation: hero-route-transition 1160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-route-loader {
+  opacity: 0;
+  transform: scale(0.78);
+  transition:
+    opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-route-transition[data-launching="true"] .hero-route-loader {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 80ms;
+}
+
+.hero-route-transition[data-launching="true"] .plane-loading-icon,
+.hero-route-transition[data-launching="true"] .plane-loading-particles {
+  animation: plane-route-icon-flight 1160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.explore-map-enter {
+  animation: explore-map-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.explore-map-pin {
+  transform: translate(-50%, -50%);
+  animation: explore-pin-arrive 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-destination-float {
+  animation: hero-destination-float 5.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.hero-destination-card {
+  transform: var(--hero-card-transform);
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.hero-destination-float:hover {
+  z-index: 30;
+  animation-play-state: paused;
+}
+
+.hero-destination-float:hover .hero-destination-card {
+  filter: brightness(1.06);
+  transform: var(--hero-card-transform) translate3d(0, -12px, 42px) scale(1.045);
+  box-shadow: 0 34px 58px -16px rgba(0, 0, 0, 0.78);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-destination-float {
+    animation: none;
+  }
+
+  .hero-explore-button:hover,
+  .hero-explore-button:focus-visible,
+  .hero-explore-button:hover .hero-explore-plane,
+  .hero-explore-button:focus-visible .hero-explore-plane,
+  .hero-explore-button:hover .hero-explore-plane svg,
+  .hero-explore-button:focus-visible .hero-explore-plane svg,
+  .hero-explore-button:hover .hero-explore-thrust span,
+  .hero-explore-button:focus-visible .hero-explore-thrust span,
+  .plane-loading:not(.hero-route-loader) .plane-loading-icon,
+  .plane-loading:not(.hero-route-loader) .plane-loading-particles,
+  .hero-route-transition[data-launching="true"] .plane-loading-icon,
+  .hero-route-transition[data-launching="true"] .plane-loading-particles,
+  .plane-loading-particles span,
+  .explore-map-enter,
+  .explore-map-pin {
+    animation: none;
+  }
+
+  .hero-destination-card {
+    transition-duration: 0.01ms;
+  }
+
+  .hero-route-transition[data-launching="true"] {
+    animation: none;
+    opacity: 0;
+  }
+}

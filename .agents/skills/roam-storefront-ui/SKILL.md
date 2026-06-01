@@ -8,16 +8,21 @@ description: Use when building or modifying Roam consumer storefront UI, porting
 Use this skill for `apps/web` consumer-facing work under the `[lang]/(storefront)`
 route group and `components/storefront`.
 
-## Read First
+## Context Loading
 
-- `AGENTS.md`
-- `design/README.md`
-- `design/DESIGN-SYSTEM.md`
-- `design/SYSTEM-README.md` when interpreting prototype intent
-- Relevant `design/app/components/*.jsx` files when porting prototype behavior
-- Existing production components in `apps/web/src/components/storefront/`
-- Dictionaries in `apps/web/src/i18n/dictionaries/en.json` and `zh-TW.json`
-- Relevant local Next.js 16 docs under `node_modules/.pnpm/next@*/node_modules/next/dist/docs/`
+Read only the context the task needs before editing:
+
+- Always: `AGENTS.md` and the relevant production component, route, or local
+  pattern in `apps/web/src/components/storefront/`.
+- For visible UI changes: inspect nearby styling, shell behavior, and
+  `apps/web/src/components/storefront/motion.tsx` when motion is involved.
+- For user-visible copy: update and inspect both dictionaries in
+  `apps/web/src/i18n/dictionaries/en.json` and `zh-TW.json`.
+- For prototype ports: read `design/README.md`, `design/DESIGN-SYSTEM.md`,
+  `design/SYSTEM-README.md` when needed, and the relevant
+  `design/app/components/*.jsx` file.
+- For Next.js behavior changes: read the relevant local Next.js 16 docs under
+  `node_modules/.pnpm/next@*/node_modules/next/dist/docs/`.
 
 ## Product Priorities
 
