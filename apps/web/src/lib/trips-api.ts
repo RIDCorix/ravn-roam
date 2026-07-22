@@ -27,6 +27,17 @@ export interface ApiTripStop {
   day_id: string;
   sort_order: number;
   name: string;
+  anchor_mode: "exact_place" | "regional" | "suggested_places";
+  place_name: string | null;
+  place_id: string | null;
+  place_address: string | null;
+  area_name: string | null;
+  search_query: string | null;
+  country_code: string | null;
+  place_types: string[];
+  suggestion_count: number;
+  place_suggestions: ApiTripPlaceSuggestion[];
+  suggestions_status: string;
   kind: string;
   arrival_time: string | null;
   duration_min: number | null;
@@ -34,6 +45,21 @@ export interface ApiTripStop {
   attachments: ApiTripStopAttachment[];
   lat: number | null;
   lng: number | null;
+}
+
+export interface ApiTripPlaceSuggestion {
+  id: string;
+  place_id: string | null;
+  name: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+  primary_type: string | null;
+  types: string[];
+  rating: number | null;
+  user_rating_count: number | null;
+  maps_url: string | null;
+  selected?: boolean;
 }
 
 export interface ApiTripStopAttachment {
@@ -52,12 +78,23 @@ export interface ApiTripStopAttachment {
   done: boolean;
 }
 
+export type ApiTripDaySegmentPart = "morning" | "afternoon" | "evening" | "full_day";
+
+export interface ApiTripDaySegment {
+  city: string;
+  start_part: ApiTripDaySegmentPart;
+  end_part: ApiTripDaySegmentPart;
+  note: string;
+}
+
 export interface ApiTripDay {
   id: string;
   trip_id: string;
   sort_order: number;
   day_date: string;
   city: string;
+  cities: string[];
+  segments: ApiTripDaySegment[];
   note: string;
   /* Optional for backwards-compat with pre-stops backend responses. New
      code paths always materialize at least one stop. */
@@ -196,12 +233,26 @@ export async function createTrip(input: {
   start_date: string;
   end_date: string;
   status?: ApiTrip["status"];
+  metadata?: Record<string, unknown>;
   days?: {
     day_date: string;
     city: string;
+    cities?: string[];
+    segments?: ApiTripDaySegment[];
     note: string;
     stops?: {
       name: string;
+      anchor_mode?: "exact_place" | "regional" | "suggested_places";
+      place_name?: string | null;
+      place_id?: string | null;
+      place_address?: string | null;
+      area_name?: string | null;
+      search_query?: string | null;
+      country_code?: string | null;
+      place_types?: string[];
+      suggestion_count?: number;
+      place_suggestions?: ApiTripPlaceSuggestion[];
+      suggestions_status?: string;
       kind?: string;
       arrival_time?: string | null;
       duration_min?: number | null;

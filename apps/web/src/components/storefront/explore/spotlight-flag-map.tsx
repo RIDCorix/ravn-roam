@@ -30,10 +30,14 @@ export function SpotlightFlagMap({
   events,
   activeId,
   onActiveChange,
+  interactive = false,
+  colorful = false,
 }: {
   events: SpotlightMapEvent[];
   activeId: string;
   onActiveChange: (eventId: string) => void;
+  interactive?: boolean;
+  colorful?: boolean;
 }) {
   const icons = useMemo(
     () =>
@@ -47,22 +51,22 @@ export function SpotlightFlagMap({
   );
 
   return (
-    <div className="roam-spotlight-map absolute inset-0">
+    <div className={`roam-spotlight-map absolute inset-0${colorful ? " is-colorful" : ""}`}>
       <style>{FLAG_MAP_CSS}</style>
       <MapContainer
         center={[18, 18]}
-        zoom={1.28}
+        zoom={interactive ? 2.1 : 1.28}
         zoomSnap={0.05}
         minZoom={1.15}
-        maxZoom={2.8}
+        maxZoom={interactive ? 5 : 2.8}
         zoomControl={false}
         attributionControl={false}
-        dragging={false}
-        scrollWheelZoom={false}
-        touchZoom={false}
-        doubleClickZoom={false}
-        boxZoom={false}
-        keyboard={false}
+        dragging={interactive}
+        scrollWheelZoom={interactive}
+        touchZoom={interactive}
+        doubleClickZoom={interactive}
+        boxZoom={interactive}
+        keyboard={interactive}
         className="h-full w-full"
       >
         <TileLayer
@@ -100,13 +104,22 @@ function MapSettler() {
 const FLAG_MAP_CSS = `
 .roam-spotlight-map .leaflet-container {
   background: transparent;
-  cursor: default;
+  cursor: grab;
   font: inherit;
 }
 
 .roam-spotlight-map .leaflet-tile-pane {
   filter: grayscale(1) sepia(0.1) contrast(1.04) brightness(1.08);
   opacity: 0.82;
+}
+
+.roam-spotlight-map.is-colorful .leaflet-container {
+  background: #b8ddf2;
+}
+
+.roam-spotlight-map.is-colorful .leaflet-tile-pane {
+  filter: saturate(1.45) hue-rotate(-8deg) contrast(1.02) brightness(1.04);
+  opacity: 0.92;
 }
 
 .roam-spotlight-map .leaflet-control-container,

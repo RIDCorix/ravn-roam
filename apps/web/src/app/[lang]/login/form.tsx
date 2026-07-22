@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { createSupabaseBrowserClient } from "@roam/shared";
-
 export function LoginForm({
   lang,
   labels,
@@ -19,6 +17,7 @@ export function LoginForm({
     sign_up: string;
     signing_in: string;
     signing_up: string;
+    auth_unreachable: string;
   };
   next?: string;
   initialError?: string;
@@ -34,18 +33,24 @@ export function LoginForm({
     setError(null);
     setBusy(true);
     try {
-      const supabase = createSupabaseBrowserClient();
-      const fn =
-        mode === "in"
-          ? supabase.auth.signInWithPassword({ email, password })
-          : supabase.auth.signUp({ email, password });
-      const { error: err } = await fn;
-      if (err) {
-        setError(err.message);
+      const response = await fetch("/api/auth/password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, password, mode }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: unknown;
+      } | null;
+
+      if (!response.ok || payload?.ok === false || payload?.error) {
+        setError(authErrorMessage(payload?.error, labels.auth_unreachable));
         return;
       }
       router.replace(next ?? `/${lang}/trips`);
       router.refresh();
+    } catch (err) {
+      setError(authErrorMessage(err, labels.auth_unreachable));
     } finally {
       setBusy(false);
     }
@@ -106,4 +111,13 @@ export function LoginForm({
       </button>
     </form>
   );
+}
+
+function authErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err === "string") {
+    return err === "Failed to fetch" || err === "fetch failed" ? fallback : err;
+  }
+  if (!(err instanceof Error)) return fallback;
+  if (err.message === "Failed to fetch" || err.message === "fetch failed") return fallback;
+  return err.message || fallback;
 }

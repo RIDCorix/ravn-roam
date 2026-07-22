@@ -2,15 +2,42 @@
 // delete conversations). Writes go through POST /trips/:id/lumi which
 // already runs the OpenAI turn and persists alongside it.
 
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
+import { normalizeTripStopAnchorMode } from "../db/schema/trip.js";
+import { resolveGooglePlace } from "../geocode/google-places.js";
 import { geocodeCities } from "../geocode/nominatim.js";
+import {
+  normalizePlaceSuggestions,
+  scheduleTripPlaceSuggestionRefresh,
+} from "../trips/place-suggestions.js";
 import { enrichAttachmentUrls } from "../lumi/booking-links.js";
-import { runLumiTurn, type LumiDay, type LumiResult } from "../lumi/openai.js";
+import {
+  type ExecutedLumiCommand,
+} from "../lumi/execution/itinerary.js";
+import { executeLumiCommands } from "../lumi/execution/dispatch.js";
+import { flightLegsFromMetadata } from "../lumi/contracts/flights.js";
+import { preflightMutationRequest, validateMutationContext } from "../lumi/mutation-context.js";
+import {
+  journeyAnchorsSchema,
+  journeyFrameSchema,
+  runJourneyStep,
+} from "../lumi/journey.js";
+import { lumiDaySchema } from "../lumi/openai.js";
+import {
+  type LumiProgressEvent,
+  normalizeLumiDayCities,
+  runLumiTurn,
+  type LumiDay,
+  type LumiResult,
+  type LumiStop,
+  type LumiStopAttachment,
+} from "../lumi/openai.js";
+import { assembleLumiResponse } from "../lumi/response-assembly.js";
 import { getUser, requireAuth } from "./_auth.js";
 import {
   checklistSubtasksFromDescription,
@@ -18,10 +45,160 @@ import {
 } from "./trip-shared.js";
 
 export const lumiRouter = new Hono();
+
+lumiRouter.onError((err, c) => {
+  console.error("[lumi] unhandled route error", err);
+  return c.json(
+    {
+      error: "lumi_internal_error",
+      message: err instanceof Error ? err.message : "unknown_error",
+    },
+    500,
+  );
+});
+
+const publicTripDraftInput = z.object({
+  prompt: z.string().min(1).max(2000),
+  context: z
+    .object({
+      current_date: z.string().optional(),
+    })
+    .optional(),
+});
+
+lumiRouter.post("/public-trip-draft", async (c) => {
+  const body = await c.req.json();
+  const parsed = publicTripDraftInput.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "invalid_request", details: parsed.error.flatten() },
+      400,
+    );
+  }
+
+  let result: LumiResult;
+  try {
+    result = await runLumiTurn({
+      prompt: parsed.data.prompt,
+      history: [],
+      context: parsed.data.context,
+      requestedSkill: "create-trip",
+    });
+  } catch (error) {
+    return c.json(
+      {
+        error: "lumi_unavailable",
+        message: error instanceof Error ? error.message : "unknown_error",
+      },
+      502,
+    );
+  }
+
+  if (!result.trip_draft) {
+    return c.json(
+      {
+        error: "draft_not_generated",
+        summary: result.summary,
+      },
+      422,
+    );
+  }
+
+  return c.json({
+    summary: result.summary,
+    trip_draft: result.trip_draft,
+  });
+});
+
 lumiRouter.use("*", requireAuth);
+
+// ── V2 journey planner ──────────────────────────────────────────────────
+// One staged step per call. The server enforces the order (frame → anchors
+// → days per city block); the model decides the content, including any
+// traveler-facing question. The client loops until `finished`.
+
+const journeyStepInputSchema = z.object({
+  prompt: z.string().min(1).max(4000),
+  current_date: z.string().max(20).nullish(),
+  qa: z
+    .array(
+      z.object({
+        step: z.enum(["frame", "anchors", "days"]),
+        question: z.string().min(1).max(400),
+        answer: z.string().min(1).max(400),
+      }),
+    )
+    .max(12)
+    .default([]),
+  frame: journeyFrameSchema.nullish(),
+  anchors: journeyAnchorsSchema.nullish(),
+  days: z.array(lumiDaySchema).max(60).default([]),
+});
+
+lumiRouter.post("/journey/step", async (c) => {
+  const body = await c.req.json();
+  const parsed = journeyStepInputSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "invalid_request", details: parsed.error.flatten() },
+      400,
+    );
+  }
+  try {
+    const frame = parsed.data.frame
+      ? {
+          ...parsed.data.frame,
+          origin: parsed.data.frame.origin ?? null,
+          cities: parsed.data.frame.cities.map((city) => ({
+            ...city,
+            country_code: city.country_code ?? null,
+            lat: city.lat ?? null,
+            lng: city.lng ?? null,
+          })),
+        }
+      : null;
+    const result = await runJourneyStep({
+      prompt: parsed.data.prompt,
+      current_date: parsed.data.current_date ?? null,
+      qa: parsed.data.qa,
+      frame,
+      anchors: parsed.data.anchors ?? null,
+      days: parsed.data.days,
+    });
+    if (result.step === "frame" && result.status === "complete") {
+      /* Attach coordinates so the studio map can pin cities immediately. */
+      const geocoded = await geocodeCities(
+        result.frame.cities.map((city) => city.name),
+        { fetchMisses: true },
+      ).catch(() => []);
+      const byName = new Map(
+        geocoded.map((g) => [g.name.trim().toLowerCase(), g]),
+      );
+      result.frame = {
+        ...result.frame,
+        cities: result.frame.cities.map((city) => ({
+          ...city,
+          lat: byName.get(city.name.trim().toLowerCase())?.lat ?? null,
+          lng: byName.get(city.name.trim().toLowerCase())?.lng ?? null,
+        })),
+      };
+    }
+    return c.json(result);
+  } catch (error) {
+    return c.json(
+      {
+        error: "journey_step_failed",
+        message: error instanceof Error ? error.message : "unknown_error",
+      },
+      502,
+    );
+  }
+});
 
 type ConversationRow = typeof schema.lumiConversation.$inferSelect;
 type MessageRow = typeof schema.lumiMessage.$inferSelect;
+const DEFAULT_CONVERSATION_LIMIT = 10;
+const MAX_CONVERSATION_LIMIT = 25;
 
 function rowToConversation(row: ConversationRow) {
   return {
@@ -35,31 +212,94 @@ function rowToConversation(row: ConversationRow) {
 }
 
 function rowToMessage(row: MessageRow) {
+  const metadata = (row.metadata ?? null) as {
+    tool_events?: unknown;
+    trip_draft?: unknown;
+    esim_suggestion?: unknown;
+  } | null;
   return {
     id: row.id,
     conversation_id: row.conversationId,
     role: row.role as "user" | "assistant",
     content: row.content,
     created_at: row.createdAt.toISOString(),
+    tool_events: Array.isArray(metadata?.tool_events)
+      ? metadata.tool_events
+      : null,
+    trip_draft: metadata?.trip_draft ?? null,
+    esim_suggestion: metadata?.esim_suggestion ?? null,
   };
 }
 
-// List the user's conversations. Optional `trip_id` filter — the
-// storefront uses this on a trip page to show only chats for that trip.
+function parseConversationLimit(raw: string | null) {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return DEFAULT_CONVERSATION_LIMIT;
+  return Math.min(MAX_CONVERSATION_LIMIT, Math.max(1, Math.floor(value)));
+}
+
+function encodeConversationCursor(row: ConversationRow) {
+  return `${row.updatedAt.toISOString()}|${row.id}`;
+}
+
+function parseConversationCursor(raw: string | null) {
+  if (!raw) return null;
+  const separatorIndex = raw.indexOf("|");
+  if (separatorIndex <= 0) return null;
+  const updatedAt = new Date(raw.slice(0, separatorIndex));
+  const id = raw.slice(separatorIndex + 1);
+  if (!id || Number.isNaN(updatedAt.getTime())) return null;
+  return { updatedAt, id };
+}
+
+// List the user's conversations. Optional `trip_id` filter — the storefront
+// uses this on a trip page, with `include_unscoped=1` to keep legacy chats
+// created before conversations were reliably linked to trips visible.
 lumiRouter.get("/conversations", async (c) => {
   const user = getUser(c);
   const url = new URL(c.req.url);
   const tripId = url.searchParams.get("trip_id");
+  const includeUnscoped = url.searchParams.get("include_unscoped") === "1";
+  const limit = parseConversationLimit(url.searchParams.get("limit"));
+  const cursor = parseConversationCursor(url.searchParams.get("cursor"));
   const db = getDb();
   const conditions = [eq(schema.lumiConversation.userId, user.id)];
-  if (tripId) conditions.push(eq(schema.lumiConversation.tripId, tripId));
+  if (tripId) {
+    conditions.push(
+      includeUnscoped
+        ? or(
+            eq(schema.lumiConversation.tripId, tripId),
+            isNull(schema.lumiConversation.tripId),
+          )!
+        : eq(schema.lumiConversation.tripId, tripId),
+    );
+  }
+  if (cursor) {
+    conditions.push(
+      or(
+        lt(schema.lumiConversation.updatedAt, cursor.updatedAt),
+        and(
+          eq(schema.lumiConversation.updatedAt, cursor.updatedAt),
+          lt(schema.lumiConversation.id, cursor.id),
+        ),
+      )!,
+    );
+  }
   const rows = await db
     .select()
     .from(schema.lumiConversation)
     .where(and(...conditions))
-    .orderBy(desc(schema.lumiConversation.updatedAt))
-    .limit(50);
-  return c.json({ conversations: rows.map(rowToConversation) });
+    .orderBy(
+      desc(schema.lumiConversation.updatedAt),
+      desc(schema.lumiConversation.id),
+    )
+    .limit(limit + 1);
+  const pageRows = rows.slice(0, limit);
+  const nextRow = rows.length > limit ? pageRows.at(-1) : null;
+  return c.json({
+    conversations: pageRows.map(rowToConversation),
+    next_cursor: nextRow ? encodeConversationCursor(nextRow) : null,
+    has_more: Boolean(nextRow),
+  });
 });
 
 lumiRouter.get("/conversations/:id", async (c) => {
@@ -112,10 +352,24 @@ lumiRouter.delete("/conversations/:id", async (c) => {
 //     its days. Otherwise concierge-mode answers only.
 // ────────────────────────────────────────────────────────────────────────
 
-const pageContextSchema = z
+export const pageContextSchema = z
   .object({
     current_date: z.string().optional(),
     user_name: z.string().nullish(),
+    known_trips: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          start_date: z.string(),
+          end_date: z.string(),
+          status: z.string(),
+          days_count: z.number().nullable(),
+          cities: z.array(z.string()),
+          updated_at: z.string(),
+        }),
+      )
+      .optional(),
     active_trip: z
       .object({
         id: z.string(),
@@ -167,7 +421,7 @@ const chatInput = z.object({
       z.object({
         role: z.enum(["user", "assistant"]),
         content: z.string().min(1).max(4000),
-      }),
+      }).strict(),
     )
     .max(40)
     .optional(),
@@ -175,30 +429,37 @@ const chatInput = z.object({
   // When set, Lumi is allowed to rewrite this trip's days. The route
   // verifies ownership before unlocking editor mode.
   current_trip_id: z.string().uuid().optional(),
+  requested_skill: z
+    .enum(["create-trip", "plan-trip", "edit-trip", "inspiration"])
+    .optional(),
   context: pageContextSchema.optional(),
-});
+}).strict();
 
-lumiRouter.post("/chat", async (c) => {
-  const user = getUser(c);
-  const body = await c.req.json();
-  const parsed = chatInput.safeParse(body);
-  if (!parsed.success) {
-    return c.json(
-      { error: "invalid_request", details: parsed.error.flatten() },
-      400,
-    );
-  }
+type LumiChatInput = z.infer<typeof chatInput>;
+type LumiChatProgressEmitter = (
+  event: LumiProgressEvent,
+) => void | Promise<void>;
+
+async function executeLumiChatTurn({
+  data,
+  user,
+  emitProgress,
+}: {
+  data: LumiChatInput;
+  user: ReturnType<typeof getUser>;
+  emitProgress?: LumiChatProgressEmitter;
+}) {
+  const parsed = { data };
   const db = getDb();
 
   // Resolve editable trip (if any).
-  let editableTrip: Awaited<ReturnType<typeof loadEditableTrip>> | null = null;
+  let loadedTrip: Awaited<ReturnType<typeof loadEditableTrip>> | null = null;
   if (parsed.data.current_trip_id) {
-    editableTrip = await loadEditableTrip(parsed.data.current_trip_id, user.id);
-    if (editableTrip === "forbidden") {
-      // Caller passed a trip they don't own. Fall back to concierge.
-      editableTrip = null;
-    }
+    loadedTrip = await loadEditableTrip(parsed.data.current_trip_id, user.id);
   }
+  const mutationContext = validateMutationContext(parsed.data.requested_skill, parsed.data.current_trip_id, loadedTrip);
+  if (!mutationContext.ok) return { status: mutationContext.status, payload: { error: mutationContext.error } };
+  const editableTrip = mutationContext.trip;
 
   // Resolve / create conversation. trip_id is set when we have an editable
   // trip, otherwise null (concierge conversations group together).
@@ -214,16 +475,26 @@ lumiRouter.post("/chat", async (c) => {
         ),
       )
       .limit(1);
-    if (!existing) conversationId = null;
+    if (!existing) {
+      conversationId = null;
+    } else if (editableTrip) {
+      if (existing.tripId && existing.tripId !== editableTrip.tripId) {
+        conversationId = null;
+      } else if (!existing.tripId) {
+        await db
+          .update(schema.lumiConversation)
+          .set({ tripId: editableTrip.tripId, updatedAt: new Date() })
+          .where(eq(schema.lumiConversation.id, existing.id));
+      }
+    }
   }
   if (!conversationId) {
-    const title = parsed.data.prompt.slice(0, 60);
     const [row] = await db
       .insert(schema.lumiConversation)
       .values({
         userId: user.id,
         tripId: editableTrip ? editableTrip.tripId : null,
-        title,
+        title: editableTrip?.title ?? "Lumi conversation",
       })
       .returning({ id: schema.lumiConversation.id });
     conversationId = row!.id;
@@ -253,6 +524,7 @@ lumiRouter.post("/chat", async (c) => {
         days?: unknown;
         companions?: unknown;
         trip_draft?: unknown;
+        tool_events?: unknown;
       } | null;
       /* Reconstruct the envelope this assistant turn actually returned,
          so the model can tell "I already shipped days[] last turn" from
@@ -277,42 +549,26 @@ lumiRouter.post("/chat", async (c) => {
       history,
       editableTrip: editableTrip
         ? {
+            trip_id: editableTrip.trip_id,
             title: editableTrip.title,
             start_date: editableTrip.start_date,
             end_date: editableTrip.end_date,
-            days: editableTrip.days,
+            days: editableTrip.days.map(({ id: _id, ...day }) => ({
+              ...day,
+              stops: day.stops.map(
+                ({ id: _stopId, place_suggestions: _suggestions, ...stop }) =>
+                  stop,
+              ),
+            })),
             cities: editableTrip.cities,
             companions: editableTrip.companions,
+            flight_legs: editableTrip.flight_legs,
           }
         : undefined,
       context: parsed.data.context,
+      requestedSkill: parsed.data.requested_skill,
+      onProgress: emitProgress,
     });
-    if (
-      editableTrip &&
-      result.days &&
-      FULL_TRIP_PLANNING_RE.test(parsed.data.prompt) &&
-      missingEditableTripDates(editableTrip, result.days).length > 0
-    ) {
-      const missing = missingEditableTripDates(editableTrip, result.days);
-      result = await runLumiTurn({
-        prompt:
-          `${parsed.data.prompt}\n\n` +
-          `系統校正：你上一版漏掉了 ${missing.length} 個日期：${missing.join(", ")}。` +
-          `這是同一趟 ${editableTrip.start_date} 到 ${editableTrip.end_date} 的旅程，` +
-          `請重新輸出完整 days[]，必須保留 editableTrip.days 裡的每一個 day_date，` +
-          `且每個非純交通日安排 2 到 3 個真實活動。`,
-        history,
-        editableTrip: {
-          title: editableTrip.title,
-          start_date: editableTrip.start_date,
-          end_date: editableTrip.end_date,
-          days: editableTrip.days,
-          cities: editableTrip.cities,
-          companions: editableTrip.companions,
-        },
-        context: parsed.data.context,
-      });
-    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "lumi_error";
     await db.insert(schema.lumiMessage).values({
@@ -320,235 +576,61 @@ lumiRouter.post("/chat", async (c) => {
       role: "assistant",
       content: `（Lumi 暫時連不上：${message}）`,
     });
-    return c.json(
-      { error: "lumi_error", message, conversation_id: conversationId },
-      502,
-    );
+    return {
+      status: 502,
+      payload: { error: "lumi_error", message, conversation_id: conversationId },
+    };
   }
 
-  // Apply day rewrite (editor mode only).
-  let updatedDays: typeof editableTrip extends null
-    ? never
-    : Array<{ day_date: string; city: string; note: string }> | null = null;
+  // Compatibility projections remain response-only. Persisted mutations are
+  // executed exclusively from the validated, exact-ID command collection.
+  let updatedDays: Array<{
+    day_date: string;
+    city: string;
+    cities: string[];
+    note: string;
+  }> | null = null;
   let updatedCities: Array<{
     name: string;
     lat: number | null;
     lng: number | null;
   }> | null = null;
   let summary = result.summary;
+  /* No server-side itinerary patching here. Flight/transfer structure is
+     enforced inside runLumiTurn via contract validation + retry, so the
+     model owns the itinerary content end to end. */
   if (result.days) {
     result.days = await enrichAttachmentUrls({
-      prompt: parsed.data.prompt,
       days: result.days,
     });
-    result.days = await prepareMappableLumiDays(result.days);
   }
-  if (result.days && editableTrip && isAttachmentOnlyPrompt(parsed.data.prompt)) {
-    const touched = await applyAttachmentPatch({
-      tripId: editableTrip.tripId,
-      editableTrip,
-      days: result.days,
+  if (result.day_creates) {
+    result.day_creates = await enrichAttachmentUrls({
+      days: result.day_creates,
     });
-    if (touched) {
-      updatedDays = editableTrip.days;
-      delete result.days;
-      summary = "我幫你把需要處理的票券、訂位或上傳資料補上了。";
-    } else {
-      delete result.days;
-      summary =
-        "我還沒找到要補票券或訂位資訊的活動。你可以告訴我活動名稱，我再幫你補上。";
-    }
-  } else if (
-    result.days &&
-    editableTrip &&
-    isPartialDayPatch(parsed.data.prompt, editableTrip, result.days)
-  ) {
-    const patchedDays = await applyDayPatches({
-      tripId: editableTrip.tripId,
-      editableTrip,
-      days: result.days,
-    });
-    updatedDays = patchedDays;
-    delete result.days;
-    summary = summarizePatchedDays(editableTrip, patchedDays);
-  } else if (result.days && editableTrip) {
-    if (!isSafeFullDayRewrite(parsed.data.prompt, editableTrip, result.days)) {
-      delete result.days;
-      summary =
-        "我沒有套用這次安排，因為新版本看起來會少掉既有內容。你可以說「重排整趟」或指定某一天，我就會直接幫你改。";
-    }
   }
+  const executionResults = await executeLumiCommands({
+    commands: result.commands ?? [],
+    userId: user.id,
+    tripId: editableTrip?.trip_id ?? null,
+  });
+  const successfulDays = successfulItineraryProjections(
+    result.commands ?? [],
+    executionResults,
+  );
+  updatedDays = successfulDays.length > 0 ? successfulDays : null;
 
-  if (result.days && editableTrip) {
-    const tripId = editableTrip.tripId;
-    await db.transaction(async (tx) => {
-      /* trip_day_stop has ON DELETE CASCADE from trip_day, so wiping
-         days clears stops too. Then re-insert days with `.returning`
-         and bulk-insert their stops keyed by sort_order. Mirrors the
-         shape in services/api/src/routes/trips.ts so the two write
-         paths stay consistent. */
-      await tx.delete(schema.tripDay).where(eq(schema.tripDay.tripId, tripId));
-      const insertedDays = await tx
-        .insert(schema.tripDay)
-        .values(
-          result.days!.map((d, i) => ({
-            tripId,
-            sortOrder: i,
-            dayDate: d.day_date,
-            city: d.city,
-            note: d.note,
-          })),
-        )
-        .returning({
-          id: schema.tripDay.id,
-          sortOrder: schema.tripDay.sortOrder,
-        });
+  const companionsTouched = executionResults.some((outcome) => outcome.status === "success" && (outcome.type === "create_companion" || outcome.type === "update_companion" || outcome.type === "delete_companion"));
+  const flightDetailsTouched = executionResults.some((outcome) => outcome.status === "success" && (outcome.type === "create_flight_leg" || outcome.type === "update_flight_leg"));
 
-      const stopRows = [];
-      for (let i = 0; i < result.days!.length; i++) {
-        const d = result.days![i]!;
-        const dayRow = insertedDays.find((r) => r.sortOrder === i);
-        if (!dayRow) continue;
-        /* Lumi may omit stops for a placeholder/rest day. Seed one
-           stop named after `city` so the day still pins on the map. */
-        const effective =
-          d.stops && d.stops.length > 0
-            ? d.stops
-            : [{ name: d.city, kind: "other", note: "", attachments: [] }];
-        for (let j = 0; j < effective.length; j++) {
-          const s = effective[j]!;
-          const attachments = [];
-          for (const a of s.attachments ?? []) {
-            let checklistItemId = a.checklist_item_id ?? null;
-            if (!checklistItemId) {
-              const [item] = await tx
-                .insert(schema.tripChecklistItem)
-                .values({
-                  tripId,
-                  text: a.checklist_text?.trim() || `${s.name}：${a.label}`,
-                  description: a.checklist_description ?? null,
-                  kind: a.checklist_kind ?? fallbackChecklistKind(a.type ?? "ticket"),
-                  startDate: d.day_date,
-                  phase: "on_trip",
-                  groupLabel: "抵達當地",
-                  subtasks: checklistSubtasksFromDescription(
-                    a.checklist_description,
-                  ),
-                  done: a.status === "completed" || a.status === "uploaded",
-                  suggested: true,
-                  suggestedBy: "Lumi",
-                  dueDate: d.day_date,
-                })
-                .returning({ id: schema.tripChecklistItem.id });
-              checklistItemId = item?.id ?? null;
-            }
-            attachments.push({ ...a, checklist_item_id: checklistItemId });
-          }
-          stopRows.push({
-            dayId: dayRow.id,
-            sortOrder: j,
-            name: s.name,
-            kind: s.kind ?? "other",
-            arrivalTime: s.arrival_time ?? null,
-            durationMin: s.duration_min ?? null,
-            note: s.note ?? "",
-            attachments,
-            lat: s.lat ?? null,
-            lng: s.lng ?? null,
-          });
-        }
-      }
-      if (stopRows.length > 0) {
-        await tx.insert(schema.tripDayStop).values(stopRows);
-      }
-
-      await tx
-        .update(schema.trip)
-        .set({
-          startDate: result.days![0]!.day_date,
-          endDate: result.days![result.days!.length - 1]!.day_date,
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.trip.id, tripId));
-    });
-    updatedDays = result.days;
-    const orderedCities: string[] = [];
-    const seen = new Set<string>();
-    for (const d of result.days) {
-      const key = d.city.trim();
-      if (!seen.has(key)) {
-        seen.add(key);
-        orderedCities.push(key);
-      }
-    }
-    const geocoded = await geocodeCities(orderedCities).catch(() => []);
-    const coordByName = new Map(
-      geocoded.map((g) => [g.name.trim().toLowerCase(), g]),
-    );
-    updatedCities = orderedCities.map((name) => ({
-      name,
-      lat: coordByName.get(name.toLowerCase())?.lat ?? null,
-      lng: coordByName.get(name.toLowerCase())?.lng ?? null,
-    }));
-  }
-
-  // Apply companion CRUD (editor mode only). The Lumi system prompt only
-  // emits ids that exist in the input — but we still scope every write
-  // by tripId so a bad id can't escape the trip.
-  let companionsTouched = false;
-  if (result.companions && editableTrip) {
-    const tripId = editableTrip.tripId;
-    const knownIds = new Set(editableTrip.companions.map((cmp) => cmp.id));
-    const existingSortOrder = editableTrip.companions.reduce(
-      (max, cmp, i) => Math.max(max, i),
-      -1,
-    );
-    let nextSort = existingSortOrder + 1;
-    for (const edit of result.companions) {
-      if (edit.id && knownIds.has(edit.id)) {
-        if (edit.delete) {
-          await db
-            .update(schema.tripChecklistItem)
-            .set({ assignedCompanionId: null })
-            .where(eq(schema.tripChecklistItem.assignedCompanionId, edit.id));
-          await db
-            .delete(schema.tripCompanion)
-            .where(
-              and(
-                eq(schema.tripCompanion.id, edit.id),
-                eq(schema.tripCompanion.tripId, tripId),
-              ),
-            );
-          companionsTouched = true;
-        } else {
-          const patch: Record<string, unknown> = { updatedAt: new Date() };
-          if (edit.display_name) patch.displayName = edit.display_name;
-          if (edit.color) patch.color = edit.color;
-          if (Object.keys(patch).length > 1) {
-            await db
-              .update(schema.tripCompanion)
-              .set(patch)
-              .where(
-                and(
-                  eq(schema.tripCompanion.id, edit.id),
-                  eq(schema.tripCompanion.tripId, tripId),
-                ),
-              );
-            companionsTouched = true;
-          }
-        }
-      } else if (!edit.delete && edit.display_name) {
-        // Create.
-        await db.insert(schema.tripCompanion).values({
-          tripId,
-          displayName: edit.display_name,
-          color: edit.color ?? "#0FB8B4",
-          sortOrder: nextSort++,
-        });
-        companionsTouched = true;
-      }
-    }
-  }
+  const assembledResponse = assembleLumiResponse({
+    proposedSummary: summary,
+    executions: executionResults,
+    rejectedAttempts: result.rejected_commands,
+    proposedToolEvents: result.tool_events,
+    flightDetailsApplied: flightDetailsTouched,
+  });
+  summary = assembledResponse.summary;
 
   /* Persist the FULL response payload in `metadata` so future turns can
      reconstruct what Lumi actually output, not just what she said. Without
@@ -561,10 +643,18 @@ lumiRouter.post("/chat", async (c) => {
     content: summary,
     metadata: {
       days: result.days ?? null,
-      companions: result.companions ?? null,
+      companions: null,
+      flight_details: null,
       trip_draft: result.trip_draft ?? null,
       esim_suggestion: result.esim_suggestion ?? null,
       tool_call: result.tool_call ?? null,
+      tool_events:
+        assembledResponse.toolEvents.length > 0
+          ? assembledResponse.toolEvents
+          : null,
+      proposed_commands: result.commands ?? [],
+      execution_results: assembledResponse.audit.executions,
+      rejected_attempts: assembledResponse.audit.rejected_attempts,
     },
   });
   await db
@@ -596,36 +686,220 @@ lumiRouter.post("/chat", async (c) => {
     }));
   }
 
-  return c.json({
-    summary,
-    days: updatedDays,
-    cities: updatedCities,
-    companions: updatedCompanions,
-    trip_draft: result.trip_draft ?? null,
-    esim_suggestion: result.esim_suggestion ?? null,
-    conversation_id: conversationId,
+  return {
+    status: 200,
+    payload: {
+      summary,
+      days: updatedDays,
+      cities: updatedCities,
+      companions: updatedCompanions,
+      trip_draft: result.trip_draft ?? null,
+      esim_suggestion: result.esim_suggestion ?? null,
+      tool_events:
+        assembledResponse.toolEvents.length > 0
+          ? assembledResponse.toolEvents
+          : null,
+      mutations: assembledResponse.mutations,
+      conversation_id: conversationId,
+      metadata_updated: flightDetailsTouched,
+    },
+  };
+}
+
+export function successfulItineraryProjections(
+  commands: NonNullable<LumiResult["commands"]>,
+  outcomes: ExecutedLumiCommand[],
+): Array<{ day_date: string; city: string; cities: string[]; note: string }> {
+  return commands.flatMap((command, index) => {
+    if (command.type !== "update_trip_day" && command.type !== "create_trip_day") return [];
+    const outcome = outcomes[index];
+    const targetId =
+      command.type === "update_trip_day" ? command.day_id : command.trip_id;
+    if (
+      !outcome ||
+      outcome.status !== "success" ||
+      outcome.type !== command.type ||
+      outcome.target_id !== targetId
+    ) {
+      return [];
+    }
+    return [
+      {
+        day_date: command.day.day_date,
+        city: command.day.city,
+        cities: normalizeLumiDayCities(command.day),
+        note: command.day.note,
+      },
+    ];
+  });
+}
+
+lumiRouter.post("/chat", async (c) => {
+  const user = getUser(c);
+  const body = await c.req.json();
+  const parsed = chatInput.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "invalid_request", details: parsed.error.flatten() },
+      400,
+    );
+  }
+
+  const result = await executeLumiChatTurn({
+    data: parsed.data,
+    user,
+  });
+  if (result.status === 200) {
+    return c.json(result.payload, 200);
+  }
+  if (result.status === 400) return c.json(result.payload, 400);
+  if (result.status === 403) return c.json(result.payload, 403);
+  return c.json(result.payload, 502);
+});
+
+lumiRouter.post("/chat/stream", async (c) => {
+  const user = getUser(c);
+  const body = await c.req.json();
+  const parsed = chatInput.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "invalid_request", details: parsed.error.flatten() },
+      400,
+    );
+  }
+
+  const preflight = await preflightMutationRequest({
+    mode: parsed.data.requested_skill,
+    tripId: parsed.data.current_trip_id,
+    loadOwnedTrip: async (tripId) => {
+      const [trip] = await getDb()
+        .select({ id: schema.trip.id })
+        .from(schema.trip)
+        .where(and(eq(schema.trip.id, tripId), eq(schema.trip.userId, user.id)))
+        .limit(1);
+      return Boolean(trip);
+    },
+  });
+  if (!preflight.ok) {
+    if (preflight.status === 400) return c.json({ error: preflight.error }, 400);
+    return c.json({ error: preflight.error }, 403);
+  }
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      let closed = false;
+      let heartbeat: ReturnType<typeof setInterval> | null = null;
+      const markClosed = () => {
+        closed = true;
+        if (heartbeat) {
+          clearInterval(heartbeat);
+          heartbeat = null;
+        }
+      };
+      const send = (event: unknown): boolean => {
+        if (closed) return false;
+        try {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
+          );
+          return true;
+        } catch {
+          markClosed();
+          return false;
+        }
+      };
+      heartbeat = setInterval(() => {
+        send({
+          event: "progress",
+          data: {
+            event: "status",
+            status: "analyzing",
+            label: "Still working",
+          },
+        });
+      }, 15_000);
+
+      void (async () => {
+        try {
+          const result = await executeLumiChatTurn({
+            data: parsed.data,
+            user,
+            emitProgress: (event) => {
+              send({ event: "progress", data: event });
+            },
+          });
+          send({ event: "final", status: result.status, data: result.payload });
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "unknown_stream_error";
+          send({
+            event: "error",
+            status: 500,
+            data: { error: "lumi_stream_error", message },
+          });
+        } finally {
+          markClosed();
+          try {
+            controller.close();
+          } catch {
+            // Client already closed the stream.
+          }
+        }
+      })();
+    },
+    cancel() {
+      // The async Lumi turn may still complete, but writes become no-ops
+      // once send() observes the closed controller.
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache",
+      connection: "keep-alive",
+    },
   });
 });
 
-interface LoadedEditableTrip {
+export interface LoadedEditableTrip {
   tripId: string;
+  trip_id: string;
   title: string;
   start_date: string;
   end_date: string;
+  metadata: Record<string, unknown>;
   days: {
     id: string;
+    day_id: string;
     day_date: string;
     city: string;
+    cities: string[];
+    segments: Array<{ city: string; start_part: "morning" | "afternoon" | "evening" | "full_day"; end_part: "morning" | "afternoon" | "evening" | "full_day"; note: string }>;
     note: string;
     /* Stops as currently stored. Empty array = day is unplanned, the
        model should treat that as "needs filling". Non-empty = already
        planned, model should preserve unless asked to rewrite. */
     stops: {
       id: string;
+      stop_id: string;
       name: string;
+      anchor_mode?: "exact_place" | "regional" | "suggested_places";
+      place_name: string | null;
+      place_id: string | null;
+      place_address: string | null;
+      area_name?: string | null;
+      search_query?: string | null;
+      country_code?: string | null;
+      place_types?: string[];
+      suggestion_count?: number | null;
+      place_suggestions?: ReturnType<typeof normalizePlaceSuggestions>;
       kind: string;
       arrival_time: string | null;
       duration_min: number | null;
+      lat: number | null;
+      lng: number | null;
       note: string;
       attachments: {
         id?: string | null;
@@ -657,6 +931,14 @@ interface LoadedEditableTrip {
     user_id: string | null;
     accepted_at: string | null;
   }[];
+  flight_legs: Array<{
+    leg_id: string;
+    departure_date?: string | null;
+    departure_time?: string | null;
+    flight_number?: string | null;
+    terminal?: string | null;
+    gate?: string | null;
+  }>;
 }
 
 async function loadEditableTrip(
@@ -699,15 +981,9 @@ async function loadEditableTrip(
     else stopsByDay.set(s.dayId, [s]);
   }
 
-  const orderedCities: string[] = [];
-  const seen = new Set<string>();
-  for (const d of days) {
-    const key = d.city.trim();
-    if (!seen.has(key)) {
-      seen.add(key);
-      orderedCities.push(key);
-    }
-  }
+  const orderedCities = uniqueCitiesFromLumiDays(
+    days.map((day) => ({ city: day.city, cities: day.cities })),
+  );
   const geocoded = await geocodeCities(orderedCities).catch(() => []);
   const coordByName = new Map(
     geocoded.map((g) => [g.name.trim().toLowerCase(), g]),
@@ -727,20 +1003,41 @@ async function loadEditableTrip(
 
   return {
     tripId: trip.id,
+    trip_id: trip.id,
     title: trip.title,
     start_date: trip.startDate,
     end_date: trip.endDate,
+    metadata:
+      trip.metadata && typeof trip.metadata === "object" && !Array.isArray(trip.metadata)
+        ? (trip.metadata as Record<string, unknown>)
+        : {},
     days: days.map((d) => ({
       id: d.id,
+      day_id: d.id,
       day_date: d.dayDate,
       city: d.city,
+      cities: normalizeLumiDayCities({ city: d.city, cities: d.cities }),
+      segments: d.segments,
       note: d.note,
       stops: (stopsByDay.get(d.id) ?? []).map((s) => ({
         id: s.id,
+        stop_id: s.id,
         name: s.name,
+        anchor_mode: normalizeTripStopAnchorMode(s.anchorMode),
+        place_name: s.placeName ?? null,
+        place_id: s.placeId ?? null,
+        place_address: s.placeAddress ?? null,
+        area_name: s.areaName ?? null,
+        search_query: s.searchQuery ?? null,
+        country_code: s.countryCode ?? null,
+        place_types: Array.isArray(s.placeTypes) ? s.placeTypes : [],
+        suggestion_count: s.suggestionCount,
+        place_suggestions: normalizePlaceSuggestions(s.placeSuggestions),
         kind: s.kind,
         arrival_time: s.arrivalTime,
         duration_min: s.durationMin,
+        lat: s.lat,
+        lng: s.lng,
         note: s.note,
         attachments: normalizeLoadedAttachments(s.attachments),
       })),
@@ -753,163 +1050,96 @@ async function loadEditableTrip(
       user_id: c.userId,
       accepted_at: c.acceptedAt?.toISOString() ?? null,
     })),
+    flight_legs: flightLegsFromMetadata(trip.id, trip.metadata && typeof trip.metadata === "object" && !Array.isArray(trip.metadata) ? trip.metadata as Record<string, unknown> : {}),
   };
 }
 
-const ATTACHMENT_ONLY_PROMPT_RE =
-  /買票|訂票|門票|票券|定位|訂位|預約|附件|上傳|標記|需要.*票|reservation|reserve|booking|book|ticket|attachment|upload|mark/i;
+type LumiStopForWrite = NonNullable<LumiDay["stops"]>[number];
 
-const REWRITE_SHRINK_OK_RE =
-  /重新規劃|重排|刪|移除|拿掉|減少|精簡|只留|縮短|remove|delete|drop|shorten|simplify|replan|rewrite/i;
-const FULL_TRIP_PLANNING_RE =
-  /整趟|整個行程|這趟旅程|這趟行程|全部|每天|每一天|全程|安排.*旅程|規劃.*旅程|plan.*whole|whole trip|every day|fill.*trip/i;
-const DATE_REMOVAL_OK_RE =
-  /刪|移除|拿掉|減少|精簡|只留|縮短|remove|delete|drop|shorten|simplify/i;
-
-function isAttachmentOnlyPrompt(prompt: string): boolean {
-  return (
-    ATTACHMENT_ONLY_PROMPT_RE.test(prompt) &&
-    !/重新規劃|重排|排程|安排|規劃整天|replan|rewrite|reschedule/i.test(prompt)
-  );
-}
-
-function isPartialDayPatch(
-  prompt: string,
-  editableTrip: LoadedEditableTrip,
-  days: LumiDay[],
-): boolean {
-  if (isAttachmentOnlyPrompt(prompt)) return false;
-  if (days.length === 0) return false;
-  const editableDates = new Set(editableTrip.days.map((day) => day.day_date));
-  if (days.some((day) => !editableDates.has(day.day_date))) return false;
-  return missingEditableTripDates(editableTrip, days).length > 0;
-}
-
-function summarizePatchedDays(
-  editableTrip: LoadedEditableTrip,
-  patchedDays: Array<{ day_date: string; city: string; note: string }>,
-): string {
-  if (patchedDays.length === 0) return "這次沒有更新到日期。";
-  const indexByDate = new Map(
-    editableTrip.days.map((day, index) => [day.day_date, index + 1]),
-  );
-  const labels = patchedDays
-    .map((day) => indexByDate.get(day.day_date))
-    .filter((index): index is number => index != null)
-    .sort((a, b) => a - b)
-    .map((index) => `Day ${index}`);
-
-  if (labels.length === 0) return "我更新了這幾天的行程。";
-  if (labels.length === editableTrip.days.length) {
-    return "我更新了全部天數的行程。";
-  }
-  return `我更新了 ${formatDayList(labels)} 的行程。`;
-}
-
-function formatDayList(labels: string[]): string {
-  if (labels.length <= 2) return labels.join("、");
-  return `${labels.slice(0, -1).join("、")} 和 ${labels[labels.length - 1]}`;
-}
-
-function isSafeFullDayRewrite(
-  prompt: string,
-  editableTrip: LoadedEditableTrip,
-  days: LumiDay[],
-): boolean {
-  if (!DATE_REMOVAL_OK_RE.test(prompt)) {
-    if (missingEditableTripDates(editableTrip, days).length > 0) return false;
-  }
-
-  if (REWRITE_SHRINK_OK_RE.test(prompt) || FULL_TRIP_PLANNING_RE.test(prompt)) {
-    return true;
-  }
-
-  const existingStopCount = editableTrip.days.reduce(
-    (sum, d) => sum + d.stops.length,
-    0,
-  );
-  const nextStopCount = days.reduce(
-    (sum, d) => sum + (d.stops?.length ?? 0),
-    0,
-  );
-  return existingStopCount === 0 || nextStopCount >= existingStopCount;
-}
-
-function missingEditableTripDates(
-  editableTrip: LoadedEditableTrip,
-  days: LumiDay[],
-): string[] {
-  const nextDates = new Set(days.map((d) => d.day_date));
-  return editableTrip.days
-    .map((d) => d.day_date)
-    .filter((date) => !nextDates.has(date));
-}
-
-async function prepareMappableLumiDays(days: LumiDay[]): Promise<LumiDay[]> {
-  const cityGeocoded = await geocodeCities(
-    Array.from(new Set(days.map((day) => day.city.trim()).filter(Boolean))),
-    { fetchMisses: true },
-  ).catch(() => []);
-  const countryByCity = new Map(
-    cityGeocoded.map((g) => [g.name.trim().toLowerCase(), g.country_code]),
-  );
-  const coordsByCountry = new Map<string, Map<string, { lat: number; lng: number }>>();
+async function resolveStopsForWrite(
+  day: LumiDay,
+  stops: LumiStopForWrite[],
+): Promise<LumiStopForWrite[]> {
+  const cityName = day.city || day.cities?.[0] || "";
+  const [city] = cityName
+    ? await geocodeCities([cityName], { fetchMisses: true }).catch(() => [])
+    : [];
 
   return Promise.all(
-    days.map(async (day) => {
-      const preciseStops = (day.stops ?? []).filter((stop) =>
-        isSpecificMappableStopName(stop.name),
-      );
-      const country =
-        countryByCity.get(day.city.trim().toLowerCase()) ?? null;
-      let coords = new Map<string, { lat: number; lng: number }>();
-      if (country && preciseStops.length > 0) {
-        const cached = coordsByCountry.get(country);
-        if (cached) {
-          coords = cached;
-        } else {
-          const geocoded = await geocodeCities(
-            preciseStops.map((stop) => stop.name),
-            { strictCountry: country, fetchMisses: true },
-          ).catch(() => []);
-          coords = new Map(
-            geocoded.map((g) => [
-              normalizeStopLookup(g.name),
-              { lat: g.lat, lng: g.lng },
-            ]),
-          );
-          coordsByCountry.set(country, coords);
-        }
-      }
+    stops.map(async (stop) => {
+      const anchorMode = normalizeTripStopAnchorMode(stop.anchor_mode);
+      if (anchorMode !== "exact_place") return stop;
+      if (stop.lat != null && stop.lng != null && stop.place_id) return stop;
 
+      const query = (stop.place_name ?? stop.name).trim();
+      if (!query) return { ...stop, lat: stop.lat ?? null, lng: stop.lng ?? null };
+
+      const resolved = await resolveGooglePlace(query, {
+        city: cityName || null,
+        expectedCountry: stop.country_code ?? city?.country_code ?? null,
+        center: city ? { lat: city.lat, lng: city.lng } : null,
+        maxDistanceMeters: 75_000,
+      }).catch(() => null);
+      if (!resolved) {
+        return {
+          ...stop,
+          lat: null,
+          lng: null,
+        };
+      }
       return {
-        ...day,
-        stops: preciseStops.map((stop) => {
-          const resolved = coords.get(normalizeStopLookup(stop.name));
-          return {
-            ...stop,
-            lat: stop.lat ?? resolved?.lat ?? null,
-            lng: stop.lng ?? resolved?.lng ?? null,
-          };
-        }),
+        ...stop,
+        place_name: resolved.name,
+        place_id: resolved.place_id,
+        place_address: resolved.formatted_address,
+        country_code: stop.country_code ?? resolved.country_code,
+        lat: resolved.lat,
+        lng: resolved.lng,
       };
     }),
   );
 }
 
-const VAGUE_STOP_NAME_RE =
-  /(市中心|中心區|舊城區|老城區|街區|周邊|附近|近郊|散策|散步|漫步|自由活動|購物時間|拍照點|咖啡時間|在地餐廳|當地餐廳|午餐$|晚餐$|早餐$|local restaurant|restaurant nearby|city center|downtown|old town|neighborhood|free time|walk|stroll|wander|shopping time|photo spot|nearby cafe)/i;
-
-function isSpecificMappableStopName(name: string): boolean {
-  const trimmed = name.trim();
-  if (trimmed.length < 2) return false;
-  if (VAGUE_STOP_NAME_RE.test(trimmed)) return false;
-  return true;
+function checklistMetaForAttachment(
+  attachment: LumiStopAttachment,
+  dayDate: string,
+) {
+  const kind =
+    attachment.checklist_kind ?? fallbackChecklistKind(attachment.type ?? "ticket");
+  if (kind === "transit" || attachment.type === "transit") {
+    return {
+      startDate: null,
+      phase: "early",
+      groupLabel: "交通預約",
+    };
+  }
+  return {
+    startDate: dayDate,
+    phase: "on_trip",
+    groupLabel: "抵達當地",
+  };
 }
 
-function normalizeStopLookup(value: string): string {
-  return value.trim().toLowerCase();
+function uniqueCitiesFromLumiDays(
+  days: Array<{ city: string; cities?: readonly string[] | null }>,
+): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const day of days) {
+    for (const city of normalizeLumiDayCities(day)) {
+      const key = city.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(city);
+    }
+  }
+  return out;
 }
+
+export function stopsForLumiWrite(day: LumiDay): LumiStop[] {
+  return day.stops && day.stops.length > 0 ? day.stops : [];
+}
+
 
 async function applyDayPatches({
   tripId,
@@ -919,7 +1149,7 @@ async function applyDayPatches({
   tripId: string;
   editableTrip: LoadedEditableTrip;
   days: LumiDay[];
-}): Promise<Array<{ day_date: string; city: string; note: string }>> {
+}): Promise<Array<{ day_date: string; city: string; cities: string[]; note: string }>> {
   const db = getDb();
   const existingDayByDate = new Map(
     editableTrip.days.map((day) => [day.day_date, day]),
@@ -935,6 +1165,7 @@ async function applyDayPatches({
         .update(schema.tripDay)
         .set({
           city: day.city,
+          cities: normalizeLumiDayCities(day),
           note: day.note,
         })
         .where(eq(schema.tripDay.id, existingDay.id));
@@ -943,18 +1174,19 @@ async function applyDayPatches({
         .delete(schema.tripDayStop)
         .where(eq(schema.tripDayStop.dayId, existingDay.id));
 
-      const effective =
-        day.stops && day.stops.length > 0
-          ? day.stops
-          : [{ name: day.city, kind: "other", note: "", attachments: [] }];
+      const resolvedStops = await resolveStopsForWrite(
+        day,
+        stopsForLumiWrite(day),
+      );
 
       const stopRows = [];
-      for (let i = 0; i < effective.length; i++) {
-        const stop = effective[i]!;
+      for (let i = 0; i < resolvedStops.length; i++) {
+        const stop = resolvedStops[i]!;
         const attachments = [];
         for (const attachment of stop.attachments ?? []) {
           let checklistItemId = attachment.checklist_item_id ?? null;
           if (!checklistItemId) {
+            const checklistMeta = checklistMetaForAttachment(attachment, day.day_date);
             const [item] = await tx
               .insert(schema.tripChecklistItem)
               .values({
@@ -966,9 +1198,9 @@ async function applyDayPatches({
                 kind:
                   attachment.checklist_kind ??
                   fallbackChecklistKind(attachment.type ?? "ticket"),
-                startDate: day.day_date,
-                phase: "on_trip",
-                groupLabel: "抵達當地",
+                startDate: checklistMeta.startDate,
+                phase: checklistMeta.phase,
+                groupLabel: checklistMeta.groupLabel,
                 subtasks: checklistSubtasksFromDescription(
                   attachment.checklist_description,
                 ),
@@ -989,6 +1221,20 @@ async function applyDayPatches({
           dayId: existingDay.id,
           sortOrder: i,
           name: stop.name,
+          anchorMode: normalizeTripStopAnchorMode(stop.anchor_mode),
+          placeName: stop.place_name ?? null,
+          placeId: stop.place_id ?? null,
+          placeAddress: stop.place_address ?? null,
+          areaName: stop.area_name ?? null,
+          searchQuery: stop.search_query ?? null,
+          countryCode: stop.country_code ?? null,
+          placeTypes: stop.place_types ?? [],
+          suggestionCount: stop.suggestion_count ?? 5,
+          placeSuggestions: [],
+          suggestionsStatus:
+            normalizeTripStopAnchorMode(stop.anchor_mode) === "regional"
+              ? "idle"
+              : "resolved",
           kind: stop.kind ?? "other",
           arrivalTime: stop.arrival_time ?? null,
           durationMin: stop.duration_min ?? null,
@@ -1012,98 +1258,187 @@ async function applyDayPatches({
     }
   });
 
+  scheduleTripPlaceSuggestionRefresh(tripId);
+
   return patches.map((day) => ({
     day_date: day.day_date,
     city: day.city,
+    cities: normalizeLumiDayCities(day),
     note: day.note,
   }));
 }
 
-function completeMissingPlanningDays({
-  prompt,
+async function applyDayCreates({
+  tripId,
   editableTrip,
   days,
 }: {
-  prompt: string;
+  tripId: string;
   editableTrip: LoadedEditableTrip;
   days: LumiDay[];
-}): LumiDay[] {
-  const incomingByDate = new Map(days.map((day) => [day.day_date, day]));
-  const wantsRestaurant =
-    /餐廳|餐馆|吃飯|吃饭|晚餐|午餐|早餐|restaurant|lunch|dinner|breakfast|meal/i.test(
-      prompt,
-    );
+}): Promise<Array<{ day_date: string; city: string; cities: string[]; note: string }>> {
+  const db = getDb();
+  const existingDates = new Set(
+    editableTrip.days.map((day) => day.day_date),
+  );
+  const creates = days
+    .filter((day) => !existingDates.has(day.day_date))
+    .sort((a, b) => a.day_date.localeCompare(b.day_date));
+  const created: Array<{
+    day_date: string;
+    city: string;
+    cities: string[];
+    note: string;
+  }> = [];
 
-  return editableTrip.days.map((existingDay) => {
-    const incoming = incomingByDate.get(existingDay.day_date);
-    if (incoming) return incoming;
+  if (creates.length === 0) return created;
 
-    const existingStops = existingDay.stops.map((stop) => ({
-      name: stop.name,
-      kind: stop.kind,
-      arrival_time: stop.arrival_time,
-      duration_min: stop.duration_min,
-      note: stop.note,
-      attachments: stop.attachments.map((attachment) => ({
-        type: attachment.type,
-        label: attachment.label,
-        url: attachment.url,
-        amount: attachment.amount,
-        action_label: attachment.action_label,
-        checklist_text: attachment.checklist_text,
-        checklist_description: attachment.checklist_description,
-        checklist_kind: attachment.checklist_kind,
-        checklist_item_id: attachment.checklist_item_id,
-        status: attachment.status,
-      })),
-    }));
+  await db.transaction(async (tx) => {
+    const existingRows = await tx
+      .select({
+        id: schema.tripDay.id,
+        dayDate: schema.tripDay.dayDate,
+      })
+      .from(schema.tripDay)
+      .where(eq(schema.tripDay.tripId, tripId));
+    const datesInDb = new Set(existingRows.map((row) => row.dayDate));
 
-    const hasRealStops =
-      existingStops.length > 1 ||
-      existingStops.some((stop) => stop.name.trim() !== existingDay.city.trim());
-    if (hasRealStops) {
-      return {
-        day_date: existingDay.day_date,
-        city: existingDay.city,
-        note: existingDay.note || `${existingDay.city}行程`,
-        stops: existingStops,
-      };
+    for (const day of creates) {
+      if (datesInDb.has(day.day_date)) continue;
+      const [insertedDay] = await tx
+        .insert(schema.tripDay)
+        .values({
+          tripId,
+          sortOrder: existingRows.length + created.length,
+          dayDate: day.day_date,
+          city: day.city,
+          cities: normalizeLumiDayCities(day),
+          note: day.note,
+        })
+        .returning({
+          id: schema.tripDay.id,
+          dayDate: schema.tripDay.dayDate,
+        });
+      if (!insertedDay) continue;
+
+      datesInDb.add(day.day_date);
+      created.push({
+        day_date: day.day_date,
+        city: day.city,
+        cities: normalizeLumiDayCities(day),
+        note: day.note,
+      });
+
+      const resolvedStops = await resolveStopsForWrite(
+        day,
+        stopsForLumiWrite(day),
+      );
+
+      const stopRows = [];
+      for (let i = 0; i < resolvedStops.length; i++) {
+        const stop = resolvedStops[i]!;
+        const attachments = [];
+        for (const attachment of stop.attachments ?? []) {
+          let checklistItemId = attachment.checklist_item_id ?? null;
+          if (!checklistItemId) {
+            const checklistMeta = checklistMetaForAttachment(attachment, day.day_date);
+            const [item] = await tx
+              .insert(schema.tripChecklistItem)
+              .values({
+                tripId,
+                text:
+                  attachment.checklist_text?.trim() ||
+                  `${stop.name}：${attachment.label}`,
+                description: attachment.checklist_description ?? null,
+                kind:
+                  attachment.checklist_kind ??
+                  fallbackChecklistKind(attachment.type ?? "ticket"),
+                startDate: checklistMeta.startDate,
+                phase: checklistMeta.phase,
+                groupLabel: checklistMeta.groupLabel,
+                subtasks: checklistSubtasksFromDescription(
+                  attachment.checklist_description,
+                ),
+                done:
+                  attachment.status === "completed" ||
+                  attachment.status === "uploaded",
+                suggested: true,
+                suggestedBy: "Lumi",
+                dueDate: day.day_date,
+              })
+              .returning({ id: schema.tripChecklistItem.id });
+            checklistItemId = item?.id ?? null;
+          }
+          attachments.push({ ...attachment, checklist_item_id: checklistItemId });
+        }
+
+        stopRows.push({
+          dayId: insertedDay.id,
+          sortOrder: i,
+          name: stop.name,
+          anchorMode: normalizeTripStopAnchorMode(stop.anchor_mode),
+          placeName: stop.place_name ?? null,
+          placeId: stop.place_id ?? null,
+          placeAddress: stop.place_address ?? null,
+          areaName: stop.area_name ?? null,
+          searchQuery: stop.search_query ?? null,
+          countryCode: stop.country_code ?? null,
+          placeTypes: stop.place_types ?? [],
+          suggestionCount: stop.suggestion_count ?? 5,
+          placeSuggestions: [],
+          suggestionsStatus:
+            normalizeTripStopAnchorMode(stop.anchor_mode) === "regional"
+              ? "idle"
+              : "resolved",
+          kind: stop.kind ?? "other",
+          arrivalTime: stop.arrival_time ?? null,
+          durationMin: stop.duration_min ?? null,
+          note: stop.note ?? "",
+          attachments,
+          lat: stop.lat ?? null,
+          lng: stop.lng ?? null,
+        });
+      }
+
+      if (stopRows.length > 0) {
+        await tx.insert(schema.tripDayStop).values(stopRows);
+      }
     }
 
-    return {
-      day_date: existingDay.day_date,
-      city: existingDay.city,
-      note: `${existingDay.city}輕旅行`,
-      stops: [
-        {
-          name: `${existingDay.city}市中心散策`,
-          kind: "sight",
-          arrival_time: "10:00",
-          duration_min: 120,
-          note: "先用輕鬆的市區路線熟悉周邊。",
-          attachments: [],
-        },
-        {
-          name: wantsRestaurant
-            ? `${existingDay.city}在地餐廳`
-            : `${existingDay.city}午餐`,
-          kind: "meal",
-          arrival_time: "12:30",
-          duration_min: 90,
-          note: wantsRestaurant ? "出發前可再挑一間想訂位的餐廳。" : "",
-          attachments: [],
-        },
-        {
-          name: `${existingDay.city}傍晚街區散步`,
-          kind: "sight",
-          arrival_time: "15:00",
-          duration_min: 120,
-          note: "保留彈性，適合安排購物、咖啡或拍照點。",
-          attachments: [],
-        },
-      ],
-    };
+    if (created.length > 0) {
+      const orderedRows = await tx
+        .select({
+          id: schema.tripDay.id,
+          dayDate: schema.tripDay.dayDate,
+        })
+        .from(schema.tripDay)
+        .where(eq(schema.tripDay.tripId, tripId));
+      orderedRows.sort((a, b) => a.dayDate.localeCompare(b.dayDate));
+
+      for (let i = 0; i < orderedRows.length; i++) {
+        const row = orderedRows[i]!;
+        await tx
+          .update(schema.tripDay)
+          .set({ sortOrder: i })
+          .where(eq(schema.tripDay.id, row.id));
+      }
+
+      await tx
+        .update(schema.trip)
+        .set({
+          startDate: orderedRows[0]?.dayDate ?? editableTrip.start_date,
+          endDate: orderedRows.at(-1)?.dayDate ?? editableTrip.end_date,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.trip.id, tripId));
+    }
   });
+
+  if (created.length > 0) {
+    scheduleTripPlaceSuggestionRefresh(tripId);
+  }
+
+  return created;
 }
 
 async function applyAttachmentPatch({
@@ -1129,7 +1464,10 @@ async function applyAttachmentPatch({
       for (const incomingStop of incomingDay.stops ?? []) {
         const incomingAttachments = incomingStop.attachments ?? [];
         if (incomingAttachments.length === 0) continue;
-        const existingStop = findMatchingStop(existingDay.stops, incomingStop.name);
+        const stopId = (incomingStop as LumiStop & { stop_id?: string }).stop_id;
+        const existingStop = stopId
+          ? existingDay.stops.find((stop) => stop.id === stopId)
+          : undefined;
         if (!existingStop) continue;
 
         const merged = [...existingStop.attachments];
@@ -1192,6 +1530,10 @@ async function applyAttachmentPatch({
 
           let checklistItemId = attachment.checklist_item_id ?? null;
           if (!checklistItemId) {
+            const checklistMeta = checklistMetaForAttachment(
+              attachment,
+              incomingDay.day_date,
+            );
             const [item] = await tx
               .insert(schema.tripChecklistItem)
               .values({
@@ -1199,9 +1541,9 @@ async function applyAttachmentPatch({
                 text: checklistText,
                 description: attachment.checklist_description ?? null,
                 kind: attachment.checklist_kind ?? fallbackChecklistKind(type),
-                startDate: incomingDay.day_date,
-                phase: "on_trip",
-                groupLabel: "抵達當地",
+                startDate: checklistMeta.startDate,
+                phase: checklistMeta.phase,
+                groupLabel: checklistMeta.groupLabel,
                 subtasks: checklistSubtasksFromDescription(
                   attachment.checklist_description,
                 ),
@@ -1253,24 +1595,6 @@ async function applyAttachmentPatch({
   });
 
   return touched;
-}
-
-function findMatchingStop(
-  stops: LoadedEditableTrip["days"][number]["stops"],
-  name: string,
-) {
-  const normalizedName = normalizeMatchText(name);
-  return (
-    stops.find((stop) => normalizeMatchText(stop.name) === normalizedName) ??
-    stops.find((stop) => {
-      const existing = normalizeMatchText(stop.name);
-      return (
-        existing.length >= 4 &&
-        normalizedName.length >= 4 &&
-        (existing.includes(normalizedName) || normalizedName.includes(existing))
-      );
-    })
-  );
 }
 
 function normalizeMatchText(value: string): string {

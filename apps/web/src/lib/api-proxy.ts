@@ -49,12 +49,22 @@ export async function proxyToApi(
 
   try {
     const response = await fetch(upstream, init);
+    const responseContentType =
+      response.headers.get("content-type") ?? "application/json";
+    if (responseContentType.includes("text/event-stream")) {
+      return new NextResponse(response.body, {
+        status: response.status,
+        headers: {
+          "content-type": responseContentType,
+          "cache-control": "no-cache",
+        },
+      });
+    }
     const body = await response.text();
     return new NextResponse(body, {
       status: response.status,
       headers: {
-        "content-type":
-          response.headers.get("content-type") ?? "application/json",
+        "content-type": responseContentType,
       },
     });
   } catch (err) {

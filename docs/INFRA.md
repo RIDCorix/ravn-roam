@@ -118,6 +118,7 @@ role, **not** a separate Supabase project. See
 | `FASTMOVE_DEPT_ID`              | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.dept_id`                              |
 | `FASTMOVE_MERCHANT_KEY`         | `services/api`                 | Server only      | Yes (for sync)  | `fastmove.api.merchant_key`                         |
 | `GEMINI_API_KEY`                | `services/api`                 | Server only      | No (event crawler) | `roam.gemini_api_key`                            |
+| `GOOGLE_MAPS_API_KEY`           | `services/api`                 | Server only      | No (Lumi stop geocoding) | `roam.google_maps_api_key`                  |
 | `GEMINI_MODEL`                  | `services/api`                 | Server only      | No              | (n/a — defaults to `gemini-2.5-flash`)              |
 | `GEMINI_SEARCH_MODEL`           | `services/api`                 | Server only      | No              | (n/a — defaults to `gemini-2.5-flash`)              |
 | `EVENT_CRAWLER_PROVIDER`        | `services/api`                 | Server only      | No              | (n/a — `gemini` or `openai`)                        |
@@ -172,8 +173,8 @@ When a new credential is needed:
 - [ ] Preview deploy on a sample PR resolves.
 - [ ] Env vars present in **both** Preview and Production scopes, all
       sourced from the hub.
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm build` all pass locally and
-      in Vercel.
+- [ ] `pnpm verify:ci` passes locally and in GitHub Actions; `pnpm build`
+      passes locally or in Vercel for deploy-bearing changes.
 - [ ] `NEXT_PUBLIC_SITE_URL` matches the actual deployed origin (drives
       OpenGraph cards).
 - [ ] Custom domain (if any) verified and HTTPS active.

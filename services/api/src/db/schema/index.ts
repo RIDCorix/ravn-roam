@@ -12,6 +12,7 @@ export * from "./audit-log";
 export * from "./order";
 export * from "./trip";
 export * from "./trip-companion";
+export * from "./traveler-collection";
 export * from "./city-geocode";
 export * from "./lumi-chat";
 export * from "./storefront-event";
@@ -28,6 +29,12 @@ import { supplierPlan } from "./supplier-plan";
 import { supplierPlanSyncLog } from "./supplier-plan-sync-log";
 import { trip, tripChecklistItem, tripDay, tripDayStop } from "./trip";
 import { tripCompanion } from "./trip-companion";
+import {
+  travelerAchievement,
+  travelerPhoto,
+  travelerPlace,
+  travelerProfile,
+} from "./traveler-collection";
 import { vendor } from "./vendor";
 
 export const schema = {
@@ -45,6 +52,10 @@ export const schema = {
   tripDayStop,
   tripChecklistItem,
   tripCompanion,
+  travelerProfile,
+  travelerPlace,
+  travelerPhoto,
+  travelerAchievement,
   cityGeocode,
   lumiConversation,
   lumiMessage,

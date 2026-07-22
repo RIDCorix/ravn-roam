@@ -42,33 +42,47 @@ export type PublicJourneyHeaderLabels = {
 export function PublicJourneyHeader({
   lang,
   labels,
-  tone = "onDark",
+  tone = "auto",
 }: {
   lang: string;
   labels: PublicJourneyHeaderLabels;
-  tone?: "onDark" | "onLight";
+  tone?: "auto" | "onDark" | "onLight";
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const searchSuffix = search ? `?${search}` : "";
   const prefix = `/${lang}`;
-  const isDark = tone === "onDark";
+  const isLightRoute =
+    pathname === `/${lang}/explore` ||
+    pathname === `/${lang}/explore/` ||
+    pathname === `/${lang}/trips` ||
+    pathname === `/${lang}/trips/` ||
+    pathname?.startsWith(`/${lang}/trips/`) ||
+    pathname === `/${lang}/me` ||
+    pathname === `/${lang}/me/`;
+  const resolvedTone =
+    tone === "auto" && isLightRoute
+      ? "onLight"
+      : tone === "auto"
+        ? "onDark"
+        : tone;
+  const isDark = resolvedTone === "onDark";
   const navItems = [
     { label: labels.nav.explore, href: `${prefix}/explore` },
-    { label: labels.nav.destinations, href: `${prefix}/shop` },
-    { label: labels.nav.calendar, href: `${prefix}/shop` },
-    { label: labels.nav.planner, href: `${prefix}/login?next=${prefix}/trips` },
-    { label: labels.nav.esim, href: `${prefix}/shop` },
+    { label: labels.nav.destinations, href: `${prefix}/explore` },
+    { label: labels.nav.calendar, href: `${prefix}/explore` },
+    { label: labels.nav.planner, href: `${prefix}/trips` },
+    { label: labels.nav.esim, href: `${prefix}/explore` },
   ];
 
   return (
     <header className="absolute inset-x-0 top-0 z-20">
-      <div className="mx-auto flex h-20 w-full max-w-[1440px] items-center gap-8 px-5 sm:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-4 px-4 sm:h-20 sm:px-8 md:gap-8">
         <Link
           href={prefix}
           className={cn(
-            "flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]",
+            "flex min-w-0 items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]",
             isDark ? "text-white" : "text-[#273a3f]",
           )}
         >
@@ -80,7 +94,7 @@ export function PublicJourneyHeader({
           >
             <Compass className="h-3.5 w-3.5" strokeWidth={2.4} />
           </span>
-          {labels.brand}
+          <span className="truncate">{labels.brand}</span>
         </Link>
 
         <nav
@@ -106,7 +120,7 @@ export function PublicJourneyHeader({
 
         <div
           className={cn(
-            "ml-auto flex items-center gap-4",
+            "ml-auto flex shrink-0 items-center gap-2 sm:gap-4",
             isDark ? "text-white/88" : "text-[#273a3f]/72",
           )}
         >
@@ -114,10 +128,10 @@ export function PublicJourneyHeader({
             lang={lang}
             pathname={pathname}
             search={searchSuffix}
-            tone={tone}
+            tone={resolvedTone}
           />
           <Link
-            href={`${prefix}/login`}
+            href={`${prefix}/me`}
             aria-label={labels.favorites_aria}
             className={cn(
               "hidden transition-colors hover:text-current sm:inline-flex",
@@ -127,7 +141,7 @@ export function PublicJourneyHeader({
             <Heart className="h-5 w-5" strokeWidth={1.9} />
           </Link>
           <Link
-            href={`${prefix}/login`}
+            href={`${prefix}/me`}
             aria-label={labels.account_aria}
             className={cn(
               "hidden transition-colors hover:text-current sm:inline-flex",

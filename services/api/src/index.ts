@@ -5,6 +5,7 @@ import { Hono } from "hono";
 
 import { env } from "./env.js";
 import { createAdminRouter } from "./routes/admin.js";
+import { collectionRouter } from "./routes/collection.js";
 import { ordersRouter } from "./routes/orders.js";
 import { productsRouter } from "./routes/products.js";
 import { storefrontRouter } from "./routes/storefront.js";
@@ -50,6 +51,7 @@ app.route("/admin/orders", ordersRouter);
 app.route("/trips", tripsRouter);
 app.route("/lumi", lumiRouter);
 app.route("/invite", inviteRouter);
+app.route("/me/collection", collectionRouter);
 
 // Storefront catalog browse — unauthenticated read-only.
 app.route("/storefront", storefrontRouter);

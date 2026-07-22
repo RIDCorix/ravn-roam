@@ -1,8 +1,6 @@
 import { env } from "../env.js";
 import type { LumiDay } from "./openai.js";
 
-const SEARCH_PROMPT_RE =
-  /網址|連結|官網|官方|訂票|買票|訂位|預約|link|url|official|ticket|book|reserve/i;
 const BOOKABLE_TYPES = new Set([
   "ticket",
   "reservation",
@@ -19,14 +17,11 @@ interface SearchResponse {
 }
 
 export async function enrichAttachmentUrls({
-  prompt,
   days,
 }: {
-  prompt: string;
   days: LumiDay[];
 }): Promise<LumiDay[]> {
-  const wantsSearch = SEARCH_PROMPT_RE.test(prompt);
-  if (!wantsSearch || !env.OPENAI_API_KEY) return validateExistingUrls(days);
+  if (!env.OPENAI_API_KEY) return validateExistingUrls(days);
 
   const next = cloneDays(days);
   let searched = 0;

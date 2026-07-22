@@ -16,11 +16,5 @@ export default async function ExploreWorldPage({
 
   const dict = await getDictionary(lang);
 
-  return (
-    <ExploreSpotlight
-      lang={lang}
-      labels={dict.storefront.explore}
-      headerLabels={dict.storefront.home.landing}
-    />
-  );
+  return <ExploreSpotlight lang={lang} labels={dict.storefront.explore} />;
 }

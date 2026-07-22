@@ -22,8 +22,12 @@ const schema = z.object({
   ADMIN_API_TOKEN: z.string().min(16).optional(),
 
   OPENAI_API_KEY: z.string().min(1).optional(),
-  OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+  // Lumi itinerary planning needs strong instruction-following over a large
+  // structured-output contract; gpt-4o-mini drifts. gpt-4.1 is the floor.
+  OPENAI_MODEL: z.string().min(1).default("gpt-4.1"),
   OPENAI_SEARCH_MODEL: z.string().min(1).default("gpt-4o-mini-search-preview"),
+  GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
+  GOOGLE_MAPS_HTTP_REFERER: z.string().url().optional(),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_MODEL: z.string().min(1).default("gemini-2.5-flash"),
   GEMINI_SEARCH_MODEL: z.string().min(1).default("gemini-2.5-flash"),

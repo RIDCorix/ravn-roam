@@ -9,7 +9,12 @@ import type {
   ApiTripStop,
   TripDetailPayload,
 } from "@/lib/trips-api";
-import type { ChecklistItem, Trip, TripStop } from "@/lib/trip-types";
+import {
+  normalizeTripStopAnchorMode,
+  type ChecklistItem,
+  type Trip,
+  type TripStop,
+} from "@/lib/trip-types";
 
 export function apiToTrip(
   trip: ApiTrip,
@@ -19,11 +24,15 @@ export function apiToTrip(
   const summaryDays =
     days.length === 0 && trip.days_count
       ? Array.from({ length: trip.days_count }, (_, i) => ({
-          d: i === 0 ? trip.start_date : "",
-          city: trip.cities?.[i] ?? "",
-          note: "",
-          stops: [],
-        }))
+        d: i === 0 ? trip.start_date : "",
+        city: trip.cities?.[i] ?? "",
+        cities: trip.cities?.[i] ? [trip.cities[i]!] : [],
+        segments: trip.cities?.[i]
+          ? [defaultDaySegment(trip.cities[i]!)]
+          : [],
+        note: "",
+        stops: [],
+      }))
       : [];
   const summaryChecklist =
     checklist.length === 0 && trip.checklist_total
@@ -47,6 +56,11 @@ export function apiToTrip(
       .map((d) => ({
         d: d.day_date,
         city: d.city,
+        cities: d.cities?.length ? d.cities : [d.city].filter(Boolean),
+        segments: normalizeDaySegments(
+          d.segments,
+          d.cities?.length ? d.cities : [d.city].filter(Boolean),
+        ),
         note: d.note,
         stops: (d.stops ?? []).map(apiToStop),
       })) : summaryDays,
@@ -59,6 +73,30 @@ function apiToStop(s: ApiTripStop): TripStop {
   return {
     id: s.id,
     name: s.name,
+    anchorMode: normalizeTripStopAnchorMode(s.anchor_mode),
+    placeName: s.place_name,
+    placeId: s.place_id,
+    placeAddress: s.place_address,
+    areaName: s.area_name,
+    searchQuery: s.search_query,
+    countryCode: s.country_code,
+    placeTypes: s.place_types,
+    suggestionCount: s.suggestion_count,
+    placeSuggestions: s.place_suggestions.map((suggestion) => ({
+      id: suggestion.id,
+      placeId: suggestion.place_id,
+      name: suggestion.name,
+      address: suggestion.address,
+      lat: suggestion.lat,
+      lng: suggestion.lng,
+      primaryType: suggestion.primary_type,
+      types: suggestion.types,
+      rating: suggestion.rating,
+      userRatingCount: suggestion.user_rating_count,
+      mapsUrl: suggestion.maps_url,
+      selected: suggestion.selected ?? false,
+    })),
+    suggestionsStatus: s.suggestions_status,
     kind: s.kind,
     arrival_time: s.arrival_time,
     duration_min: s.duration_min,
@@ -85,6 +123,31 @@ function apiToStop(s: ApiTripStop): TripStop {
 
 export function apiDetailToTrip(payload: TripDetailPayload): Trip {
   return apiToTrip(payload.trip, payload.days, payload.checklist);
+}
+
+function defaultDaySegment(city: string) {
+  return {
+    city,
+    start_part: "full_day" as const,
+    end_part: "full_day" as const,
+    note: "",
+  };
+}
+
+function normalizeDaySegments(
+  segments: ApiTripDay["segments"] | undefined,
+  cities: string[],
+): ApiTripDay["segments"] {
+  const normalized = (segments ?? [])
+    .map((segment) => ({
+      city: segment.city.trim(),
+      start_part: segment.start_part,
+      end_part: segment.end_part,
+      note: segment.note ?? "",
+    }))
+    .filter((segment) => segment.city);
+  if (normalized.length > 0) return normalized;
+  return cities.filter(Boolean).map(defaultDaySegment);
 }
 
 function apiToChecklist(item: ApiChecklistItem): ChecklistItem {

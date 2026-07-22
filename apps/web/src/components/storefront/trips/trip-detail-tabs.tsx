@@ -914,6 +914,7 @@ function DayView({
         {day.stops && day.stops.length > 0 && (
           <StopsTimeline
             tripId={tripId}
+            city={day.city}
             stops={day.stops}
             activeStopIndex={activeStopIndex}
             onFocusStop={focusStop}
@@ -938,11 +939,13 @@ const STOPS_VIEW_KEY = "roam-trip-stops-view";
    flavor — they shouldn't disappear just because Lumi forgot a time. */
 function StopsTimeline({
   tripId,
+  city,
   stops,
   activeStopIndex,
   onFocusStop,
 }: {
   tripId: string;
+  city: string;
   stops: NonNullable<TripDay["stops"]>;
   activeStopIndex: number | null;
   onFocusStop: (index: number) => void;
@@ -971,6 +974,7 @@ function StopsTimeline({
       {view === "list" ? (
         <StopsList
           tripId={tripId}
+          city={city}
           stops={stops}
           activeStopIndex={activeStopIndex}
           onFocusStop={onFocusStop}
@@ -978,6 +982,7 @@ function StopsTimeline({
       ) : (
         <StopsCalendar
           tripId={tripId}
+          city={city}
           stops={stops}
           activeStopIndex={activeStopIndex}
           onFocusStop={onFocusStop}
@@ -1045,11 +1050,13 @@ function ToggleButton({
 
 function StopsList({
   tripId,
+  city,
   stops,
   activeStopIndex,
   onFocusStop,
 }: {
   tripId: string;
+  city: string;
   stops: NonNullable<TripDay["stops"]>;
   activeStopIndex?: number | null;
   onFocusStop?: (index: number) => void;
@@ -1126,6 +1133,7 @@ function StopsList({
               <StopActions
                 tripId={tripId}
                 stop={s}
+                city={city}
                 attachments={s.attachments ?? []}
               />
             </div>
@@ -1141,11 +1149,13 @@ function StopsList({
    arrival_time + duration_min. Looks like Google Calendar's day view. */
 function StopsCalendar({
   tripId,
+  city,
   stops,
   activeStopIndex,
   onFocusStop,
 }: {
   tripId: string;
+  city: string;
   stops: NonNullable<TripDay["stops"]>;
   activeStopIndex: number | null;
   onFocusStop: (index: number) => void;
@@ -1177,6 +1187,7 @@ function StopsCalendar({
     return (
       <StopsList
         tripId={tripId}
+        city={city}
         stops={stops}
         activeStopIndex={activeStopIndex}
         onFocusStop={onFocusStop}
@@ -1272,6 +1283,7 @@ function StopsCalendar({
                     <StopActions
                       tripId={tripId}
                       stop={stop}
+                      city={city}
                       attachments={stop.attachments ?? []}
                       compact
                     />
@@ -1290,6 +1302,7 @@ function StopsCalendar({
           </div>
           <StopsList
             tripId={tripId}
+            city={city}
             stops={unscheduled.map((u) => u.stop)}
             activeStopIndex={unscheduled.findIndex(
               (u) => u.index === activeStopIndex,
@@ -1362,15 +1375,17 @@ function KindChip({ kind }: { kind: string }) {
 function StopActions({
   tripId,
   stop,
+  city,
   attachments,
   compact,
 }: {
   tripId: string;
   stop: TripStop;
+  city: string;
   attachments: NonNullable<TripStop["attachments"]>;
   compact?: boolean;
 }) {
-  const mapUrl = googleMapsUrl(stop);
+  const mapUrl = googleMapsUrl(stop, city);
   return (
     <div className="flex shrink-0 items-center justify-end gap-1">
       <a
@@ -1397,13 +1412,27 @@ function StopActions({
   );
 }
 
-function googleMapsUrl(stop: TripStop): string {
+function googleMapsUrl(stop: TripStop, city: string): string {
+  const textQuery = [
+    stop.placeName?.trim() || stop.name,
+    stop.placeAddress,
+    city,
+  ]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .join(" ");
+  const params = new URLSearchParams({ api: "1" });
+  if (stop.placeId) {
+    const coordinateQuery =
+      stop.lat != null && stop.lng != null ? `${stop.lat},${stop.lng}` : null;
+    params.set("query", textQuery || coordinateQuery || stop.placeId);
+    params.set("query_place_id", stop.placeId);
+    return `https://www.google.com/maps/search/?${params.toString()}`;
+  }
   if (stop.lat != null && stop.lng != null) {
     return `https://www.google.com/maps/search/?api=1&query=${stop.lat},${stop.lng}`;
   }
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    stop.name,
-  )}`;
+  params.set("query", textQuery);
+  return `https://www.google.com/maps/search/?${params.toString()}`;
 }
 
 function AttachmentBadges({

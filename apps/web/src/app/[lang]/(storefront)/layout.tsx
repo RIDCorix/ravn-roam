@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { createSupabaseServerClient } from "@roam/shared";
-
-import { DEFAULT_LUMI_AVATAR_ID } from "@/components/storefront/lumi-avatar";
-import { StorefrontShell } from "@/components/storefront/shell";
+import { PublicJourneyHeader } from "@/components/storefront/public-journey-header";
+import { StorefrontPageTransition } from "@/components/storefront/storefront-page-transition";
+import { LumiAssistant } from "@/components/storefront/trips/lumi-assistant";
 
 import { getDictionary, hasLocale } from "../dictionaries";
+
+export const dynamic = "force-dynamic";
 
 export default async function StorefrontLayout({
   children,
@@ -17,49 +19,25 @@ export default async function StorefrontLayout({
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
-
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const lumiAvatarId =
-    (user?.user_metadata?.lumi_avatar as string | undefined) ??
-    DEFAULT_LUMI_AVATAR_ID;
-  const t = dict.storefront.trips;
-  const lumiLabels = {
-    name: t.lumi.name,
-    placeholder: t.lumi.placeholder,
-    open: t.lumi.open,
-    close: t.lumi.close,
-    send: t.lumi.send,
-    thinking: t.lumi.thinking,
-    thinking_phrases: t.lumi.thinking_phrases,
-    no_trip_hint: t.lumi.no_trip_hint,
-    history_title: t.lumi.history_title,
-    new_chat: t.lumi.new_chat,
-    delete_chat: t.lumi.delete_chat,
-    empty_history: t.lumi.empty_history,
-    draft_days_unit: t.lumi.draft_days_unit,
-    draft_create: t.lumi.draft_create,
-    draft_creating: t.lumi.draft_creating,
-    draft_created: t.lumi.draft_created,
-    change_days: t.lumi.change_days,
-    change_stops: t.lumi.change_stops,
-    change_companions: t.lumi.change_companions,
-    change_checklist: t.lumi.change_checklist,
-    change_draft_days: t.lumi.change_draft_days,
-  };
+    typeof user?.user_metadata?.lumi_avatar === "string"
+      ? user.user_metadata.lumi_avatar
+      : undefined;
 
   return (
-    <StorefrontShell
-      lang={lang}
-      labels={dict.storefront.nav}
-      isSignedIn={Boolean(user)}
-      signInLabel={dict.storefront.login.sign_in}
-      lumiLabels={user ? lumiLabels : null}
-      lumiAvatarId={lumiAvatarId}
-    >
-      {children}
-    </StorefrontShell>
+    <div className="relative min-h-screen">
+      <PublicJourneyHeader lang={lang} labels={dict.storefront.home.landing} />
+      <StorefrontPageTransition>{children}</StorefrontPageTransition>
+      {user ? (
+        <LumiAssistant
+          labels={dict.storefront.trips.lumi}
+          avatarId={lumiAvatarId}
+        />
+      ) : null}
+    </div>
   );
 }

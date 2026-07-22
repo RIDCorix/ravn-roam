@@ -13,6 +13,42 @@ import {
 
 import { roamPoc, tripStatus } from "./_schema";
 
+export type TripDaySegment = {
+  city: string;
+  start_part: "morning" | "afternoon" | "evening" | "full_day";
+  end_part: "morning" | "afternoon" | "evening" | "full_day";
+  note: string;
+};
+
+export type TripStopAnchorMode =
+  | "exact_place"
+  | "regional"
+  /** @deprecated Read-only compatibility for rows created before regional stops. */
+  | "suggested_places";
+
+export function normalizeTripStopAnchorMode(
+  value: string | null | undefined,
+): Exclude<TripStopAnchorMode, "suggested_places"> {
+  return value === "regional" || value === "suggested_places"
+    ? "regional"
+    : "exact_place";
+}
+
+export type TripPlaceSuggestion = {
+  id: string;
+  place_id: string | null;
+  name: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+  primary_type: string | null;
+  types: string[];
+  rating: number | null;
+  user_rating_count: number | null;
+  maps_url: string | null;
+  selected?: boolean;
+};
+
 // Roam consumer trips. Owner is the Supabase auth user (`auth.users.id`)
 // the storefront authenticated as. We store it as text so an account can be
 // hard-deleted without cascading the trip away — trips are kept as a
@@ -56,6 +92,11 @@ export const tripDay = roamPoc.table(
     sortOrder: integer("sort_order").notNull(),
     dayDate: date("day_date").notNull(),
     city: text("city").notNull(),
+    cities: jsonb("cities").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    segments: jsonb("segments")
+      .$type<TripDaySegment[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     note: text("note").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -80,6 +121,26 @@ export const tripDayStop = roamPoc.table(
       .references(() => tripDay.id, { onDelete: "cascade" }),
     sortOrder: integer("sort_order").notNull(),
     name: text("name").notNull(),
+    anchorMode: text("anchor_mode")
+      .$type<TripStopAnchorMode>()
+      .notNull()
+      .default("exact_place"),
+    placeName: text("place_name"),
+    placeId: text("place_id"),
+    placeAddress: text("place_address"),
+    areaName: text("area_name"),
+    searchQuery: text("search_query"),
+    countryCode: text("country_code"),
+    placeTypes: jsonb("place_types")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    suggestionCount: integer("suggestion_count").notNull().default(5),
+    placeSuggestions: jsonb("place_suggestions")
+      .$type<TripPlaceSuggestion[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    suggestionsStatus: text("suggestions_status").notNull().default("idle"),
     /* sight | meal | transit | stay | shop | other — purely cosmetic, drives
        the pin icon and the timeline kind chip. Stays loose (text) so Lumi
        can introduce new kinds without a schema change. */

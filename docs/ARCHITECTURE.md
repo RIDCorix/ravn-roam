@@ -41,6 +41,26 @@ Server components may read from `services/api` directly with
   be imported into production request context unless the file name or call site
   makes that fallback explicit.
 
+## Lumi Agent Boundary
+
+Lumi receives natural language only at the model-provider boundary. A
+structured `requested_skill` is the caller's explicit authorization request;
+the API combines it with server-loaded, user-owned resource context to derive
+the capabilities and tools available for that turn. Unscoped free-form chat,
+including chat with no `requested_skill`, is read-only and cannot authorize a
+mutation merely because editable resource context is visible to the model.
+
+Mutation tools emit typed commands that reference existing trip entities by
+stable trip, day, and stop IDs. Commands pass through schema, capability,
+ownership/reference, and domain validation before dedicated itinerary or
+attachment execution services apply them. Model output is therefore a proposed
+command, not proof of authorization or successful persistence.
+
+Routes, prompts, validators, and executors must not infer authorization,
+mutation intent, or mutation targets from prompt text, display names, model
+prose, or substring/keyword matching. Names remain display data; stable IDs and
+structured request fields are the only mutation references.
+
 ## i18n
 
 `zh-TW` is the default product locale. User-visible strings in `apps/web`

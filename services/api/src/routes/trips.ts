@@ -6,6 +6,8 @@
 //   PATCH  /trips/:id                   update title / dates / status
 //   DELETE /trips/:id                   delete a trip
 //   PUT    /trips/:id/days              replace the day list (Lumi or manual)
+//   PATCH  /trips/:id/checklist/:itemId update one checklist item
+//   DELETE /trips/:id/checklist/:itemId delete one checklist item
 //   POST   /trips/:id/lumi              run OpenAI itinerary edit
 //
 // Every route runs through requireAuth so we get the Supabase user.id and
@@ -26,6 +28,11 @@ import {
   fallbackChecklistKind,
 } from "./trip-shared.js";
 import { geocodeCities } from "../geocode/nominatim.js";
+import {
+  normalizePlaceSuggestions,
+  scheduleTripPlaceSuggestionRefresh,
+} from "../trips/place-suggestions.js";
+import { normalizeTripStopAnchorMode } from "../db/schema/trip.js";
 
 export const tripsRouter = new Hono();
 
@@ -38,6 +45,38 @@ tripsRouter.route("/:tripId/companions", companionsRouter);
    the only required field; the rest are optional enrichments. */
 const stopInput = z.object({
   name: z.string().min(1).max(200),
+  anchor_mode: z
+    .enum(["exact_place", "regional", "suggested_places"])
+    .default("exact_place")
+    .transform(normalizeTripStopAnchorMode),
+  place_name: z.string().max(200).nullish(),
+  place_id: z.string().max(300).nullish(),
+  place_address: z.string().max(1000).nullish(),
+  area_name: z.string().max(200).nullish(),
+  search_query: z.string().max(240).nullish(),
+  country_code: z.string().max(8).nullish(),
+  place_types: z.array(z.string().min(1).max(80)).max(12).default([]),
+  suggestion_count: z.number().int().min(1).max(10).default(5),
+  place_suggestions: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(300),
+        place_id: z.string().max(300).nullish(),
+        name: z.string().min(1).max(200),
+        address: z.string().max(1000).nullish(),
+        lat: z.number(),
+        lng: z.number(),
+        primary_type: z.string().max(100).nullish(),
+        types: z.array(z.string().max(100)).max(30).default([]),
+        rating: z.number().nullish(),
+        user_rating_count: z.number().int().nullish(),
+        maps_url: z.string().url().max(1200).nullish(),
+        selected: z.boolean().optional(),
+      }),
+    )
+    .max(10)
+    .default([]),
+  suggestions_status: z.string().max(40).default("idle"),
   /* sight | meal | transit | stay | shop | other. Loose so Lumi can
      introduce new kinds without a schema change. */
   kind: z.string().max(40).default("other"),
@@ -71,15 +110,30 @@ const stopInput = z.object({
   lng: z.number().nullish(),
 });
 
+const daySegmentPart = z.enum(["morning", "afternoon", "evening", "full_day"]);
+
+const daySegmentInput = z.object({
+  city: z.string().min(1).max(120),
+  start_part: daySegmentPart.default("full_day"),
+  end_part: daySegmentPart.default("full_day"),
+  note: z.string().max(2000).default(""),
+});
+
 const dayInput = z.object({
   day_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   /* Macro city label — kept for backwards compatibility and as the
      overview-map pin name. Lumi still emits this. */
-  city: z.string().min(1).max(120),
+  city: z.string().max(120).default(""),
+  /* Ordered cities touched by the day. Defaults to [city] for old clients. */
+  cities: z.array(z.string().min(1).max(120)).max(8).optional(),
+  /* Editable overview blocks inside this day. A travel day can have two
+     segments, e.g. morning Milan and afternoon Paris, while both remain
+     independently editable in the overview. */
+  segments: z.array(daySegmentInput).max(8).optional(),
   note: z.string().max(2000).default(""),
   /* Multi-stop itinerary within this day. Empty array is allowed (e.g.
-     "rest day"); legacy callers that don't send `stops` get an
-     auto-derived single stop named after `city`. */
+     "rest day"); legacy callers that don't send `stops` only get an
+     auto-derived stop when `city` is known. */
   stops: z.array(stopInput).default([]),
 });
 
@@ -115,6 +169,7 @@ const tripCreate = z.object({
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   status: z.enum(["upcoming", "active", "past", "cancelled"]).default("upcoming"),
+  metadata: z.record(z.unknown()).default({}),
   days: z.array(dayInput).default([]),
   checklist: z.array(checklistInput).default([]),
 });
@@ -125,16 +180,30 @@ const tripPatch = z.object({
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   status: z.enum(["upcoming", "active", "past", "cancelled"]).optional(),
+  metadata: z.record(z.unknown()).optional(),
 });
 
 const daysReplace = z.object({ days: z.array(dayInput).min(1) });
 
-/* Legacy callers (and Lumi until the prompt rewrite lands) send days with
-   just a city and no stops. Materialize a single placeholder stop so the
-   day still pins on the map and the timeline isn't empty. */
+/* Legacy callers can send days with just a city and no stops. Materialize a
+   placeholder stop for those callers, but let Lumi-generated drafts opt out
+   so missing itinerary stops stay visible as missing content. */
+type DaySegmentInput = z.infer<typeof daySegmentInput>;
+
 function defaultStopFromCity(city: string): z.infer<typeof stopInput> {
   return {
     name: city,
+    anchor_mode: "exact_place",
+    place_name: null,
+    place_id: null,
+    place_address: null,
+    area_name: null,
+    search_query: null,
+    country_code: null,
+    place_types: [],
+    suggestion_count: 5,
+    place_suggestions: [],
+    suggestions_status: "idle",
     kind: "other",
     arrival_time: null,
     duration_min: null,
@@ -143,6 +212,108 @@ function defaultStopFromCity(city: string): z.infer<typeof stopInput> {
     lat: null,
     lng: null,
   };
+}
+
+export function shouldSeedDefaultStops(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  return metadata?.source !== "lumi";
+}
+
+export function normalizeTripDayCities(
+  city: string,
+  cities?: readonly string[] | null,
+  segments?: readonly Pick<DaySegmentInput, "city">[] | null,
+): string[] {
+  if (
+    Array.isArray(cities) &&
+    cities.length === 0 &&
+    Array.isArray(segments) &&
+    segments.length === 0
+  ) {
+    return [];
+  }
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (value: string | null | undefined) => {
+    const name = value?.trim();
+    if (!name) return;
+    if (isAirportOverviewCity(name)) return;
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(name);
+  };
+  for (const segment of segments ?? []) push(segment.city);
+  push(city);
+  for (const name of cities ?? []) push(name);
+  return out;
+}
+
+function segmentPartForIndex(index: number, total: number): DaySegmentInput["start_part"] {
+  if (total <= 1) return "full_day";
+  if (index === 0) return "morning";
+  if (index === 1) return "afternoon";
+  return "evening";
+}
+
+function normalizeTripDaySegments(
+  city: string,
+  cities?: readonly string[] | null,
+  segments?: readonly DaySegmentInput[] | null,
+): DaySegmentInput[] {
+  const parsedSegments = (segments ?? [])
+    .map((segment) => ({
+      city: segment.city.trim(),
+      start_part: segment.start_part,
+      end_part: segment.end_part,
+      note: segment.note.trim(),
+    }))
+    .filter((segment) => segment.city && !isAirportOverviewCity(segment.city));
+  if (parsedSegments.length > 0) return parsedSegments;
+
+  const normalizedCities = normalizeTripDayCities(city, cities);
+  return normalizedCities.map((name, index) => {
+    const part = segmentPartForIndex(index, normalizedCities.length);
+    return {
+      city: name,
+      start_part: part,
+      end_part: part,
+      note: "",
+    };
+  });
+}
+
+function isAirportOverviewCity(value: string): boolean {
+  return /機場|airport|aéroport|aeroporto|aeropuerto|\bTPE\b|\bTSA\b|\bMXP\b|\bLIN\b|\bCDG\b|\bLHR\b|\bBCN\b/i.test(
+    value,
+  );
+}
+
+function primaryCityFromSegments(
+  city: string,
+  cities?: readonly string[] | null,
+  segments?: readonly DaySegmentInput[] | null,
+): string {
+  return normalizeTripDaySegments(city, cities, segments)[0]?.city ?? city.trim();
+}
+
+function dayCities(row: Pick<TripDayRow, "city" | "cities" | "segments">): string[] {
+  return normalizeTripDayCities(row.city, row.cities, row.segments);
+}
+
+function uniqueCitiesFromDays(days: Pick<TripDayRow, "city" | "cities" | "segments">[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const day of days) {
+    for (const city of dayCities(day)) {
+      const key = city.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(city);
+    }
+  }
+  return out;
 }
 
 // ─── Row → JSON ────────────────────────────────────────────────────────
@@ -175,20 +346,58 @@ function rowToStop(
   coordsByName: Map<string, { lat: number; lng: number }>,
   checklistById: Map<string, ChecklistRow>,
 ) {
-  const cached = coordsByName.get(row.name.trim().toLowerCase());
+  const coords = coordsForStopRow(row, coordsByName);
   return {
     id: row.id,
     day_id: row.dayId,
     sort_order: row.sortOrder,
     name: row.name,
+    anchor_mode: normalizeTripStopAnchorMode(row.anchorMode),
+    place_name: row.placeName ?? null,
+    place_id: row.placeId ?? null,
+    place_address: row.placeAddress ?? null,
+    area_name: row.areaName ?? null,
+    search_query: row.searchQuery ?? null,
+    country_code: row.countryCode ?? null,
+    place_types: Array.isArray(row.placeTypes) ? row.placeTypes : [],
+    suggestion_count: row.suggestionCount,
+    place_suggestions: normalizePlaceSuggestions(row.placeSuggestions),
+    suggestions_status: row.suggestionsStatus,
     kind: row.kind,
     arrival_time: row.arrivalTime,
     duration_min: row.durationMin,
     note: row.note,
     attachments: normalizeStopAttachments(row.attachments, checklistById),
-    lat: row.lat ?? cached?.lat ?? null,
-    lng: row.lng ?? cached?.lng ?? null,
+    lat: row.lat ?? coords?.lat ?? null,
+    lng: row.lng ?? coords?.lng ?? null,
   };
+}
+
+export function stopMappableNameForTrip(
+  stop: Pick<TripDayStopRow, "name" | "placeName">,
+): string {
+  return stop.placeName?.trim() || stop.name;
+}
+
+export function stopLookupNamesForTrip(
+  stop: Pick<TripDayStopRow, "name" | "placeName">,
+): string[] {
+  return Array.from(
+    new Set(
+      [stop.placeName?.trim() ?? "", stop.name.trim()].filter(Boolean),
+    ),
+  );
+}
+
+function coordsForStopRow(
+  stop: Pick<TripDayStopRow, "name" | "placeName">,
+  coordsByName: Map<string, { lat: number; lng: number }>,
+) {
+  for (const name of stopLookupNamesForTrip(stop)) {
+    const coords = coordsByName.get(name.toLowerCase());
+    if (coords) return coords;
+  }
+  return null;
 }
 
 function rowToDay(
@@ -203,6 +412,8 @@ function rowToDay(
     sort_order: row.sortOrder,
     day_date: row.dayDate,
     city: row.city,
+    cities: dayCities(row),
+    segments: normalizeTripDaySegments(row.city, row.cities, row.segments),
     note: row.note,
     stops: stops.map((s) => rowToStop(s, coordsByName, checklistById)),
   };
@@ -443,7 +654,7 @@ tripsRouter.get("/", async (c) => {
     return {
       ...rowToTrip(row),
       days_count: tripDays.length,
-      cities: Array.from(new Set(tripDays.map((day) => day.city))),
+      cities: uniqueCitiesFromDays(tripDays),
       checklist_total: stats.total,
       checklist_done: stats.done,
     };
@@ -570,15 +781,7 @@ tripsRouter.get("/:id", async (c) => {
      script place names on a Milan trip can't cross-language-match to
      Chinese cities (the "米蘭時尚區 → Shanghai" bug). Stops without a
      matchable hit return null lat/lng → no pin > wrong pin. */
-  const cityList: string[] = [];
-  const citySeen = new Set<string>();
-  for (const d of days) {
-    const key = d.city.trim();
-    if (!citySeen.has(key.toLowerCase())) {
-      citySeen.add(key.toLowerCase());
-      cityList.push(key);
-    }
-  }
+  const cityList = uniqueCitiesFromDays(days);
   const cityGeocoded = await geocodeCities(cityList, {
     fetchMisses: false,
   }).catch(() => []);
@@ -594,11 +797,12 @@ tripsRouter.get("/:id", async (c) => {
      strict mode. */
   const stopsByCountry = new Map<string | null, Set<string>>();
   for (const d of days) {
+    const primaryCity = dayCities(d)[0] ?? "";
     const cc =
-      cityCountryByName.get(d.city.trim().toLowerCase()) ?? null;
+      cityCountryByName.get(primaryCity.trim().toLowerCase()) ?? null;
     for (const s of stopsByDay.get(d.id) ?? []) {
       const set = stopsByCountry.get(cc) ?? new Set<string>();
-      set.add(s.name.trim());
+      for (const name of stopLookupNamesForTrip(s)) set.add(name);
       stopsByCountry.set(cc, set);
     }
   }
@@ -628,6 +832,8 @@ tripsRouter.get("/:id", async (c) => {
     return { name, lat: c?.lat ?? null, lng: c?.lng ?? null };
   });
   const orderStates = await loadChecklistOrderStates(db, checklist, [trip]);
+
+  scheduleTripPlaceSuggestionRefresh(trip.id);
 
   return c.json({
     trip: rowToTrip(trip),
@@ -682,32 +888,45 @@ tripsRouter.post("/", async (c) => {
       startDate: parsed.data.start_date,
       endDate: parsed.data.end_date,
       status: parsed.data.status,
+      metadata: parsed.data.metadata,
     })
     .returning();
   const createdChecklistKeys = new Set<string>();
+  const seedDefaultStops = shouldSeedDefaultStops(parsed.data.metadata);
 
   if (parsed.data.days.length > 0) {
     const insertedDays = await db
       .insert(schema.tripDay)
       .values(
-        parsed.data.days.map((d, i) => ({
-          tripId: trip!.id,
-          sortOrder: i,
-          dayDate: d.day_date,
-          city: d.city,
-          note: d.note,
-        })),
+        parsed.data.days.map((d, i) => {
+          const segments = normalizeTripDaySegments(d.city, d.cities, d.segments);
+          const city = primaryCityFromSegments(d.city, d.cities, segments);
+          return {
+            tripId: trip!.id,
+            sortOrder: i,
+            dayDate: d.day_date,
+            city,
+            cities: normalizeTripDayCities(city, d.cities, segments),
+            segments,
+            note: d.note,
+          };
+        }),
       )
       .returning({ id: schema.tripDay.id, sortOrder: schema.tripDay.sortOrder });
 
     /* Build stop rows for every day. If the caller didn't supply stops[],
-       seed one stop named after `city` so the day still pins on the map. */
+       seed one stop named after `city` only when the city is known. */
     const stopRows = [];
     for (let i = 0; i < parsed.data.days.length; i++) {
       const d = parsed.data.days[i]!;
       const dayRow = insertedDays.find((r) => r.sortOrder === i);
       if (!dayRow) continue;
-      const effective = d.stops.length > 0 ? d.stops : [defaultStopFromCity(d.city)];
+      const effective =
+        d.stops.length > 0
+          ? d.stops
+          : seedDefaultStops && d.city.trim()
+            ? [defaultStopFromCity(d.city)]
+            : [];
       for (let j = 0; j < effective.length; j++) {
         const s = effective[j]!;
         const attachments = [];
@@ -747,6 +966,17 @@ tripsRouter.post("/", async (c) => {
           dayId: dayRow.id,
           sortOrder: j,
           name: s.name,
+          anchorMode: normalizeTripStopAnchorMode(s.anchor_mode),
+          placeName: s.place_name ?? null,
+          placeId: s.place_id ?? null,
+          placeAddress: s.place_address ?? null,
+          areaName: s.area_name ?? null,
+          searchQuery: s.search_query ?? null,
+          countryCode: s.country_code ?? null,
+          placeTypes: s.place_types ?? [],
+          suggestionCount: s.suggestion_count ?? 5,
+          placeSuggestions: normalizePlaceSuggestions(s.place_suggestions),
+          suggestionsStatus: s.suggestions_status ?? "idle",
           kind: s.kind,
           arrivalTime: s.arrival_time ?? null,
           durationMin: s.duration_min ?? null,
@@ -798,6 +1028,8 @@ tripsRouter.post("/", async (c) => {
     })),
   );
 
+  scheduleTripPlaceSuggestionRefresh(trip!.id);
+
   return c.json({ trip: rowToTrip(trip!) }, 201);
 });
 
@@ -818,6 +1050,7 @@ tripsRouter.patch("/:id", async (c) => {
   if (parsed.data.start_date) patch.startDate = parsed.data.start_date;
   if (parsed.data.end_date) patch.endDate = parsed.data.end_date;
   if (parsed.data.status) patch.status = parsed.data.status;
+  if (parsed.data.metadata !== undefined) patch.metadata = parsed.data.metadata;
 
   const [row] = await db
     .update(schema.trip)
@@ -872,22 +1105,36 @@ tripsRouter.put("/:id/days", async (c) => {
     const insertedDays = await tx
       .insert(schema.tripDay)
       .values(
-        parsed.data.days.map((d, i) => ({
-          tripId: id,
-          sortOrder: i,
-          dayDate: d.day_date,
-          city: d.city,
-          note: d.note,
-        })),
+        parsed.data.days.map((d, i) => {
+          const segments = normalizeTripDaySegments(d.city, d.cities, d.segments);
+          const city = primaryCityFromSegments(d.city, d.cities, segments);
+          return {
+            tripId: id,
+            sortOrder: i,
+            dayDate: d.day_date,
+            city,
+            cities: normalizeTripDayCities(city, d.cities, segments),
+            segments,
+            note: d.note,
+          };
+        }),
       )
       .returning({ id: schema.tripDay.id, sortOrder: schema.tripDay.sortOrder });
 
     const stopRows = [];
+    const seedDefaultStops = shouldSeedDefaultStops(
+      trip.metadata as Record<string, unknown> | null | undefined,
+    );
     for (let i = 0; i < parsed.data.days.length; i++) {
       const d = parsed.data.days[i]!;
       const dayRow = insertedDays.find((r) => r.sortOrder === i);
       if (!dayRow) continue;
-      const effective = d.stops.length > 0 ? d.stops : [defaultStopFromCity(d.city)];
+      const effective =
+        d.stops.length > 0
+          ? d.stops
+          : seedDefaultStops && d.city.trim()
+            ? [defaultStopFromCity(d.city)]
+            : [];
       for (let j = 0; j < effective.length; j++) {
         const s = effective[j]!;
         const attachments = [];
@@ -921,6 +1168,17 @@ tripsRouter.put("/:id/days", async (c) => {
           dayId: dayRow.id,
           sortOrder: j,
           name: s.name,
+          anchorMode: normalizeTripStopAnchorMode(s.anchor_mode),
+          placeName: s.place_name ?? null,
+          placeId: s.place_id ?? null,
+          placeAddress: s.place_address ?? null,
+          areaName: s.area_name ?? null,
+          searchQuery: s.search_query ?? null,
+          countryCode: s.country_code ?? null,
+          placeTypes: s.place_types ?? [],
+          suggestionCount: s.suggestion_count ?? 5,
+          placeSuggestions: normalizePlaceSuggestions(s.place_suggestions),
+          suggestionsStatus: s.suggestions_status ?? "idle",
           kind: s.kind,
           arrivalTime: s.arrival_time ?? null,
           durationMin: s.duration_min ?? null,
@@ -944,6 +1202,8 @@ tripsRouter.put("/:id/days", async (c) => {
       })
       .where(eq(schema.trip.id, id));
   });
+
+  scheduleTripPlaceSuggestionRefresh(id);
 
   /* Read back days + stops to return the canonical post-update shape.
      Geocoding happens lazily in the GET /:id path; this response only
@@ -985,9 +1245,9 @@ tripsRouter.put("/:id/days", async (c) => {
   });
 });
 
-// ─── CHECKLIST ITEM PATCH ───────────────────────────────────────────────
-// Single-field updates (mark done, assign to a companion). Used by the
-// checklist row + the assignee dropdown.
+// ─── CHECKLIST ITEM MUTATIONS ───────────────────────────────────────────
+// Single-item updates and deletes. Used by the checklist row + the assignee
+// dropdown.
 
 const checklistPatch = z.object({
   done: z.boolean().optional(),
@@ -1102,6 +1362,37 @@ tripsRouter.patch("/:id/checklist/:itemId", async (c) => {
       assigned_companion_id: row.assignedCompanionId,
     },
   });
+});
+
+tripsRouter.delete("/:id/checklist/:itemId", async (c) => {
+  const user = getUser(c);
+  const id = c.req.param("id");
+  const itemId = c.req.param("itemId");
+  const db = getDb();
+  const [trip] = await db
+    .select({ id: schema.trip.id })
+    .from(schema.trip)
+    .where(and(eq(schema.trip.id, id), eq(schema.trip.userId, user.id)))
+    .limit(1);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+
+  const [row] = await db
+    .delete(schema.tripChecklistItem)
+    .where(
+      and(
+        eq(schema.tripChecklistItem.id, itemId),
+        eq(schema.tripChecklistItem.tripId, id),
+      ),
+    )
+    .returning({ id: schema.tripChecklistItem.id });
+  if (!row) return c.json({ error: "not_found" }, 404);
+
+  await db
+    .update(schema.trip)
+    .set({ updatedAt: new Date() })
+    .where(eq(schema.trip.id, id));
+
+  return c.json({ ok: true, id: row.id });
 });
 
 tripsRouter.patch("/:id/stops/:stopId/attachments/:attachmentId", async (c) => {

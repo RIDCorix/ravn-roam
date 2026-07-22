@@ -27,14 +27,14 @@ pnpm dev:landing  # landing app at http://localhost:3011
 Useful checks:
 
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm test
+pnpm verify          # broad local handoff check
+pnpm verify:ci       # CI-equivalent Node/TypeScript checks
+pnpm agent:audit     # agent-native repo structure audit
 
-pnpm --filter @roam/web typecheck
-pnpm --filter @roam/web lint
-pnpm --filter @roam/api typecheck
-pnpm --filter @roam/api test
+pnpm verify:web
+pnpm verify:api
+pnpm verify:catalog
+pnpm verify:lumi-agent
 ```
 
 ## Product Boundaries
@@ -50,6 +50,8 @@ Any user-facing string in `apps/web` should go through
 ## Docs
 
 - `AGENTS.md` is the operating manual for coding agents.
+- `docs/AGENT_NATIVE.md` defines the agent-native rubric, verification
+  commands, and known architecture debt.
 - `docs/DEVELOPMENT.md` covers local commands, ports, and verification.
 - `docs/ARCHITECTURE.md` covers app boundaries and data-flow decisions.
 - `docs/ASSETS.md` covers image/icon asset rules.

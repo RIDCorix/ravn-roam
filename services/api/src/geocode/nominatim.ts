@@ -27,8 +27,89 @@ export interface Geocoded {
   country_code: string | null;
 }
 
+const KNOWN_CITY_GEOCODES: Record<string, Omit<Geocoded, "name">> = {
+  taipei: {
+    lat: 25.033,
+    lng: 121.5654,
+    display_name: "Taipei, Taiwan",
+    country_code: "tw",
+  },
+  台北: {
+    lat: 25.033,
+    lng: 121.5654,
+    display_name: "台北, 台灣",
+    country_code: "tw",
+  },
+  臺北: {
+    lat: 25.033,
+    lng: 121.5654,
+    display_name: "臺北, 台灣",
+    country_code: "tw",
+  },
+  milan: {
+    lat: 45.4642,
+    lng: 9.19,
+    display_name: "Milan, Lombardy, Italy",
+    country_code: "it",
+  },
+  米蘭: {
+    lat: 45.4642,
+    lng: 9.19,
+    display_name: "米蘭, 義大利",
+    country_code: "it",
+  },
+  paris: {
+    lat: 48.8566,
+    lng: 2.3522,
+    display_name: "Paris, France",
+    country_code: "fr",
+  },
+  巴黎: {
+    lat: 48.8566,
+    lng: 2.3522,
+    display_name: "巴黎, 法國",
+    country_code: "fr",
+  },
+  barcelona: {
+    lat: 41.3874,
+    lng: 2.1686,
+    display_name: "Barcelona, Catalonia, Spain",
+    country_code: "es",
+  },
+  巴塞隆納: {
+    lat: 41.3874,
+    lng: 2.1686,
+    display_name: "巴塞隆納, 西班牙",
+    country_code: "es",
+  },
+  london: {
+    lat: 51.5072,
+    lng: -0.1276,
+    display_name: "London, England, United Kingdom",
+    country_code: "gb",
+  },
+  倫敦: {
+    lat: 51.5072,
+    lng: -0.1276,
+    display_name: "倫敦, 英國",
+    country_code: "gb",
+  },
+};
+
 function normalize(name: string): string {
   return name.trim().toLowerCase();
+}
+
+export function knownCityGeocode(
+  name: string,
+  strictCountry?: string | null,
+): Geocoded | null {
+  const key = normalize(name);
+  const known = KNOWN_CITY_GEOCODES[key];
+  if (!known) return null;
+  const requiredCountry = strictCountry?.toLowerCase() ?? null;
+  if (requiredCountry && known.country_code !== requiredCountry) return null;
+  return { name, ...known };
 }
 
 let chain: Promise<unknown> = Promise.resolve();
@@ -144,6 +225,10 @@ export async function geocodeCities(
       country_code: row.countryCode,
     });
   }
+  for (const name of unique) {
+    const known = knownCityGeocode(name, opts.strictCountry);
+    if (known) byKey.set(normalize(name), known);
+  }
 
   /* In strict mode the caller already knows the country (e.g. stops on a
      trip in IT); otherwise infer from cached hits and let the loop refine
@@ -167,6 +252,33 @@ export async function geocodeCities(
     return unique
       .map((name) => byKey.get(normalize(name)))
       .filter((c): c is Geocoded => c != null);
+  }
+
+  for (const name of unique) {
+    const known = knownCityGeocode(name, opts.strictCountry);
+    if (!known) continue;
+    try {
+      await db
+        .insert(schema.cityGeocode)
+        .values({
+          nameNormalized: normalize(name),
+          displayName: known.display_name,
+          lat: String(known.lat),
+          lng: String(known.lng),
+          countryCode: known.country_code,
+        })
+        .onConflictDoUpdate({
+          target: schema.cityGeocode.nameNormalized,
+          set: {
+            displayName: known.display_name,
+            lat: String(known.lat),
+            lng: String(known.lng),
+            countryCode: known.country_code,
+          },
+        });
+    } catch {
+      // Cache repair is best-effort.
+    }
   }
 
   const misses = unique.filter((n) => !byKey.has(normalize(n)));

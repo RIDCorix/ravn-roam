@@ -19,10 +19,6 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  PublicJourneyHeader,
-  type PublicJourneyHeaderLabels,
-} from "@/components/storefront/public-journey-header";
 import { cn } from "@/lib/utils";
 
 import type { SpotlightMapEvent } from "./spotlight-flag-map";
@@ -69,6 +65,7 @@ const SPOTLIGHT_META = [
   {
     id: "venice-carnival",
     regionSlug: "italy",
+    countryCode: "IT",
     image: "/illustrations/cities/rome.jpg",
     lat: 45.44,
     lng: 12.315,
@@ -77,14 +74,25 @@ const SPOTLIGHT_META = [
   {
     id: "rio-carnival",
     regionSlug: "brazil",
+    countryCode: "BR",
     image: "/illustrations/cities/rio.jpg",
     lat: -22.906,
     lng: -43.172,
     tone: "green",
   },
   {
+    id: "tomorrowland",
+    regionSlug: "belgium",
+    countryCode: "BE",
+    image: "/illustrations/cities/europe.jpg",
+    lat: 51.09,
+    lng: 4.37,
+    tone: "violet",
+  },
+  {
     id: "iceland-lights",
     regionSlug: "iceland",
+    countryCode: "IS",
     image: "/illustrations/timeline/seasons/winter.png",
     lat: 64.147,
     lng: -21.942,
@@ -93,6 +101,7 @@ const SPOTLIGHT_META = [
   {
     id: "singapore-grand-prix",
     regionSlug: "singapore",
+    countryCode: "SG",
     image: "/illustrations/cities/singapore.jpg",
     lat: 1.291,
     lng: 103.864,
@@ -101,29 +110,130 @@ const SPOTLIGHT_META = [
   {
     id: "taiwan-lantern",
     regionSlug: "taiwan",
+    countryCode: "TW",
     image: "/illustrations/cities/taipei.jpg",
     lat: 23.697,
     lng: 120.96,
     tone: "gold",
   },
   {
+    id: "taiwan-mazu",
+    regionSlug: "taiwan",
+    countryCode: "TW",
+    image: "/illustrations/events/taiwan-dajia-mazu-pilgrimage.png",
+    lat: 24.347,
+    lng: 120.623,
+    tone: "coral",
+  },
+  {
     id: "japan-gion",
     regionSlug: "japan",
+    countryCode: "JP",
     image: "/illustrations/cities/kyoto.jpg",
     lat: 35.011,
     lng: 135.768,
     tone: "rose",
   },
+  {
+    id: "fuji-rock",
+    regionSlug: "japan",
+    countryCode: "JP",
+    image: "/illustrations/events/japan-fuji-rock-2026.png",
+    lat: 36.79,
+    lng: 138.78,
+    tone: "violet",
+  },
+  {
+    id: "jp-sakura",
+    regionSlug: "japan",
+    countryCode: "JP",
+    image: "/illustrations/events/jp-sakura-2026.png",
+    lat: 35.011,
+    lng: 135.768,
+    tone: "rose",
+  },
+  {
+    id: "korankei-autumn",
+    regionSlug: "japan",
+    countryCode: "JP",
+    image: "/illustrations/events/japan-korankei-autumn-festival.png",
+    lat: 35.133,
+    lng: 137.316,
+    tone: "gold",
+  },
+  {
+    id: "korea-boryeong-mud",
+    regionSlug: "korea",
+    countryCode: "KR",
+    image: "/illustrations/events/korea-boryeong-mud-festival-2026.png",
+    lat: 36.305,
+    lng: 126.517,
+    tone: "coral",
+  },
+  {
+    id: "korea-jinhae-cherry",
+    regionSlug: "korea",
+    countryCode: "KR",
+    image: "/illustrations/events/korea-jinhae-gunhangje-cherry-blossom.png",
+    lat: 35.15,
+    lng: 128.66,
+    tone: "rose",
+  },
+  {
+    id: "hong-kong-sevens",
+    regionSlug: "hong-kong",
+    countryCode: "HK",
+    image: "/illustrations/events/hong-kong-sevens-2026.png",
+    lat: 22.278,
+    lng: 114.182,
+    tone: "cyan",
+  },
+  {
+    id: "hong-kong-flower-show",
+    regionSlug: "hong-kong",
+    countryCode: "HK",
+    image: "/illustrations/events/hong-kong-flower-show.png",
+    lat: 22.281,
+    lng: 114.188,
+    tone: "rose",
+  },
+  {
+    id: "rainforest-world-music",
+    regionSlug: "malaysia",
+    countryCode: "MY",
+    image: "/illustrations/events/malaysia-rainforest-world-music-festival-2026.png",
+    lat: 1.744,
+    lng: 110.315,
+    tone: "green",
+  },
+  {
+    id: "singapore-durian",
+    regionSlug: "singapore",
+    countryCode: "SG",
+    image: "/illustrations/events/singapore-malaysia-durian-season.png",
+    lat: 1.352,
+    lng: 103.819,
+    tone: "green",
+  },
+  {
+    id: "taipei-feast",
+    regionSlug: "taiwan",
+    countryCode: "TW",
+    image: "/illustrations/events/taipei-taipei-feast-2026.png",
+    lat: 25.033,
+    lng: 121.565,
+    tone: "coral",
+  },
 ] as const;
+
+export const SPOTLIGHT_EVENTS = SPOTLIGHT_META;
 
 export function ExploreSpotlight({
   lang,
   labels,
-  headerLabels,
 }: {
   lang: string;
   labels: ExploreSpotlightLabels;
-  headerLabels: PublicJourneyHeaderLabels;
 }) {
   const copyById = useMemo(
     () => new Map(labels.spotlight_events.map((event) => [event.id, event])),
@@ -213,11 +323,9 @@ export function ExploreSpotlight({
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0.02)_45%,rgba(0,0,0,0.46)_100%)]" />
       <div className="absolute bottom-0 right-0 h-[54%] w-[58%] bg-[radial-gradient(circle_at_70%_58%,rgba(0,0,0,0.56)_0%,rgba(0,0,0,0.34)_34%,rgba(0,0,0,0)_72%)]" />
 
-      <PublicJourneyHeader lang={lang} labels={headerLabels} tone="onLight" />
-
-      <div className="relative z-10 min-h-[100svh] px-6 pb-8 pt-24 md:px-12 md:pb-12 lg:px-16">
-        <div className="relative z-10 max-w-[560px] pt-8 md:absolute md:left-12 md:top-32 md:pt-0 lg:left-16 lg:top-40">
-          <h1 className="text-[42px] font-semibold leading-[1.18] tracking-[-0.02em] text-[#273a3f] md:text-[58px]">
+      <div className="relative z-10 min-h-[100svh] px-4 pb-6 pt-20 sm:px-6 md:px-12 md:pb-12 md:pt-24 lg:px-16">
+        <div className="relative z-10 max-w-[560px] pt-4 sm:pt-8 md:absolute md:left-12 md:top-32 md:pt-0 lg:left-16 lg:top-40">
+          <h1 className="text-[36px] font-semibold leading-[1.14] tracking-[-0.02em] text-[#273a3f] max-[380px]:text-[32px] md:text-[58px] md:leading-[1.18]">
             {labels.spotlight_title_lines.map((line) => (
               <span key={line} className="block">
                 {line}
@@ -226,9 +334,9 @@ export function ExploreSpotlight({
           </h1>
         </div>
 
-        <div className="relative mt-10 min-h-[650px] md:static md:mt-0 md:min-h-0">
+        <div className="relative mt-7 min-h-[calc(100svh-190px)] md:static md:mt-0 md:min-h-0">
           <div
-            className="relative h-[230px] w-full overflow-hidden opacity-95 md:absolute md:bottom-14 md:left-12 md:h-[280px] md:w-[min(40vw,560px)] lg:left-16 lg:h-[300px] lg:w-[min(39vw,575px)]"
+            className="relative h-[220px] w-full overflow-hidden opacity-95 sm:h-[250px] md:absolute md:bottom-14 md:left-12 md:h-[280px] md:w-[min(40vw,560px)] lg:left-16 lg:h-[300px] lg:w-[min(39vw,575px)]"
             style={MAP_EDGE_FEATHER_STYLE}
           >
             <div className="absolute inset-0 bg-[#f8f4ec]/22" />
@@ -242,7 +350,7 @@ export function ExploreSpotlight({
             <div className="pointer-events-none absolute inset-0 z-[410] bg-[radial-gradient(ellipse_at_46%_54%,rgba(248,244,236,0)_0%,rgba(248,244,236,0.08)_54%,rgba(248,244,236,0.34)_78%,rgba(248,244,236,0.64)_100%)]" />
           </div>
 
-          <article className="relative mt-7 w-full max-w-[760px] text-white md:absolute md:bottom-12 md:right-12 md:mt-0 lg:right-16">
+          <article className="relative mt-6 w-full max-w-[760px] text-white md:absolute md:bottom-12 md:right-12 md:mt-0 lg:right-16">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/14 px-4 py-2 text-[14px] font-semibold shadow-[0_18px_44px_-30px_rgba(0,0,0,0.8)] ring-1 ring-white/25 backdrop-blur">
               <Compass className="h-4 w-4" />
               {activeEvent.category}
@@ -257,7 +365,7 @@ export function ExploreSpotlight({
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <h2 className="max-w-[760px] whitespace-nowrap text-[clamp(40px,10vw,48px)] font-semibold leading-[0.98] tracking-[-0.045em] drop-shadow-[0_12px_34px_rgba(0,0,0,0.55)] sm:text-[clamp(48px,8vw,56px)] md:text-[clamp(48px,4.35vw,60px)]">
+              <h2 className="max-w-[760px] text-[36px] font-semibold leading-[1.02] tracking-[-0.03em] drop-shadow-[0_12px_34px_rgba(0,0,0,0.55)] max-[380px]:text-[32px] sm:text-[clamp(42px,8vw,56px)] md:whitespace-nowrap md:text-[clamp(48px,4.35vw,60px)]">
                 {activeEvent.title}
               </h2>
               <button
@@ -292,13 +400,13 @@ export function ExploreSpotlight({
               <MapPin className="h-5 w-5" />
               {activeEvent.location}
             </div>
-            <div className="mt-5 grid items-end gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
-              <p className="h-24 max-w-[420px] overflow-hidden text-[16px] font-medium leading-8 text-white/88">
+            <div className="mt-5 grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-5">
+              <p className="max-h-28 max-w-[420px] overflow-hidden text-[15px] font-medium leading-7 text-white/88 sm:text-[16px] sm:leading-8 md:h-24">
                 {activeEvent.description}
               </p>
               <Button
                 asChild
-                className="h-14 rounded-[18px] bg-white px-7 text-[16px] font-semibold text-[#273a3f] shadow-[0_20px_48px_-24px_rgba(0,0,0,0.75)] hover:bg-white/92"
+                className="h-[52px] w-full rounded-[18px] bg-white px-6 text-[15px] font-semibold text-[#273a3f] shadow-[0_20px_48px_-24px_rgba(0,0,0,0.75)] hover:bg-white/92 sm:h-14 sm:w-auto sm:px-7 sm:text-[16px]"
               >
                 <Link href={`${prefix}/shop/${activeEvent.regionSlug}`}>
                   {labels.spotlight_more}

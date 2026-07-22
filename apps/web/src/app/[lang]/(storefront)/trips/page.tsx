@@ -2,13 +2,10 @@ import { notFound, redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@roam/shared";
 
-import { TripsListClient } from "@/components/storefront/trips/trips-list-client";
+import { BackendTripsPage } from "@/components/storefront/trips/backend-trips-page";
 
 import { getDictionary, hasLocale } from "../../dictionaries";
 
-// Keep the route per-request for auth-aware shell rendering, but do not
-// block navigation on itinerary data. The client paints skeleton rows and
-// hydrates from /api/storefront/trips.
 export const dynamic = "force-dynamic";
 
 export default async function TripsPage({
@@ -27,31 +24,13 @@ export default async function TripsPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) {
     const next = `/${lang}/trips${toSearch(sp)}`;
     redirect(`/${lang}/login?next=${encodeURIComponent(next)}`);
   }
-  const initialDestination = pickString(sp.destination);
 
-  return (
-    <TripsListClient
-      lang={lang}
-      initialDestination={initialDestination}
-      labels={{
-        title: t.list.title,
-        subtitle: t.list.subtitle,
-        empty: t.list.empty,
-        groups: t.groups,
-        card: t.card,
-        create: t.create,
-      }}
-    />
-  );
-}
-
-function pickString(v: string | string[] | undefined): string | undefined {
-  const s = Array.isArray(v) ? v[0] : v;
-  return s && s.trim() ? s.trim() : undefined;
+  return <BackendTripsPage lang={lang} labels={t.local} />;
 }
 
 function toSearch(params: Record<string, string | string[] | undefined>): string {

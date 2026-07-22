@@ -3,51 +3,59 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 import {
-  Bell,
   CalendarDays,
   Compass,
   Map as MapIcon,
-  Plus,
   Search,
   Sparkles,
   Wifi,
 } from "lucide-react";
 
-import { createSupabaseServerClient } from "@roam/shared";
-
-import {
-  ListCard,
-  SectionHeader,
-  TripRow,
-  TripTodoCard,
-  UserHeader,
-} from "@/components/storefront/home-sections";
-import {
-  HomeSearchPill,
-  HomeSearchProvider,
-  HomeTrendingCarousel,
-  type HomeSearchEvent,
-} from "@/components/storefront/home/home-search-discovery";
 import { ExploreWorldButton } from "@/components/storefront/home/explore-world-button";
-import { PopularDestinationsRail } from "@/components/storefront/home/popular-destinations-rail";
-import { PublicJourneyHeader } from "@/components/storefront/public-journey-header";
-import { serverApiBase } from "@/lib/server-api-base";
-import { loadRegionStats } from "@/lib/storefront-region-stats";
-import { formatTemplate } from "@/lib/text-template";
-import { apiToTrip } from "@/lib/trip-mapping";
-import { tripCoverUrl } from "@/lib/trip-cover";
-import { listChecklists, listTrips, TripApiError } from "@/lib/trips-api";
-import type { ApiChecklistItem } from "@/lib/trips-api";
+import {
+  OngoingTripHomeBanner,
+  type OngoingTripHomeBannerLabels,
+} from "@/components/storefront/home/ongoing-trip-home-banner";
 
 import { getDictionary, hasLocale } from "../dictionaries";
 
-// "Near-term" window for the home-screen todo list. Items due within
-// this many days from today are surfaced; everything else (no due
-// date, or due far in the future) is hidden from the home preview but
-// still visible on the trip detail page.
-const TODO_HORIZON_DAYS = 14;
-
 export const dynamic = "force-dynamic";
+
+type LandingLabels = {
+  brand: string;
+  nav: {
+    explore: string;
+    destinations: string;
+    calendar: string;
+    planner: string;
+    esim: string;
+  };
+  title_lines: string[];
+  subtitle: string;
+  search_placeholder: string;
+  search_aria: string;
+  search_button_aria: string;
+  favorites_aria: string;
+  account_aria: string;
+  menu_aria: string;
+  explore_cta: string;
+  ongoing: OngoingTripHomeBannerLabels;
+  cards: {
+    iceland: { title: string; months: string };
+    turkey: { title: string; months: string };
+    switzerland: { title: string; months: string };
+    japan: { title: string; months: string };
+    greece: { title: string; months: string };
+    bali: { title: string; months: string };
+  };
+  dock: {
+    inspiration: string;
+    calendar: string;
+    ai_planner: string;
+    guide: string;
+    esim: string;
+  };
+};
 
 export default async function StorefrontHomePage({
   params,
@@ -57,265 +65,28 @@ export default async function StorefrontHomePage({
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
-  const t = dict.storefront.home;
-  const shopLabels = dict.storefront.shop;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const isSignedIn = Boolean(user);
-  const displayName =
-    (user?.user_metadata?.full_name as string | undefined) ??
-    (user?.user_metadata?.name as string | undefined) ??
-    user?.email?.split("@")[0] ??
-    t.default_name;
-
-  const localeKey: "zh-TW" | "en" = lang === "en" ? "en" : "zh-TW";
-
-  if (!isSignedIn) {
-    return <PublicJourneyHero labels={t.landing} lang={lang} />;
-  }
-
-  const [trips, regionStats, searchEvents] = await Promise.all([
-    loadRealTrips(),
-    loadRegionStats(),
-    loadSearchEvents(),
-  ]);
-  const now = new Date();
-  const today = isoDate(now);
-  const horizonISO = isoDate(
-    new Date(now.getTime() + TODO_HORIZON_DAYS * 86_400_000),
-  );
-  const activeTrip =
-    trips.find((trip) => trip.start <= today && today <= trip.end) ??
-    trips.find((trip) => trip.status === "active") ??
-    null;
-  const upcoming =
-    trips
-      .filter((trip) => trip.start > today || trip.status === "upcoming")
-      .sort((a, b) => a.start.localeCompare(b.start))[0] ?? null;
-  // Trips with **near-term** incomplete tasks (due within TODO_HORIZON_DAYS).
-  // Items without a due date are intentionally excluded from the home
-  // preview — they remain visible on the trip detail page. Trips with no
-  // qualifying items drop out entirely.
-  const tripsWithTodos = trips
-    .map((trip) => ({
-      ...trip,
-      checklist: trip.checklist.filter(
-        (item) => !item.done && item.due && item.due <= horizonISO,
-      ),
-    }))
-    .filter((trip) => trip.checklist.length > 0)
-    .sort((a, b) => {
-      const aActive = activeTrip?.id === a.id ? 0 : 1;
-      const bActive = activeTrip?.id === b.id ? 0 : 1;
-      if (aActive !== bActive) return aActive - bActive;
-      return a.start.localeCompare(b.start);
-    });
-  return (
-    <div className="min-h-full">
-      {isSignedIn && (
-        <UserHeader
-          name={displayName}
-          level={1}
-          levelTitle={t.level_title}
-          xp={120}
-          xpToNext={500}
-          right={
-            <button
-              type="button"
-              aria-label={t.notifications_aria}
-              className="relative ml-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg-secondary transition-colors hover:bg-surface-hover"
-            >
-              <Bell className="h-[18px] w-[18px]" />
-              <span
-                className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full"
-                style={{
-                  background: "var(--accent)",
-                  boxShadow: "0 0 0 3px var(--bg)",
-                }}
-              />
-            </button>
-          }
-        />
-      )}
-
-      <HomeSearchProvider>
-      <div className="flex flex-col gap-5 px-5 pt-5 pb-6">
-        {(activeTrip || upcoming) && (
-          <div className="flex flex-col gap-3">
-            <SectionHeader title={t.continue_planning} />
-            <ListCard>
-              {activeTrip && (
-                <TripRow
-                  href={`/${lang}/trips/${activeTrip.id}`}
-                  imageSrc={tripCoverUrl({
-                    title: activeTrip.title,
-                    cities: activeTrip.days.map((d) => d.city),
-                  })}
-                  title={activeTrip.title}
-                  subtitle={formatTemplate(t.current_trip_meta, {
-                    date: `${activeTrip.start.slice(5)} – ${activeTrip.end.slice(5)}`,
-                    tasks: String(
-                      activeTrip.checklist.filter((item) => !item.done).length,
-                    ),
-                  })}
-                />
-              )}
-              {upcoming && (
-                <TripRow
-                  href={`/${lang}/trips/${upcoming.id}`}
-                  imageSrc={tripCoverUrl({
-                    title: upcoming.title,
-                    cities: upcoming.days.map((d) => d.city),
-                  })}
-                  title={upcoming.title}
-                  subtitle={`${upcoming.start.slice(5)} – ${upcoming.end.slice(5)} · ${formatTemplate(
-                    t.next_trip.label_with_countdown,
-                    { days: String(daysUntil(upcoming.start, today)) },
-                  )}`}
-                />
-              )}
-            </ListCard>
-          </div>
-        )}
-
-        {tripsWithTodos.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <SectionHeader title={t.upcoming_tasks} />
-            <div className="flex flex-col gap-3">
-              {tripsWithTodos.map((trip) => {
-                const incomplete = trip.checklist.filter((item) => !item.done);
-                return (
-                  <TripTodoCard
-                    key={trip.id}
-                    trip={trip}
-                    lang={lang}
-                    href={`/${lang}/trips/${trip.id}`}
-                    coverSrc={tripCoverUrl({
-                      title: trip.title,
-                      cities: trip.days.map((d) => d.city),
-                    })}
-                    countLabel={formatTemplate(t.task_count, {
-                      count: String(incomplete.length),
-                    })}
-                    viewAllLabel={formatTemplate(t.view_all_tasks, {
-                      count: String(incomplete.length),
-                    })}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <HomeSearchPill
-          lang={lang}
-          localeKey={localeKey}
-          stats={regionStats}
-          events={searchEvents}
-          labels={shopLabels}
-          placeholder={t.search_placeholder}
-        />
-
-        <HomeTrendingCarousel
-          lang={lang}
-          localeKey={localeKey}
-          labels={shopLabels}
-        />
-
-        <PopularDestinationsRail
-          lang={lang}
-          localeKey={localeKey}
-          stats={regionStats}
-        />
-
-        {isSignedIn && trips.length === 0 && !activeTrip && !upcoming && (
-          <div
-            className="flex flex-col items-center rounded-2xl bg-surface px-5 pt-4 pb-6 text-center"
-            style={{ boxShadow: "var(--shadow-card)" }}
-          >
-            <Image
-              src="/illustrations/trip-empty.png"
-              alt=""
-              width={180}
-              height={180}
-              className="h-[180px] w-[180px]"
-              priority
-            />
-            <div className="mt-2 text-[16px] font-semibold text-fg">
-              {t.empty_primary}
-            </div>
-            <div className="mt-1 max-w-[260px] text-[13px] text-fg-secondary">
-              {t.empty_secondary}
-            </div>
-            <Link
-              href={`/${lang}/trips`}
-              className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 text-[13px] font-semibold text-white shadow-[0_10px_20px_-12px_rgba(15,184,181,0.9)] transition-transform active:scale-[0.98]"
-            >
-              <Plus className="h-4 w-4" />
-              {t.quick_actions.new_trip}
-            </Link>
-          </div>
-        )}
-      </div>
-      </HomeSearchProvider>
-    </div>
-  );
+  return <PublicJourneyHero labels={dict.storefront.home.landing} lang={lang} />;
 }
 
 function PublicJourneyHero({
   labels,
   lang,
 }: {
-  labels: {
-    brand: string;
-    nav: {
-      explore: string;
-      destinations: string;
-      calendar: string;
-      planner: string;
-      esim: string;
-    };
-    title_lines: string[];
-    subtitle: string;
-    search_placeholder: string;
-    search_aria: string;
-    search_button_aria: string;
-    favorites_aria: string;
-    account_aria: string;
-    menu_aria: string;
-    explore_cta: string;
-    cards: {
-      iceland: { title: string; months: string };
-      turkey: { title: string; months: string };
-      switzerland: { title: string; months: string };
-      japan: { title: string; months: string };
-      greece: { title: string; months: string };
-      bali: { title: string; months: string };
-    };
-    dock: {
-      inspiration: string;
-      calendar: string;
-      ai_planner: string;
-      guide: string;
-      esim: string;
-    };
-  };
+  labels: LandingLabels;
   lang: string;
 }) {
   const prefix = `/${lang}`;
   const featureItems = [
     { icon: Compass, label: labels.dock.inspiration, href: `${prefix}/explore` },
-    { icon: CalendarDays, label: labels.dock.calendar, href: `${prefix}/shop` },
+    { icon: CalendarDays, label: labels.dock.calendar, href: `${prefix}/explore` },
     {
       icon: Sparkles,
       label: labels.dock.ai_planner,
-      href: `${prefix}/login?next=${prefix}/trips`,
+      href: `${prefix}/explore`,
     },
-    { icon: MapIcon, label: labels.dock.guide, href: `${prefix}/shop` },
-    { icon: Wifi, label: labels.dock.esim, href: `${prefix}/shop` },
+    { icon: MapIcon, label: labels.dock.guide, href: `${prefix}/explore` },
+    { icon: Wifi, label: labels.dock.esim, href: `${prefix}/explore` },
   ];
   const cards = [
     {
@@ -325,7 +96,7 @@ function PublicJourneyHero({
       className: "left-[60%] top-[12%] min-[1180px]:left-[35%]",
       transform: "rotateX(-7deg) rotateY(20deg) rotateZ(4deg) translateZ(24px)",
       floatDelay: "-0.8s",
-      href: `${prefix}/shop/iceland`,
+      href: `${prefix}/explore`,
     },
     {
       key: "turkey",
@@ -334,7 +105,7 @@ function PublicJourneyHero({
       className: "right-[4%] top-[15%] min-[1180px]:right-[15%]",
       transform: "rotateX(-7deg) rotateY(-22deg) rotateZ(6deg) translateZ(26px)",
       floatDelay: "-2.4s",
-      href: `${prefix}/shop/turkey`,
+      href: `${prefix}/explore`,
     },
     {
       key: "switzerland",
@@ -343,7 +114,7 @@ function PublicJourneyHero({
       className: "left-[55%] top-[51%] max-[1099px]:hidden min-[1180px]:left-[39%]",
       transform: "rotateX(-1deg) rotateY(16deg) rotateZ(-3deg) translateZ(18px)",
       floatDelay: "-1.7s",
-      href: `${prefix}/shop/switzerland`,
+      href: `${prefix}/explore`,
     },
     {
       key: "japan",
@@ -352,7 +123,7 @@ function PublicJourneyHero({
       className: "right-[3%] top-[38%]",
       transform: "rotateX(1deg) rotateY(-20deg) rotateZ(8deg) translateZ(22px)",
       floatDelay: "-3.1s",
-      href: `${prefix}/shop/japan`,
+      href: `${prefix}/explore`,
     },
     {
       key: "bali",
@@ -361,7 +132,7 @@ function PublicJourneyHero({
       className: "left-[53%] bottom-[11%] max-[1099px]:hidden",
       transform: "rotateX(11deg) rotateY(9deg) rotateZ(3deg) translateZ(18px)",
       floatDelay: "-0.2s",
-      href: `${prefix}/shop/indonesia`,
+      href: `${prefix}/explore`,
     },
   ];
 
@@ -397,35 +168,33 @@ function PublicJourneyHero({
         }}
       />
 
-      <PublicJourneyHeader lang={lang} labels={labels} tone="onDark" />
-
-      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[1440px] items-center px-5 pb-32 pt-24 sm:px-8 lg:pb-24">
+      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[1440px] items-center px-4 pb-28 pt-20 sm:px-8 sm:pb-32 sm:pt-24 lg:pb-24">
         <div className="max-w-[620px]">
-          <h1 className="text-balance text-[44px] font-semibold leading-[1.14] tracking-[-0.035em] text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.24)] sm:text-[56px] lg:text-[64px]">
+          <h1 className="text-balance text-[40px] font-semibold leading-[1.12] tracking-[-0.03em] text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.24)] max-[380px]:text-[34px] sm:text-[56px] lg:text-[64px]">
             {labels.title_lines.map((line) => (
               <span key={line} className="block">
                 {line}
               </span>
             ))}
           </h1>
-          <p className="mt-5 max-w-[560px] text-[18px] font-medium leading-8 text-white/88 sm:text-[20px]">
+          <p className="mt-4 max-w-[560px] text-[16px] font-medium leading-7 text-white/88 sm:mt-5 sm:text-[20px] sm:leading-8">
             {labels.subtitle}
           </p>
 
           <form
-            action={`${prefix}/shop`}
-            className="mt-9 flex h-16 max-w-[430px] overflow-hidden rounded-[12px] bg-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.45)] sm:max-w-[470px]"
+            action={`${prefix}/explore`}
+            className="mt-7 flex h-14 max-w-[430px] overflow-hidden rounded-[12px] bg-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.45)] sm:mt-9 sm:h-16 sm:max-w-[470px]"
           >
             <input
               name="q"
               aria-label={labels.search_aria}
               placeholder={labels.search_placeholder}
-              className="min-w-0 flex-1 bg-white px-6 text-[15px] font-medium text-[#122026] outline-none placeholder:text-[#8b9497]"
+              className="min-w-0 flex-1 bg-white px-4 text-[15px] font-medium text-[#122026] outline-none placeholder:text-[#8b9497] sm:px-6"
             />
             <button
               type="submit"
               aria-label={labels.search_button_aria}
-              className="grid w-16 shrink-0 place-items-center bg-[#4b9466] text-white transition-colors hover:bg-[#3f8459]"
+              className="grid w-14 shrink-0 place-items-center bg-[#4b9466] text-white transition-colors hover:bg-[#3f8459] sm:w-16"
             >
               <Search className="h-7 w-7" strokeWidth={2.4} />
             </button>
@@ -435,6 +204,7 @@ function PublicJourneyHero({
             href={`${prefix}/explore`}
             label={labels.explore_cta}
           />
+          <OngoingTripHomeBanner lang={lang} labels={labels.ongoing} />
         </div>
 
         <div
@@ -455,13 +225,13 @@ function PublicJourneyHero({
           ))}
         </div>
 
-        <nav className="absolute inset-x-5 bottom-4 z-20 rounded-[18px] border border-white/10 bg-black/18 px-3 py-3 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl sm:inset-x-8 lg:left-1/2 lg:w-[980px] lg:-translate-x-1/2">
+        <nav className="absolute inset-x-3 bottom-3 z-20 rounded-[18px] border border-white/10 bg-black/22 px-2 py-2 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl sm:inset-x-8 sm:bottom-4 sm:px-3 sm:py-3 lg:left-1/2 lg:w-[980px] lg:-translate-x-1/2">
           <div className="grid grid-cols-5 gap-1">
             {featureItems.map(({ icon: Icon, label, href }) => (
               <Link
                 key={label}
                 href={href}
-                className="flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl px-1.5 py-2 text-center text-[11px] font-semibold text-white/86 transition-colors hover:bg-white/10 hover:text-white sm:flex-row sm:gap-3 sm:text-[15px]"
+                className="flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-2 text-center text-[10.5px] font-semibold text-white/86 transition-colors hover:bg-white/10 hover:text-white sm:flex-row sm:gap-3 sm:px-1.5 sm:text-[15px]"
               >
                 <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" strokeWidth={1.9} />
                 <span className="truncate">{label}</span>
@@ -538,59 +308,4 @@ function HeroDestinationCard({
       </div>
     </Link>
   );
-}
-
-async function loadSearchEvents(): Promise<HomeSearchEvent[]> {
-  const base = serverApiBase();
-  const url = new URL("/storefront/events", base);
-  url.searchParams.set("upcoming", "1");
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { events?: HomeSearchEvent[] };
-    return (data.events ?? []).slice(0, 60);
-  } catch {
-    return [];
-  }
-}
-
-async function loadRealTrips() {
-  try {
-    const [summaries, checklistItems] = await Promise.all([
-      listTrips(),
-      listChecklists().catch((err) => {
-        // If only the new endpoint fails (e.g. older API), still render
-        // summaries — we just lose task text on the home screen.
-        if (err instanceof TripApiError && err.status === 404) return [];
-        throw err;
-      }),
-    ]);
-    const itemsByTrip = new Map<string, ApiChecklistItem[]>();
-    for (const item of checklistItems) {
-      const arr = itemsByTrip.get(item.trip_id);
-      if (arr) arr.push(item);
-      else itemsByTrip.set(item.trip_id, [item]);
-    }
-    return summaries.map((summary) =>
-      apiToTrip(summary, [], itemsByTrip.get(summary.id) ?? []),
-    );
-  } catch (err) {
-    if (err instanceof TripApiError && (err.status === 401 || err.status === 503)) {
-      return [];
-    }
-    throw err;
-  }
-}
-
-function isoDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function daysUntil(dateISO: string, fromISO: string): number {
-  const a = new Date(`${fromISO}T00:00:00`).getTime();
-  const b = new Date(`${dateISO}T00:00:00`).getTime();
-  return Math.max(0, Math.round((b - a) / 86_400_000));
 }

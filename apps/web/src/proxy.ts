@@ -6,8 +6,6 @@ export const DEFAULT_LOCALE = "en";
 
 export type Locale = (typeof LOCALES)[number];
 
-const PROTECTED_PATH = /^\/(en|zh-TW)\/(trips|tasks|me)(\/|$)/;
-
 function pickLocale(acceptLanguage: string | null): Locale {
   if (!acceptLanguage) return DEFAULT_LOCALE;
   const tags = acceptLanguage
@@ -43,7 +41,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Step 2: refresh Supabase auth cookies + gate member routes.
+  // Step 2: refresh Supabase auth cookies for pages that read session state.
   const response = NextResponse.next({ request });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -65,17 +63,7 @@ export async function proxy(request: NextRequest) {
 
   // IMPORTANT: getUser refreshes the session if the JWT is expired AND
   // writes the new cookies onto `response` via the setAll() callback.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (PROTECTED_PATH.test(pathname) && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = `/${currentLocale}/login`;
-    url.search = "";
-    url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(url);
-  }
+  await supabase.auth.getUser();
 
   return response;
 }

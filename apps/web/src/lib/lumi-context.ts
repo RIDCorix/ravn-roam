@@ -51,9 +51,21 @@ export interface LumiContextTodayTasks {
   items: LumiContextTaskItem[];
 }
 
+export interface LumiContextKnownTrip {
+  id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  days_count: number | null;
+  cities: string[];
+  updated_at: string;
+}
+
 export interface LumiContext {
   current_date: string;
   user_name: string | null;
+  known_trips: LumiContextKnownTrip[];
   active_trip: LumiContextActiveTrip | null;
   active_esim: LumiContextESIM | null;
   today_tasks: LumiContextTodayTasks | null;
@@ -64,6 +76,7 @@ export async function getLumiContext(): Promise<LumiContext> {
   const ctx: LumiContext = {
     current_date: today,
     user_name: null,
+    known_trips: [],
     active_trip: null,
     active_esim: null,
     today_tasks: null,
@@ -71,6 +84,19 @@ export async function getLumiContext(): Promise<LumiContext> {
 
   try {
     const trips = await listTrips();
+    ctx.known_trips = [...trips]
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+      .slice(0, 8)
+      .map((trip) => ({
+        id: trip.id,
+        title: trip.title,
+        start_date: trip.start_date,
+        end_date: trip.end_date,
+        status: trip.status,
+        days_count: trip.days_count ?? null,
+        cities: trip.cities ?? [],
+        updated_at: trip.updated_at,
+      }));
     const active =
       trips.find((t) => t.start_date <= today && today <= t.end_date) ?? null;
     if (active) {

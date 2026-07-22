@@ -1,5 +1,48 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@xyflow/react/dist/style.css";
+
+.react-flow {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.react-flow__container,
+.react-flow__pane,
+.react-flow__viewport,
+.react-flow__renderer,
+.react-flow__selection,
+.react-flow__edges,
+.react-flow__nodes {
+  position: absolute;
+  inset: 0;
+}
+
+.react-flow__viewport {
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.react-flow__edges,
+.react-flow__nodes {
+  transform-origin: 0 0;
+}
+
+.react-flow__node {
+  position: absolute;
+  user-select: none;
+  pointer-events: all;
+  transform-origin: 0 0;
+  box-sizing: border-box;
+}
+
+.react-flow__edges svg {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
 
 /* ================================================================
    Roam admin/storefront design tokens. Mirrors apps/landing —
@@ -25,6 +68,8 @@
   --surface-elevated: #fcfcfd;
   --surface-sunken: #f2f2ef;
   --surface-hover: #efefec;
+  --paper: #f3efe7;
+  --paper-raised: #fbf8f1;
   --divider: rgba(0, 0, 0, 0.06);
   --divider-strong: rgba(0, 0, 0, 0.1);
   --border: #e6e6e0;
@@ -67,6 +112,8 @@
     "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: var(--font-intel-mono), ui-monospace, "SF Mono", Menlo, monospace;
   --font-display: var(--font-sans);
+  --font-editorial-family: "Iowan Old Style", "Palatino Linotype", Palatino,
+    "Times New Roman", serif;
 
   /* type scale */
   --type-display-2xl: 96px;
@@ -461,6 +508,8 @@ body {
   --color-surface-elevated: var(--surface-elevated);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
   --color-divider: var(--divider);
   --color-divider-strong: var(--divider-strong);
   --color-border: var(--border);
@@ -526,6 +575,7 @@ body {
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-display: var(--font-display);
+  --font-editorial: var(--font-editorial-family);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -542,6 +592,37 @@ body {
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+}
+
+.trip-editorial-pressable {
+  transition:
+    transform var(--dur-micro) var(--ease-out-soft),
+    box-shadow var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.trip-editorial-pressable:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .trip-editorial-pressable:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-editorial-pressable {
+    transition:
+      box-shadow var(--dur-fast) ease,
+      border-color var(--dur-fast) ease;
+  }
+
+  .trip-editorial-pressable:hover,
+  .trip-editorial-pressable:active {
+    transform: none;
+  }
 }
 
 /* ============================================================

@@ -7,8 +7,8 @@
 
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { Copy, Crown, Plus, Trash2, UserPlus, Users } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Copy, Crown, Mail, Plus, Trash2, UserPlus, Users } from "lucide-react";
 
 import { MotionButton, popIn } from "@/components/storefront/motion";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,9 @@ export interface CompanionsMenuLabels {
   add: string;
   rename_placeholder: string;
   copy_invite: string;
+  email_invite: string;
+  email_subject: string;
+  email_body: string;
   copied: string;
   link_only: string;
   joined: string;
@@ -35,10 +38,12 @@ export function CompanionsMenu({
   tripId,
   companions,
   labels,
+  trigger,
 }: {
   tripId: string;
   companions: ApiCompanion[];
   labels: CompanionsMenuLabels;
+  trigger?: ReactNode;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -92,30 +97,45 @@ export function CompanionsMenu({
 
   return (
     <div className="relative">
-      <MotionButton
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={labels.manage_aria}
-        aria-expanded={open}
-        className={cn(
-          "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/88 text-fg transition-colors backdrop-blur",
-          open ? "bg-white" : "hover:bg-white",
-        )}
-        style={{ boxShadow: "var(--shadow-card)" }}
-      >
-        <Users className="h-4 w-4" />
-        {companions.length > 0 && (
-          <span
-            className="absolute -bottom-0.5 -right-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white"
-            style={{
-              background: "var(--accent)",
-              fontFamily: "var(--font-mono)",
-            }}
-          >
-            {companions.length}
-          </span>
-        )}
-      </MotionButton>
+      {trigger ? (
+        <MotionButton
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={labels.manage_aria}
+          aria-expanded={open}
+          className={cn(
+            "group inline-flex rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-accent/35 focus-visible:ring-offset-2",
+            open && "ring-2 ring-accent/20",
+          )}
+        >
+          {trigger}
+        </MotionButton>
+      ) : (
+        <MotionButton
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={labels.manage_aria}
+          aria-expanded={open}
+          className={cn(
+            "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/88 text-fg transition-colors backdrop-blur",
+            open ? "bg-white" : "hover:bg-white",
+          )}
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <Users className="h-4 w-4" />
+          {companions.length > 0 && (
+            <span
+              className="absolute -bottom-0.5 -right-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white"
+              style={{
+                background: "var(--accent)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {companions.length}
+            </span>
+          )}
+        </MotionButton>
+      )}
 
       <AnimatePresence>
         {open && (
@@ -227,6 +247,19 @@ function CompanionRow({
     window.setTimeout(() => setPickToast(false), 1500);
   }
 
+  function emailInvite() {
+    if (!inviteUrl) return;
+    const subject = formatTemplate(labels.email_subject, {
+      name: companion.display_name,
+      url: inviteUrl,
+    });
+    const body = formatTemplate(labels.email_body, {
+      name: companion.display_name,
+      url: inviteUrl,
+    });
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
   function commitName() {
     if (owner) return;
     const next = draft.trim();
@@ -305,20 +338,31 @@ function CompanionRow({
             <UserPlus className="h-3.5 w-3.5" />
           </button>
           {inviteUrl && (
-            <button
-              type="button"
-              onClick={() => void copyInvite()}
-              aria-label={labels.copy_invite}
-              title={copied ? labels.copied : labels.copy_invite}
-              className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-                copied
-                  ? "text-accent"
-                  : "text-fg-muted hover:bg-[rgba(0,0,0,0.05)] hover:text-fg",
-              )}
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={emailInvite}
+                aria-label={labels.email_invite}
+                title={labels.email_invite}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-[rgba(0,0,0,0.05)] hover:text-fg"
+              >
+                <Mail className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyInvite()}
+                aria-label={labels.copy_invite}
+                title={copied ? labels.copied : labels.copy_invite}
+                className={cn(
+                  "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                  copied
+                    ? "text-accent"
+                    : "text-fg-muted hover:bg-[rgba(0,0,0,0.05)] hover:text-fg",
+                )}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -334,4 +378,8 @@ function CompanionRow({
       )}
     </div>
   );
+}
+
+function formatTemplate(template: string, values: Record<string, string>) {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
 }

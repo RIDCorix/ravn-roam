@@ -74,6 +74,10 @@ Heed deprecation notices from the installed docs over memory.
   surface, not a separate admin dashboard unless the route is actually admin.
 - Lumi is a core product surface, not decoration. It should convert trip intent
   into itinerary context and useful eSIM recommendations.
+- Lumi-generated itinerary stops follow one simple invariant: every stop must
+  have a non-empty `place_name` map anchor. Do not solve missing map anchors
+  with positive keyword lists or category-specific patches; make the structured
+  output contract require a mappable place for every stop.
 - Preserve the CTA chain: trip or checklist context -> shop prefilter ->
   plan comparison -> purchase/action.
 - Default locale is `zh-TW`; default currency is TWD. Any user-facing copy must
@@ -106,6 +110,34 @@ Read these before substantial UI or product-copy work:
 - `design/app/components/*.jsx` when porting prototype behavior
 
 ## UI Implementation Rules
+
+### Design Quality Gate
+
+For substantial consumer-facing UI work, redesigns, new product flows, or
+visual direction changes, do not move directly from requirements to code. Use
+this design stack in order:
+
+1. Apply `roam-storefront-ui` for Roam product, brand, component, i18n, and
+   mobile-first constraints.
+2. Before implementation, use the official `frontend-design` skill for a
+   brief-specific visual direction and self-critique, then use Impeccable
+   `shape` with its product register to turn that direction into a coherent
+   product interaction. Existing Lume tokens and patterns remain authoritative.
+3. Generate a visual mockup for approval. When the choice is broad, show four
+   clearly differentiated options in one comparison image. Do not implement a
+   visual direction that has not been approved.
+4. Use `emil-design-eng` when the surface includes motion, gestures, popovers,
+   transitions, state changes, or other interaction details. Motion must
+   communicate state and remain fast, interruptible, and reduced-motion safe.
+5. Before completion, run an Impeccable `critique` or `polish` pass and verify
+   the real UI with browser screenshots at representative mobile and desktop
+   sizes. Fix generic AI patterns, inconsistent component vocabulary, weak
+   hierarchy, missing states, and unnecessary decoration before handoff.
+
+Do not use landing-page or Awwwards-oriented skills as the primary authority
+for authenticated product UI. Routine copy edits, exact bug fixes, and small
+design-system-aligned changes do not require the full stack, but still follow
+`roam-storefront-ui` and existing tokens.
 
 - All app UI must use the shared component library and local design-system
   patterns for interactive controls.
@@ -233,6 +265,9 @@ pnpm dev
 pnpm build
 pnpm lint
 pnpm typecheck
+pnpm verify
+pnpm verify:ci
+pnpm agent:audit
 ```
 
 Web app:
@@ -270,6 +305,17 @@ pnpm --filter @roam/catalog test
 pnpm --filter @roam/catalog typecheck
 ```
 
+Agent-native shortcuts:
+
+```bash
+pnpm verify:web
+pnpm verify:landing
+pnpm verify:api
+pnpm verify:catalog
+pnpm verify:lumi-agent
+pnpm agent:audit
+```
+
 ## Verification Policy
 
 Run checks based on changed scope:
@@ -301,13 +347,14 @@ external service, report that explicitly with the command and reason.
 
 ## Project-Local Codex Skills
 
-This repo includes minimal project Codex config at `.codex/config.toml` and
-project-local Codex skills under `.agents/skills/`. Use the skills when
-relevant:
+This repo includes project-local Codex skills under `.agents/skills/`. Use the
+skills when relevant:
 
 - `roam-storefront-ui`: consumer storefront, design porting, UI polish.
 - `roam-api-catalog`: API, catalog, supplier, pricing, publication work.
 - `roam-infra-release`: infra, env, deploy, CI, secrets, Linear handoff.
 
 If the current Codex session does not auto-discover newly added project skills,
-read their `SKILL.md` files directly before doing the matching work.
+read their `SKILL.md` files directly before doing the matching work. Local
+`.codex/` files are ignored workspace state unless a future change explicitly
+force-adds and documents a shared project config file.

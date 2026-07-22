@@ -28,7 +28,7 @@ Every stage-02 PoC issue must close out the following seven items. Each one MUST
 | 2 | **Railway project** | If repo needs a long-running backend service that doesn't fit on Vercel Functions (e.g. Python worker, Go daemon, persistent socket server) | `railway init` + `railway up`; one Railway project per repo |
 | 3 | **Supabase schema** (in shared project) | If the PoC needs Postgres. Skip only if (a) PoC genuinely has no persistence, or (b) client mandated a different DB | Don't create a new Supabase project — see [`06-shared-supabase.md`](./06-shared-supabase.md) |
 | 4 | **CI pipeline** | Always | GitHub Actions: lint + typecheck + test on PR + main. The RAVN-private `ravn-notify-linear.yml` lives on `ravn/integration` only (see [`08-ravn-integration-branch.md`](./08-ravn-integration-branch.md)); the client-facing `ci.yml` lives on both branches. |
-| 5 | **CD pipeline + production branch = `ravn/integration`** | If anything is deployable (≈ always when item 1 or 2 fired) | Vercel + Railway production branch set to `ravn/integration` (NOT `main`) — see [`08-ravn-integration-branch.md`](./08-ravn-integration-branch.md). Preview deploys cover all other branches. Run `scripts/bootstrap-deploy-targets.sh` to set this idempotently. |
+| 5 | **CD pipeline + production branch** | If anything is deployable (≈ always when item 1 or 2 fired) | Follow the repo-specific infra doc. For Roam, `docs/INFRA.md` overrides the older `ravn/integration` default and production deploys from `main`. |
 | 6 | **PR preview discipline** | If item 1 or 2 fired | Vercel PR preview enabled (free, default). Railway PR Environments NOT enabled at stage-02 — backend protected by backward-compat + migration-first rules per [`09-pr-previews.md`](./09-pr-previews.md). |
 | 7 | **Pre-commit hooks** | Always | `pre-commit` or husky + lint-staged; format + lint on staged files |
 
@@ -39,9 +39,9 @@ Format for the issue's `## Conclusion`:
 - [x] Railway — skipped: Next.js API routes cover the backend, no separate service needed
 - [x] Supabase — done · schema `acme_poc` on shared project, conn string injected into Vercel env
 - [x] CI — done · .github/workflows/ci.yml
-- [x] CD + prod branch — done · Vercel production branch = `ravn/integration` (Railway skipped per #2)
+- [x] CD + prod branch — done · Vercel production branch matches repo infra doc
 - [x] PR preview — done · Vercel preview enabled; Railway PR Environments deferred to stage-03 per `09-pr-previews.md`
-- [x] Pre-commit — done · .husky/pre-commit + lint-staged
+- [x] Pre-commit — skipped: this repo currently uses CI + `pnpm verify:*` commands instead of local hooks
 ```
 
 Rules of thumb:

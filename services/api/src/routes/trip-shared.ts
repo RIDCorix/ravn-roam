@@ -4,6 +4,7 @@ export interface ChecklistSubtaskDraft {
 }
 
 export function fallbackChecklistKind(type: string): string {
+  if (type === "airport_transfer") return "transit";
   if (type === "reservation") return "stay";
   if (type === "booking" || type === "flight") return "flight";
   if (type === "upload" || type === "document") return "doc";
