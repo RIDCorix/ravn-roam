@@ -1,5 +1,5 @@
 import * as React from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check, TriangleAlert } from "lucide-react";
 
 import type { ShopProduct } from "@/lib/storefront-api";
@@ -31,6 +31,7 @@ export function PlanRow({
   region: ShopRegion;
   onSelect: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
   const coverage = getCoverageInfo(
     product.marketing_destinations,
     region,
@@ -62,9 +63,9 @@ export function PlanRow({
       type="button"
       onClick={onSelect}
       layout
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
+      whileHover={reducedMotion ? undefined : { y: -2 }}
+      whileTap={reducedMotion ? undefined : { scale: 0.98 }}
+      transition={reducedMotion ? { duration: 0 } : { duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
       className={cn(
         "group relative flex w-full items-stretch overflow-hidden rounded-xl text-left transition-colors duration-150",
         highlighted

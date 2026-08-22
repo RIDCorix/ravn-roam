@@ -732,6 +732,8 @@
       "plans_load_error": "Plans could not load.",
       "try_again": "Try again",
       "loading_plans": "Loading plans",
+      "sign_in_to_continue": "Sign in to choose this plan",
+      "sign_in_to_buy": "Sign in to continue",
       "back_to_shop": "Back to eSIM shop",
       "coverage_label": "eSIM coverage",
       "trip_length": "Trip length",

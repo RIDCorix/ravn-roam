@@ -613,6 +613,13 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hover\:-translate-y-0\.5:hover,
+  .group:hover .group-hover\:scale-\[1\.03\],
+  .group:hover .group-hover\:translate-x-0\.5 {
+    transform: none;
+    transition: none;
+  }
+
   .trip-editorial-pressable {
     transition:
       box-shadow var(--dur-fast) ease,
@@ -622,6 +629,22 @@ body {
   .trip-editorial-pressable:hover,
   .trip-editorial-pressable:active {
     transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .roam-public-header [class*="backdrop-blur"] {
+    backdrop-filter: none;
+    background-color: var(--bg);
+  }
+}
+
+@media (forced-colors: active) {
+  .roam-public-header,
+  .roam-public-header a,
+  .roam-public-header button {
+    forced-color-adjust: auto;
+    border-color: CanvasText;
   }
 }
 

@@ -6,6 +6,8 @@ export interface ShopRegionLabels {
   plans_load_error: string;
   try_again: string;
   loading_plans: string;
+  sign_in_to_continue: string;
+  sign_in_to_buy: string;
   trip_length: string;
   options: string;
   day_unit: string;

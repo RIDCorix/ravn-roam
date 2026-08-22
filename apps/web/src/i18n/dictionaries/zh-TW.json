@@ -732,6 +732,8 @@
       "plans_load_error": "目前無法載入方案。",
       "try_again": "再試一次",
       "loading_plans": "正在載入方案",
+      "sign_in_to_continue": "登入後選擇這個方案",
+      "sign_in_to_buy": "登入後繼續",
       "back_to_shop": "返回 eSIM 商店",
       "coverage_label": "eSIM 覆蓋範圍",
       "trip_length": "旅程天數",
