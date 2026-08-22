@@ -306,7 +306,11 @@ export function ShopRegionClient({
         </div>
       ) : loadError ? (
         <div className="space-y-4">
-          <ConnectivityReadinessScene state="error" title={labels.plans_load_error} description={labels.no_coverage_body} />
+          <ConnectivityReadinessScene
+            state="error"
+            title={labels.plans_load_error}
+            description={labels.plans_load_error_body}
+          />
           <Button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="h-11 w-full rounded-full bg-accent text-white hover:bg-accent/90">
             {labels.try_again}
           </Button>

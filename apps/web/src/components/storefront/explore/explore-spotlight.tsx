@@ -231,9 +231,11 @@ export const SPOTLIGHT_EVENTS = SPOTLIGHT_META;
 export function ExploreSpotlight({
   lang,
   labels,
+  initialQuery,
 }: {
   lang: string;
   labels: ExploreSpotlightLabels;
+  initialQuery?: string;
 }) {
   const copyById = useMemo(
     () => new Map(labels.spotlight_events.map((event) => [event.id, event])),
@@ -247,7 +249,18 @@ export function ExploreSpotlight({
       }),
     [copyById],
   );
-  const [activeIndex, setActiveIndex] = useState(0);
+  const initialIndex = useMemo(() => {
+    const query = initialQuery?.trim().toLocaleLowerCase();
+    if (!query) return 0;
+    const match = events.findIndex((event) =>
+      [event.title, event.location, event.countryCode, event.regionSlug]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(query),
+    );
+    return match >= 0 ? match : 0;
+  }, [events, initialQuery]);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const autoTimerRef = useRef<number | null>(null);
   const activeEvent = events[activeIndex] ?? events[0];
   const prefix = `/${lang}`;

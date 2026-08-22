@@ -730,6 +730,7 @@
       "no_coverage_body": "Keep this destination selected and browse another place to find a compatible plan.",
       "browse_destinations": "Browse destinations",
       "plans_load_error": "Plans could not load.",
+      "plans_load_error_body": "We couldn't read plans for this destination. Try again to keep your destination and trip details.",
       "try_again": "Try again",
       "loading_plans": "Loading plans",
       "sign_in_to_continue": "Sign in to choose this plan",

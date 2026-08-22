@@ -730,6 +730,7 @@
       "no_coverage_body": "會保留這個目的地。你可以改看其他目的地的相容方案。",
       "browse_destinations": "瀏覽目的地",
       "plans_load_error": "目前無法載入方案。",
+      "plans_load_error_body": "目前無法讀取這個目的地的方案。再試一次會保留目的地與旅程資訊。",
       "try_again": "再試一次",
       "loading_plans": "正在載入方案",
       "sign_in_to_continue": "登入後選擇這個方案",

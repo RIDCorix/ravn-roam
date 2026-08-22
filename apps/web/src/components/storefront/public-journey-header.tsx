@@ -58,7 +58,6 @@ export function PublicJourneyHeader({
     pathname === `/${lang}/explore/` ||
     pathname === `/${lang}/shop` ||
     pathname === `/${lang}/shop/` ||
-    pathname?.startsWith(`/${lang}/shop/`) ||
     pathname === `/${lang}/trips` ||
     pathname === `/${lang}/trips/` ||
     pathname?.startsWith(`/${lang}/trips/`) ||
