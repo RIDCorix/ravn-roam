@@ -8,7 +8,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Loader2,
 } from "lucide-react";
@@ -381,7 +381,6 @@ export function ShopRegionClient({
               don't show a pointless 1-chip bar). */}
           {subRegions.length >= 2 ? (
             <motion.section
-              layout
               {...fadeUp}
               transition={reducedMotion ? { duration: 0 } : appSpring}
               className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1"
@@ -405,7 +404,7 @@ export function ShopRegionClient({
           ) : null}
 
           {/* Plans list */}
-          <motion.section layout transition={reducedMotion ? { duration: 0 } : appSpring} className="space-y-2">
+          <section className="space-y-2">
             <div className="px-1 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
               {formatTemplate(labels.plans_for_days, {
                 days: String(days),
@@ -420,27 +419,26 @@ export function ShopRegionClient({
                 {labels.no_plan_duration}
               </div>
             ) : (
-              <AnimatePresence mode="popLayout">
+              <>
                 {plansForDay.map((p) => (
-                  <motion.div
-                    key={p.id}
-                    layout
-                    {...fadeUp}
-                    transition={reducedMotion ? { duration: 0 } : appSpring}
-                  >
-                    <PlanRow
-                      product={p}
-                      localeKey={localeKey}
-                      labels={labels}
-                      highlighted={p.id === highlightedPlanId}
-                      region={region}
-                      onSelect={() => setCheckoutProduct(p)}
-                    />
-                  </motion.div>
+                <motion.div
+                  key={p.id}
+                  {...fadeUp}
+                  transition={reducedMotion ? { duration: 0 } : appSpring}
+                >
+                  <PlanRow
+                    product={p}
+                    localeKey={localeKey}
+                    labels={labels}
+                    highlighted={p.id === highlightedPlanId}
+                    region={region}
+                    onSelect={() => setCheckoutProduct(p)}
+                  />
+                </motion.div>
                 ))}
-              </AnimatePresence>
+              </>
             )}
-          </motion.section>
+          </section>
 
           <BuyerNotes labels={labels} />
           <CheckoutSheet
