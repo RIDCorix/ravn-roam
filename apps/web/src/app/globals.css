@@ -637,14 +637,33 @@ body {
     backdrop-filter: none;
     background-color: var(--bg);
   }
+
+  .shop-region-back-control {
+    backdrop-filter: none;
+    background-color: var(--bg);
+  }
 }
 
 @media (forced-colors: active) {
   .roam-public-header,
   .roam-public-header a,
-  .roam-public-header button {
+  .roam-public-header button,
+  .shop-region-back-control,
+  .shop-plan-row {
     forced-color-adjust: auto;
     border-color: CanvasText;
+  }
+
+  .shop-region-back-control,
+  .shop-plan-row {
+    border: 1px solid CanvasText;
+  }
+
+  .shop-plan-row.is-highlighted {
+    background: Highlight;
+    color: HighlightText;
+    outline: 2px solid HighlightText;
+    outline-offset: -4px;
   }
 }
 

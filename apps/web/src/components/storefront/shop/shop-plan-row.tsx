@@ -40,9 +40,12 @@ export function PlanRow({
   const rowRef = React.useRef<HTMLButtonElement | null>(null);
   React.useEffect(() => {
     if (highlighted && rowRef.current) {
-      rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      rowRef.current.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "center",
+      });
     }
-  }, [highlighted]);
+  }, [highlighted, reducedMotion]);
   const retail = Number(product.pricing?.retail ?? 0);
   const isUnlimited = product.data_amount_mb < 0;
   const isPerDay = (product.tags ?? []).includes("per-day");
@@ -62,14 +65,13 @@ export function PlanRow({
       ref={rowRef}
       type="button"
       onClick={onSelect}
-      layout
       whileHover={reducedMotion ? undefined : { y: -2 }}
       whileTap={reducedMotion ? undefined : { scale: 0.98 }}
       transition={reducedMotion ? { duration: 0 } : { duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
       className={cn(
-        "group relative flex w-full items-stretch overflow-hidden rounded-xl text-left transition-colors duration-150",
+        "shop-plan-row group relative flex w-full items-stretch overflow-hidden rounded-xl text-left transition-colors duration-150",
         highlighted
-          ? "bg-accent-softer ring-2 ring-accent/40"
+          ? "is-highlighted bg-accent-softer ring-2 ring-accent/40"
           : "bg-surface",
       )}
       style={{ boxShadow: "var(--shadow-card)" }}
