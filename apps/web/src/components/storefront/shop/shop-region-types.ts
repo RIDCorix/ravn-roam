@@ -1,5 +1,11 @@
 export interface ShopRegionLabels {
   no_plans: string;
+  no_coverage_title: string;
+  no_coverage_body: string;
+  browse_destinations: string;
+  plans_load_error: string;
+  try_again: string;
+  loading_plans: string;
   trip_length: string;
   options: string;
   day_unit: string;

@@ -1,8 +1,7 @@
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check, TriangleAlert } from "lucide-react";
 
-import { appSpring } from "@/components/storefront/motion";
 import type { ShopProduct } from "@/lib/storefront-api";
 import {
   getCoverageInfo,
@@ -63,9 +62,9 @@ export function PlanRow({
       type="button"
       onClick={onSelect}
       layout
-      whileHover={{ y: -2, scale: 1.01 }}
-      whileTap={{ scale: 0.985 }}
-      transition={appSpring}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
       className={cn(
         "group relative flex w-full items-stretch overflow-hidden rounded-xl text-left transition-colors duration-150",
         highlighted
@@ -169,7 +168,7 @@ function CoverageBadge({
           : labels.coverage_partial_title
       }
     >
-      {coverage.isFullCoverage ? "✓ " : "⚠ "}
+      {coverage.isFullCoverage ? <Check className="mr-0.5 h-3 w-3" aria-hidden="true" /> : <TriangleAlert className="mr-0.5 h-3 w-3" aria-hidden="true" />}
       {coverage.label}
     </span>
   );

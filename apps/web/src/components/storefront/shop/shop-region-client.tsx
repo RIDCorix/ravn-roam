@@ -45,6 +45,7 @@ import { formatTemplate } from "@/lib/text-template";
 
 import { CoverageChip } from "./shop-coverage-chip";
 import { BuyerNotes, ReadinessPanel } from "./shop-info-panels";
+import { ConnectivityReadinessScene } from "./connectivity-readiness-scene";
 import { PlanRow } from "./shop-plan-row";
 import { dataAmountAsc, formatDataInline } from "./shop-plan-utils";
 import type {
@@ -79,6 +80,8 @@ export function ShopRegionClient({
 }) {
   const [products, setProducts] = React.useState<ShopProduct[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState(false);
+  const [loadAttempt, setLoadAttempt] = React.useState(0);
   const [days, setDays] = React.useState<number>(initialDays ?? 7);
   // Empty = show plans from all sub-regions; otherwise show any selected
   // coverage bucket. URL deep-links can preselect more than one bucket,
@@ -100,6 +103,7 @@ export function ShopRegionClient({
     let cancelled = false;
     async function load() {
       setLoading(true);
+      setLoadError(false);
       try {
         const qs = new URLSearchParams({
           destinations: destinationList,
@@ -107,13 +111,15 @@ export function ShopRegionClient({
         const res = await fetch(`/api/storefront/products?${qs}`, {
           cache: "no-store",
         });
-        if (!res.ok) {
-          setProducts([]);
-          return;
-        }
+        if (!res.ok) throw new Error("products unavailable");
         const data = (await res.json()) as ShopProductListResponse;
         if (cancelled) return;
         setProducts(data.products ?? []);
+      } catch {
+        if (!cancelled) {
+          setProducts([]);
+          setLoadError(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -122,7 +128,7 @@ export function ShopRegionClient({
     return () => {
       cancelled = true;
     };
-  }, [destinationList]);
+  }, [destinationList, loadAttempt]);
 
   // Available days available in this region's catalog
   const availableDays = React.useMemo(() => {
@@ -274,17 +280,23 @@ export function ShopRegionClient({
   return (
     <div className="space-y-5 px-5 pb-24">
       {loading ? (
-        <div className="flex items-center justify-center py-12 text-fg-muted">
-          <Loader2 className="h-5 w-5 animate-spin" />
+        <div className="flex items-center justify-center gap-2 py-12 text-[13px] text-fg-muted" role="status">
+          <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+          {labels.loading_plans}
+        </div>
+      ) : loadError ? (
+        <div className="space-y-4">
+          <ConnectivityReadinessScene state="error" title={labels.plans_load_error} description={labels.no_coverage_body} />
+          <Button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="h-11 w-full rounded-full bg-accent text-white hover:bg-accent/90">
+            {labels.try_again}
+          </Button>
         </div>
       ) : products.length === 0 ? (
-        <div
-          className="rounded-2xl bg-surface px-5 py-8 text-center"
-          style={{ boxShadow: "var(--shadow-card)" }}
-        >
-          <div className="text-[15px] font-medium text-fg">
-            {labels.no_plans}
-          </div>
+        <div className="space-y-4">
+          <ConnectivityReadinessScene state="no-coverage" title={labels.no_coverage_title} description={labels.no_coverage_body} />
+          <Button type="button" variant="secondary" onClick={() => window.location.assign(`/${lang}/shop`)} className="h-11 w-full rounded-full">
+            {labels.browse_destinations}
+          </Button>
         </div>
       ) : (
         <>

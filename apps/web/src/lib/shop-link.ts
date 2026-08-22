@@ -165,8 +165,8 @@ export function buildShopHref(
 
   if (slug) {
     return qs
-      ? `/${lang}/shop/${slug}/plans?${qs}`
-      : `/${lang}/shop/${slug}/plans`;
+      ? `/${lang}/shop/${slug}?${qs}`
+      : `/${lang}/shop/${slug}`;
   }
   // No resolvable region — drop the user on the grid; query string lives
   // on as a hint for any future cross-region search UI.
