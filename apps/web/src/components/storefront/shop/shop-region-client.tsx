@@ -292,7 +292,15 @@ export function ShopRegionClient({
   return (
     <div className="mx-auto w-full max-w-[780px] space-y-5 px-5 pb-24">
       {loading ? (
-        <div className="flex items-center justify-center gap-2 py-12 text-[13px] text-fg-muted" role="status">
+        // Native translation may wrap this first-load text node. Keep the
+        // disposable loader outside its rewrite pass so React can remove it
+        // safely when the catalog resolves; the resulting content remains
+        // translatable after it mounts.
+        <div
+          className="flex items-center justify-center gap-2 py-12 text-[13px] text-fg-muted"
+          role="status"
+          translate="no"
+        >
           <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
           {labels.loading_plans}
         </div>
