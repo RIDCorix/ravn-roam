@@ -18,13 +18,14 @@
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r typecheck",
-    "verify": "pnpm clean:generated && pnpm typecheck && pnpm lint && pnpm test && pnpm agent:audit",
-    "verify:ci": "pnpm clean:generated && pnpm typecheck && pnpm --filter @roam/web lint && pnpm --filter @roam/landing lint && pnpm --filter @roam/api test && pnpm --filter @roam/catalog test && pnpm agent:audit",
+    "verify": "pnpm clean:generated && pnpm typecheck && pnpm lint && pnpm test && pnpm i18n:parity && pnpm agent:audit",
+    "verify:ci": "pnpm clean:generated && pnpm typecheck && pnpm --filter @roam/web lint && pnpm --filter @roam/landing lint && pnpm --filter @roam/api test && pnpm --filter @roam/catalog test && pnpm i18n:parity && pnpm agent:audit",
     "verify:web": "pnpm --filter @roam/web typecheck && pnpm --filter @roam/web lint",
     "verify:landing": "pnpm --filter @roam/landing typecheck && pnpm --filter @roam/landing lint",
     "verify:api": "pnpm --filter @roam/api typecheck && pnpm --filter @roam/api test",
     "verify:catalog": "pnpm --filter @roam/catalog typecheck && pnpm --filter @roam/catalog test",
     "verify:lumi-agent": "cd services/lumi-agent && uv run pytest",
-    "agent:audit": "node scripts/agent-native-audit.mjs"
+    "agent:audit": "node scripts/agent-native-audit.mjs",
+    "i18n:parity": "node scripts/i18n-parity.mjs"
   }
 }

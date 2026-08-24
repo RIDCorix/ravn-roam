@@ -742,7 +742,7 @@
       "day_unit": "day(s)",
       "day_aria": "Trip length",
       "all": "All",
-      "plans_for_days": "Plans for {days} day(s)",
+      "plans_for_days": "Plans for {days} day(s) ({count})",
       "no_plan_duration": "No plan at this duration — pick a nearby day.",
       "tier_titanium": "Titanium",
       "tier_high_speed": "High speed",
