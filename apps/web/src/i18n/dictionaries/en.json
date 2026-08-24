@@ -874,6 +874,41 @@
       "esim_wallet_profiles": "{count} profiles"
     },
     "trips": {
+      "planning_depth": {
+        "fields": {
+          "datetime": "Date and time",
+          "duration": "Duration",
+          "ticket_booking": "Ticket & booking",
+          "place_anchor": "Location",
+          "note": "Note",
+          "origin": "From",
+          "destination": "To",
+          "transit_mode": "Mode",
+          "airline": "Airline",
+          "flight_number": "Flight number",
+          "booking_reference": "Booking reference",
+          "check_in": "Check-in",
+          "check_out": "Check-out"
+        },
+        "ticket_status": {
+          "none": "Not added",
+          "required": "Needs upload",
+          "attached": "Attached"
+        },
+        "item_type": {
+          "place": "Place",
+          "transit": "Transport",
+          "flight": "Flight",
+          "stay": "Stay"
+        },
+        "detent": {
+          "low": "Map",
+          "mid": "Itinerary",
+          "full": "Full itinerary"
+        },
+        "more": "More",
+        "back_to_itinerary": "Back to itinerary"
+      },
       "list": {
         "title": "Trips",
         "subtitle": "{count} active or upcoming",

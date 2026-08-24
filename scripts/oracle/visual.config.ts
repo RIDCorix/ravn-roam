@@ -32,12 +32,15 @@ export default defineConfig({
     trace: "retain-on-failure",
     deviceScaleFactor: 1,
   },
-  // The three viewports are not a preference — R-276's screen contract names
-  // 390x844, 1280x720 and 1440x900, so the gate checks the sizes the acceptance
-  // criteria were written against.
+  // The viewports are not a preference — they are the screen contracts the acceptance
+  // criteria were written against. R-276 names 390x844, 1280x720 and 1440x900; R-301's
+  // c-1 adds 1720 for the trip planning workspace, whose desktop layout is the widest
+  // surface the product has. Adding a project re-checks every route at the new width,
+  // which is the point: a layout that breaks at 1720 breaks for everyone on that screen.
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 720 } } },
     { name: "wide", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    { name: "ultrawide", use: { ...devices["Desktop Chrome"], viewport: { width: 1720, height: 1000 } } },
     // The consumer journey is mobile-first, so a desktop-only baseline would miss the
     // viewport most of its users are on. Chromium rather than the iPhone device preset,
     // which is WebKit: a regression gate wants ONE engine for both sizes, and a second

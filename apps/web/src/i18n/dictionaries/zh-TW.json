@@ -874,6 +874,41 @@
       "esim_wallet_profiles": "{count} 組資料"
     },
     "trips": {
+      "planning_depth": {
+        "fields": {
+          "datetime": "日期與時間",
+          "duration": "時長",
+          "ticket_booking": "票券與訂位",
+          "place_anchor": "地點",
+          "note": "備註",
+          "origin": "出發",
+          "destination": "抵達",
+          "transit_mode": "交通方式",
+          "airline": "航空公司",
+          "flight_number": "班機號碼",
+          "booking_reference": "訂位代碼",
+          "check_in": "入住",
+          "check_out": "退房"
+        },
+        "ticket_status": {
+          "none": "尚未加入",
+          "required": "需要上傳",
+          "attached": "已附上"
+        },
+        "item_type": {
+          "place": "地點",
+          "transit": "交通",
+          "flight": "航班",
+          "stay": "住宿"
+        },
+        "detent": {
+          "low": "地圖",
+          "mid": "行程",
+          "full": "完整行程"
+        },
+        "more": "更多",
+        "back_to_itinerary": "回到行程"
+      },
       "list": {
         "title": "行程",
         "subtitle": "{count} 個進行中或即將開始",
