@@ -6,7 +6,9 @@
 // days that actually have products (no dead positions).
 
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Loader2,
 } from "lucide-react";
@@ -45,6 +47,7 @@ import { formatTemplate } from "@/lib/text-template";
 
 import { CoverageChip } from "./shop-coverage-chip";
 import { BuyerNotes, ReadinessPanel } from "./shop-info-panels";
+import { ConnectivityReadinessScene } from "./connectivity-readiness-scene";
 import { PlanRow } from "./shop-plan-row";
 import { dataAmountAsc, formatDataInline } from "./shop-plan-utils";
 import type {
@@ -62,6 +65,7 @@ export function ShopRegionClient({
   initialGb,
   initialCoverageSlugs,
   initialQuantity,
+  initialSelectedPlanId,
   checkoutTripContext,
   checkoutProfile,
 }: {
@@ -74,11 +78,16 @@ export function ShopRegionClient({
   initialGb?: number;
   initialCoverageSlugs?: string[];
   initialQuantity?: number;
+  initialSelectedPlanId?: string;
   checkoutTripContext?: CheckoutTripContext | null;
   checkoutProfile?: CheckoutProfile | null;
 }) {
+  const searchParams = useSearchParams();
+  const reducedMotion = useReducedMotion();
   const [products, setProducts] = React.useState<ShopProduct[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState(false);
+  const [loadAttempt, setLoadAttempt] = React.useState(0);
   const [days, setDays] = React.useState<number>(initialDays ?? 7);
   // Empty = show plans from all sub-regions; otherwise show any selected
   // coverage bucket. URL deep-links can preselect more than one bucket,
@@ -100,6 +109,7 @@ export function ShopRegionClient({
     let cancelled = false;
     async function load() {
       setLoading(true);
+      setLoadError(false);
       try {
         const qs = new URLSearchParams({
           destinations: destinationList,
@@ -107,13 +117,21 @@ export function ShopRegionClient({
         const res = await fetch(`/api/storefront/products?${qs}`, {
           cache: "no-store",
         });
-        if (!res.ok) {
-          setProducts([]);
-          return;
-        }
+        if (!res.ok) throw new Error("products unavailable");
         const data = (await res.json()) as ShopProductListResponse;
         if (cancelled) return;
-        setProducts(data.products ?? []);
+        const nextProducts = data.products ?? [];
+        setProducts(nextProducts);
+        const selectedPlanId = initialSelectedPlanId ?? searchParams.get("plan");
+        const selected = selectedPlanId
+          ? nextProducts.find((product) => product.id === selectedPlanId)
+          : undefined;
+        if (selected) setCheckoutProduct(selected);
+      } catch {
+        if (!cancelled) {
+          setProducts([]);
+          setLoadError(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -122,7 +140,7 @@ export function ShopRegionClient({
     return () => {
       cancelled = true;
     };
-  }, [destinationList]);
+  }, [destinationList, initialSelectedPlanId, loadAttempt, searchParams]);
 
   // Available days available in this region's catalog
   const availableDays = React.useMemo(() => {
@@ -272,19 +290,37 @@ export function ShopRegionClient({
   }, [plansForDay, initialGb, userInteracted]);
 
   return (
-    <div className="space-y-5 px-5 pb-24">
+    <div className="mx-auto w-full max-w-[780px] space-y-5 px-5 pb-24">
       {loading ? (
-        <div className="flex items-center justify-center py-12 text-fg-muted">
-          <Loader2 className="h-5 w-5 animate-spin" />
+        // Native translation may wrap this first-load text node. Keep the
+        // disposable loader outside its rewrite pass so React can remove it
+        // safely when the catalog resolves; the resulting content remains
+        // translatable after it mounts.
+        <div
+          className="flex items-center justify-center gap-2 py-12 text-[13px] text-fg-muted"
+          role="status"
+          translate="no"
+        >
+          <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+          {labels.loading_plans}
+        </div>
+      ) : loadError ? (
+        <div className="space-y-4">
+          <ConnectivityReadinessScene
+            state="error"
+            title={labels.plans_load_error}
+            description={labels.plans_load_error_body}
+          />
+          <Button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="h-11 w-full rounded-full bg-accent text-white hover:bg-accent/90">
+            {labels.try_again}
+          </Button>
         </div>
       ) : products.length === 0 ? (
-        <div
-          className="rounded-2xl bg-surface px-5 py-8 text-center"
-          style={{ boxShadow: "var(--shadow-card)" }}
-        >
-          <div className="text-[15px] font-medium text-fg">
-            {labels.no_plans}
-          </div>
+        <div className="space-y-4">
+          <ConnectivityReadinessScene state="no-coverage" title={labels.no_coverage_title} description={labels.no_coverage_body} />
+          <Button type="button" variant="secondary" onClick={() => window.location.assign(`/${lang}/shop`)} className="h-11 w-full rounded-full">
+            {labels.browse_destinations}
+          </Button>
         </div>
       ) : (
         <>
@@ -357,8 +393,8 @@ export function ShopRegionClient({
               don't show a pointless 1-chip bar). */}
           {subRegions.length >= 2 ? (
             <motion.section
-              layout
               {...fadeUp}
+              transition={reducedMotion ? { duration: 0 } : appSpring}
               className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1"
             >
               <CoverageChip
@@ -380,7 +416,7 @@ export function ShopRegionClient({
           ) : null}
 
           {/* Plans list */}
-          <motion.section layout className="space-y-2">
+          <section className="space-y-2">
             <div className="px-1 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
               {formatTemplate(labels.plans_for_days, {
                 days: String(days),
@@ -395,31 +431,31 @@ export function ShopRegionClient({
                 {labels.no_plan_duration}
               </div>
             ) : (
-              <AnimatePresence mode="popLayout">
+              <>
                 {plansForDay.map((p) => (
-                  <motion.div
-                    key={p.id}
-                    layout
-                    {...fadeUp}
-                    transition={appSpring}
-                  >
-                    <PlanRow
-                      product={p}
-                      localeKey={localeKey}
-                      labels={labels}
-                      highlighted={p.id === highlightedPlanId}
-                      region={region}
-                      onSelect={() => setCheckoutProduct(p)}
-                    />
-                  </motion.div>
+                <motion.div
+                  key={p.id}
+                  {...fadeUp}
+                  transition={reducedMotion ? { duration: 0 } : appSpring}
+                >
+                  <PlanRow
+                    product={p}
+                    localeKey={localeKey}
+                    labels={labels}
+                    highlighted={p.id === highlightedPlanId}
+                    region={region}
+                    onSelect={() => setCheckoutProduct(p)}
+                  />
+                </motion.div>
                 ))}
-              </AnimatePresence>
+              </>
             )}
-          </motion.section>
+          </section>
 
           <BuyerNotes labels={labels} />
           <CheckoutSheet
             product={checkoutProduct}
+            lang={lang}
             localeKey={localeKey}
             labels={labels}
             checkoutProfile={checkoutProfile}
@@ -437,6 +473,7 @@ export function ShopRegionClient({
 
 type CheckoutSheetProps = {
   product: ShopProduct | null;
+  lang: string;
   localeKey: "zh-TW" | "en";
   labels: ShopRegionLabels;
   checkoutProfile?: CheckoutProfile | null;
@@ -450,7 +487,22 @@ type CheckoutSheetContentProps = Omit<CheckoutSheetProps, "product"> & {
 };
 
 function CheckoutSheet(props: CheckoutSheetProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   if (!props.product) return null;
+  if (!props.checkoutProfile) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("plan", props.product.id);
+    const returnTo = `${pathname}${params.size ? `?${params}` : ""}`;
+    return (
+      <Sheet open onOpenChange={props.onOpenChange}>
+        <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-[28px] border-x bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5">
+          <SheetHeader className="px-0"><SheetTitle className="text-[20px] tracking-[-0.02em] text-fg">{props.labels.sign_in_to_continue}</SheetTitle><SheetDescription className="text-[13px] leading-relaxed text-fg-muted">{props.labels.checkout_body}</SheetDescription></SheetHeader>
+          <SheetFooter className="px-0 pt-5"><Button asChild className="h-12 w-full rounded-full bg-accent text-white hover:bg-accent/90"><Link href={`/${props.lang}/login?next=${encodeURIComponent(returnTo)}`}>{props.labels.sign_in_to_buy}</Link></Button></SheetFooter>
+        </SheetContent>
+      </Sheet>
+    );
+  }
   return (
     <CheckoutSheetContent
       key={props.product.id}

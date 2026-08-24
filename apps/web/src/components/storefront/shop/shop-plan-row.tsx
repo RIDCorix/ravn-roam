@@ -1,8 +1,7 @@
 import * as React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowRight, Check, TriangleAlert } from "lucide-react";
 
-import { appSpring } from "@/components/storefront/motion";
 import type { ShopProduct } from "@/lib/storefront-api";
 import {
   getCoverageInfo,
@@ -32,6 +31,7 @@ export function PlanRow({
   region: ShopRegion;
   onSelect: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
   const coverage = getCoverageInfo(
     product.marketing_destinations,
     region,
@@ -40,9 +40,12 @@ export function PlanRow({
   const rowRef = React.useRef<HTMLButtonElement | null>(null);
   React.useEffect(() => {
     if (highlighted && rowRef.current) {
-      rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      rowRef.current.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "center",
+      });
     }
-  }, [highlighted]);
+  }, [highlighted, reducedMotion]);
   const retail = Number(product.pricing?.retail ?? 0);
   const isUnlimited = product.data_amount_mb < 0;
   const isPerDay = (product.tags ?? []).includes("per-day");
@@ -62,14 +65,13 @@ export function PlanRow({
       ref={rowRef}
       type="button"
       onClick={onSelect}
-      layout
-      whileHover={{ y: -2, scale: 1.01 }}
-      whileTap={{ scale: 0.985 }}
-      transition={appSpring}
+      whileHover={reducedMotion ? undefined : { y: -2 }}
+      whileTap={reducedMotion ? undefined : { scale: 0.98 }}
+      transition={reducedMotion ? { duration: 0 } : { duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
       className={cn(
-        "group relative flex w-full items-stretch overflow-hidden rounded-xl text-left transition-colors duration-150",
+        "shop-plan-row group relative flex w-full items-stretch overflow-hidden rounded-xl text-left transition-colors duration-150",
         highlighted
-          ? "bg-accent-softer ring-2 ring-accent/40"
+          ? "is-highlighted bg-accent-softer ring-2 ring-accent/40"
           : "bg-surface",
       )}
       style={{ boxShadow: "var(--shadow-card)" }}
@@ -169,7 +171,7 @@ function CoverageBadge({
           : labels.coverage_partial_title
       }
     >
-      {coverage.isFullCoverage ? "✓ " : "⚠ "}
+      {coverage.isFullCoverage ? <Check className="mr-0.5 h-3 w-3" aria-hidden="true" /> : <TriangleAlert className="mr-0.5 h-3 w-3" aria-hidden="true" />}
       {coverage.label}
     </span>
   );
