@@ -120,9 +120,12 @@ export function fullViewFieldsFor(type: TripItemType): readonly string[] {
  * Every field the compact sheet may render, in order. Exported as a function rather
  * than reusing the const so a caller cannot mutate the contract array in place.
  */
-export function compactFieldsFor(_type: TripItemType): readonly CompactCoreField[] {
+export function compactFieldsFor(type: TripItemType): readonly CompactCoreField[] {
   // Intentionally ignores the type. That IS D-2: the outer layer is universal, and a
-  // type-dependent compact sheet is the thing the decision rejected.
+  // type-dependent compact sheet is the thing the decision rejected. The parameter
+  // stays in the signature so callers pass the type they have — the day this returns
+  // something type-dependent, every call site is already correct.
+  void type;
   return COMPACT_CORE_FIELDS;
 }
 

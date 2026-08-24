@@ -12,6 +12,7 @@ export function buildTripDetailLabels(
   return {
     back: planning.back_to_trips,
     planning: {
+      planning_depth: t.planning_depth,
       back_to_trips: planning.back_to_trips,
       share: planning.share,
       export_trip: planning.export_trip,
