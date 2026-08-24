@@ -1,0 +1,16 @@
+/* theme: r301-lume — Roam restrained light, derived from minimal-white */
+:root{
+  --bg:#f7f7f5;--bg-soft:#f1f2ef;--surface:#ffffff;--surface-2:#eef7f5;
+  --border:rgba(23,23,19,.09);--border-strong:rgba(23,23,19,.18);
+  --text-1:#171713;--text-2:#565750;--text-3:#7d7f77;
+  --accent:#0b8f8c;--accent-2:#0fb8b4;--accent-3:#075f5d;
+  --good:#287a51;--warn:#9a6418;--bad:#a4472d;
+  --grad:linear-gradient(135deg,#0b8f8c,#0fb8b4);
+  --grad-soft:linear-gradient(135deg,#ddf4f1,#f7f7f5);
+  --radius:16px;--radius-sm:10px;--radius-lg:22px;
+  --shadow:0 2px 8px rgba(27,35,36,.06);
+  --shadow-lg:0 20px 54px rgba(27,35,36,.14);
+  --font-sans:'Inter','Noto Sans TC','PingFang TC',sans-serif;
+  --font-display:'Inter','Noto Sans TC','PingFang TC',sans-serif;
+  --letter-tight:-.04em;
+}

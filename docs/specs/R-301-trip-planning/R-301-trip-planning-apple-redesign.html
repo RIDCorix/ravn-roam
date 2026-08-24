@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-Hant" data-themes="r301-lume,minimal-white">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>R-301 · 行程規劃頁面 Apple design 翻新提案</title>
+<link rel="stylesheet" href="./assets/html-ppt/fonts.css">
+<link rel="stylesheet" href="./assets/html-ppt/base.css">
+<link rel="stylesheet" id="theme-link" href="./assets/html-ppt/themes/r301-lume.css">
+<link rel="stylesheet" href="./assets/html-ppt/animations.css">
+<link rel="stylesheet" href="./assets/R-301/style.css">
+</head>
+<body class="tpl-r301" data-theme-base="./assets/html-ppt/themes/">
+
+<!-- roam-spec v2 · R-301 · anchor-driven html-ppt deck · machine anchors intact -->
+<article class="deck" data-spec="R-301">
+
+  <section class="slide cover-slide" data-slide="1" data-title="提案">
+    <img class="cover-art" src="./assets/R-301/cover-v1.png" alt="桌面與手機上的行程規劃介面概念圖">
+    <div class="cover-copy">
+      <p class="kicker">Roam · R-301 · design review</p>
+      <h1 class="h1 anim-fade-up" data-anim="fade-up">行程規劃，變成一個空間</h1>
+      <p class="lede">Apple design 是行為，不是換皮。</p>
+    </div>
+    <div class="deck-footer">
+      <span>Trip planning refresh</span>
+      <span class="slide-number" data-current="1" data-total="7"></span>
+    </div>
+    <aside class="notes" data-narration>
+      <p>這張先建立一個很簡單的方向：我們不是把 Roam 做成 iOS，也不是把所有卡片加上玻璃。真正要借的是 <strong>Apple 對空間、回應和控制感的處理方式</strong>。</p>
+      <p>現在的行程頁功能完整，但手機首屏同時有大型 header、重複的 sticky context、地圖和底部 inspector。每一塊單獨看都合理，放在一起卻像四個介面互相搶位置。旅客進來後，要先理解頁面結構，才開始規劃。</p>
+      <p>這份提案要把它收斂成一個連續空間：地圖提供位置，時間線承接主要工作，工具跟著選取狀態出現。接下來先說我們從 Apple design 真正拿了哪些原則。</p>
+    </aside>
+  </section>
+
+  <section class="slide visual-slide" data-slide="2" data-title="設計方針">
+    <div class="slide-heading">
+      <div><p class="kicker">設計方針</p><h2 class="h2">不是更多玻璃，是更少迷路</h2></div>
+      <p class="micro">Lume tokens 保持不變。Apple design 只決定介面的行為與空間關係。</p>
+    </div>
+    <figure class="visual-frame motion">
+      <img src="./assets/R-301/motion-v1.png" alt="行程 bottom sheet 從按下、拖曳到落點的三段分鏡">
+    </figure>
+    <div class="caption-row" data-normative>
+      <span>按下即回應</span><span>拖曳 1:1 跟手</span><span>動畫可中斷</span><span>返回原本位置</span>
+    </div>
+    <div class="deck-footer"><span>Behavior over decoration</span><span class="slide-number" data-current="2" data-total="7"></span></div>
+    <aside class="notes" data-narration>
+      <p>這張圖看的是同一個 sheet 的三個瞬間。第一個瞬間，使用者按下去就要有回應；第二個瞬間，sheet 跟著手指走，地圖和路線不能突然換一個座標系；第三個瞬間，放手速度要直接交給落點動畫，不能先停住再開始另一段。</p>
+      <p>所以這裡的 Apple design 是四條行為準則：<strong>立即、跟手、可中斷、可返回</strong>。半透明只用在 top bar、bottom nav 和浮動 chrome，內容本身保持實色與高對比。</p>
+      <p>如果這四條成立，畫面不需要大量裝飾也會有質感。下一張直接看它落在桌面和手機會長成什麼樣子。</p>
+    </aside>
+  </section>
+
+  <section class="slide visual-slide" data-slide="3" data-title="跨日總覽">
+    <div class="slide-heading">
+      <div><p class="kicker">跨日總覽</p><h2 class="h2">先看停留，再看移動</h2></div>
+      <p class="micro">總覽依 stay segment 分組；只有真正換城市時，才出現獨立的 travel day。</p>
+    </div>
+    <figure class="visual-frame">
+      <img src="./assets/R-301/cross-day-overview-v1.png" alt="桌面與手機的跨日行程總覽：連續停留日依地點分組，換城市以獨立 travel day 表示，地圖只在實際移動地點間顯示中性路線，藍色標示目前選取日">
+    </figure>
+    <div class="caption-row" data-normative>
+      <span>同地點的連續日合併成一個 stay segment</span><span>每日只顯示當地活動與 stop 數</span><span>Travel day 是跨地點移動的唯一表示</span><span>藍色只代表目前選取日；其餘保持中性</span>
+    </div>
+    <div class="deck-footer"><span>Stay segments, not day lanes</span><span class="slide-number" data-current="3" data-total="7"></span></div>
+    <aside class="notes" data-narration>
+      <p>跨日總覽不使用每一天一條泳道，也不替每天分配顏色。那種表示法會讓人先解碼圖表，在手機上尤其難掃。這裡先把連續住在同一地點的日子收進一個 stay segment，例如「A Place · Days 1–3」。</p>
+      <p>segment 裡每一天只說當地活動與 stop 數，不畫出城市之間的移動。真正換地點時，才插入一列清楚的「Travel day · A Place → B Place」，再開始下一個地點的 segment。地圖遵守同一規則：標出停留地區，只在實際 relocation 之間畫中性路線。</p>
+      <p>藍色不是某一天的分類色，只表示目前選取的 day；畫面底部有明確圖例。其他 row、pin 與 route 都保持中性，讓桌面和手機都能一眼看出現在看哪一天。下一張再決定手機第一次進來的預設高度。</p>
+    </aside>
+  </section>
+
+  <section class="slide visual-slide" data-slide="4" data-title="未決 D-1">
+    <div data-decision="d-1" data-status="agreed">
+      <div class="decision-head">
+        <div><p class="kicker">未決 D-1</p><h2 data-question>手機第一次進來，sheet 停哪裡？</h2></div>
+        <span class="status"></span>
+      </div>
+      <figure class="visual-frame contain short">
+        <img src="./assets/R-301/detents-v1.png" alt="低層、中層與全層三種 bottom sheet 高度比較">
+      </figure>
+      <ul data-options>
+        <li data-option="a" class="recommended"><b>中層，行程優先</b>首屏看見 2–3 個 stop；代價是地圖不會全開。</li>
+        <li data-option="b"><b>低層，地圖優先</b>路線最完整；代價是主要工作藏在手勢後。</li>
+        <li data-option="c"><b>記住上次位置</b>延續狀態；代價是每次進頁起點不可預測。</li>
+      </ul>
+      <p data-resolution>已決：A，中層、行程優先。Corix 直接採納簡報建議 —— 接受地圖首屏只露約 38%，因為規劃頁最主要的工作是看今天的 stop，想看完整路線的人可以把 sheet 下拉。</p>
+    </div>
+    <div class="deck-footer"><span>Recommendation: A</span><span class="slide-number" data-current="4" data-total="7"></span></div>
+    <aside class="notes" data-narration>
+      <p>圖上是同一個畫面，只改 sheet 的停靠高度。左邊低層最適合單純看路線；中間中層可以直接看到今天的兩到三個 stop，同時保留大約三成八的地圖；右邊全層適合長時間編排和完整編輯。</p>
+      <p>三個選項都有代價。B 讓地圖最完整，但把規劃頁最主要的工作藏起來。C 延續使用狀態，但分享連結、教學和每次進頁的起點會不一致。</p>
+      <p>我建議 <strong>A，中層、行程優先</strong>。它最符合這個頁面的工作目的，旅客如果只想看路線，仍然可以把 sheet 下拉。這裡請停下來，確認能不能接受地圖第一次只露約 38%。</p>
+    </aside>
+  </section>
+
+  <section class="slide visual-slide" data-slide="5" data-title="互動契約">
+    <div class="slide-heading">
+      <div><p class="kicker">互動契約</p><h2 class="h2">動效只做三件事：回應、跟手、承接</h2></div>
+      <p class="micro">常用點擊保持快；只有真實拖曳才交給 spring。</p>
+    </div>
+    <div class="contract-grid">
+      <figure class="visual-frame contain motion"><img src="./assets/R-301/motion-v1.png" alt="bottom sheet 動作連續性的三段分鏡"></figure>
+      <table>
+        <thead><tr><th>操作</th><th>契約</th></tr></thead>
+        <tbody>
+          <tr><td>按下</td><td>100–160ms 內有回應，不等儲存完成。</td></tr>
+          <tr><td>拖曳</td><td>保留 grab offset，1:1 跟手，可中途反向。</td></tr>
+          <tr><td>放開</td><td>承接 release velocity，投影後選最近 detent。</td></tr>
+          <tr><td>減少動態</td><td>位移改成短 cross-fade，回饋仍保留。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="deck-footer"><span>Interruptible by default</span><span class="slide-number" data-current="5" data-total="7"></span></div>
+    <aside class="notes" data-narration>
+      <p>這頁不用逐條念表格，只抓三件事。第一，按下去要立刻回應，不能等 API 回來才讓人知道介面有聽到。第二，拖曳的東西要黏在手指上，抓在哪裡就從哪裡移動，也要允許使用者在動畫途中反向。</p>
+      <p>第三，放手後不是另外播放一段預設動畫，而是把當下速度交給 spring，再用投影落點選最近的 detent。預設用 critically damped，不亂彈；只有 flick 本身帶動量時，才允許很小的 overshoot。</p>
+      <p>reduced motion 不是把回饋全部關掉，而是把位移和 spring 換成短 cross-fade。接下來第二個決策，是 stop 詳細資料到底留在哪一層。</p>
+    </aside>
+  </section>
+
+  <section class="slide visual-slide" data-slide="6" data-title="已決 D-2">
+    <div data-decision="d-2" data-status="agreed">
+      <div class="decision-head">
+        <div><p class="kicker">已決 D-2</p><h2 data-question>單筆行程 item，怎麼分層編輯？</h2></div>
+        <span class="status"></span>
+      </div>
+      <figure class="visual-frame contain short">
+        <img src="./assets/R-301/depth-v2.png" alt="同一筆航班行程 item 的 compact sheet 與 type-specific full view：外層只顯示日期時間、時長、票券與預訂狀態及 More；完整頁顯示航班、起訖、票券細節與訂位代碼">
+      </figure>
+      <ul data-options data-normative>
+        <li data-option="s" class="recommended"><b>Compact sheet：core + evidence</b>只放日期／時間、時長與明顯的 Ticket &amp; booking 狀態；More 開完整頁。</li>
+        <li data-option="f"><b>Full view：依 item type</b>航班顯示航空／班號與票券；住宿顯示訂房；交通與景點顯示相關憑證。</li>
+        <li data-option="r"><b>返回原本工作位置</b>關閉 full view 後，回到同一天、同一 item、同一 sheet 高度。</li>
+      </ul>
+      <p data-resolution>已決：每次只編輯一筆 item；外層保持 universal，完整頁才依類型展開。</p>
+    </div>
+    <div class="deck-footer"><span>Compact first, type-specific on demand</span><span class="slide-number" data-current="6" data-total="7"></span></div>
+    <aside class="notes" data-narration>
+      <p>這裡已經不是要決定「全部留在 sheet」或「全部進新頁」。每次只編輯一筆行程 item，但 item 可能是景點／地點、一般交通、航班或住宿。左邊 compact sheet 因此只保留所有類型都能理解的 core：日期／時間、時長，以及一列永遠看得見的 Ticket &amp; booking。</p>
+      <p>Ticket &amp; booking 不是藏在 More 裡。它要直接顯示狀態，例如尚未加入、需要上傳或已附一張，讓博物館票、訂房截圖、交通票券都能立刻找到入口。外層不再塞短備註、預算或其他互不相關的四五個欄位；More 才把同一筆 item 展開到右邊 full view。</p>
+      <p>Full view 依 item type 換欄位：航班有航空公司、班號、起訖與票券細節；住宿有入住／退房、訂房資料與憑證；一般交通與景點顯示各自的票券或 booking evidence。關閉 full view 後，必須回到同一天、同一 item、同一 sheet 高度。</p>
+    </aside>
+  </section>
+
+  <section class="slide visual-slide" data-slide="7" data-title="範圍與驗收">
+    <div class="slide-heading">
+      <div><p class="kicker">範圍與驗收</p><h2 class="h2">翻新層級，不擴大功能</h2></div>
+      <p class="micro">唯一仍需人工判斷的是：真機上的手勢連續性。</p>
+    </div>
+    <div class="acceptance-layout">
+      <figure class="visual-frame"><img src="./assets/R-301/workspace-v1.png" alt="跨裝置行程規劃 workspace"></figure>
+      <table class="acceptance-table">
+        <thead><tr><th>#</th><th>驗收條件</th><th>檢查</th></tr></thead>
+        <tbody>
+          <tr data-criterion="c-1" data-check="visual:/zh-TW/dev/trips-editorial?view=detail@390,1280,1440,1720"><td>c-1</td><td>390／1280／1440／1720 都有 baseline；sheet 不遮 bottom nav。</td><td><span class="check">visual</span></td></tr>
+          <tr data-criterion="c-2" data-check="e2e:apps/web/e2e/trip-planning-spatial-state.spec.ts"><td>c-2</td><td>切日期、開 full view、返回後維持 day／item／sheet height。</td><td><span class="check">e2e</span></td></tr>
+          <tr data-criterion="c-3" data-check="test:apps/web/test/trip-planning-depth-map.test.ts"><td>c-3</td><td>Compact sheet 只含 universal core 與 ticket／booking entry；full view 依 item type 映射欄位。</td><td><span class="check">unit</span></td></tr>
+          <tr data-criterion="c-4" data-check="e2e:apps/web/e2e/trip-planning-reduced-motion.spec.ts"><td>c-4</td><td>Reduced motion／transparency／contrast 有對應模式。</td><td><span class="check">e2e</span></td></tr>
+          <tr data-criterion="c-5" data-check="test:apps/web/test/trip-planning-i18n.test.ts"><td>c-5</td><td>zh-TW／en 完整，長標題與日期不造成 layout shift。</td><td><span class="check">i18n</span></td></tr>
+          <tr data-criterion="c-6" data-check="e2e:apps/web/e2e/trip-shop-prefilter.spec.ts"><td>c-6</td><td>Lumi 與 checklist 到 Shop 的 prefilter 路徑不變。</td><td><span class="check">e2e</span></td></tr>
+          <tr data-criterion="c-7" data-check="human"><td>c-7</td><td>真機拖曳時抓取點不跳、可中途反向、放手速度連續。</td><td><span class="check human">human</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="deck-footer"><span>Scope locked</span><span class="slide-number" data-current="7" data-total="7"></span></div>
+    <aside class="notes" data-narration>
+      <p>最後把範圍鎖住。這次不新增 AI 能力、不換地圖供應商、不改購買流程，也不增加資料模型。Lumi context、checklist shortcut、Shop prefilter 和 autosave 都要保持原本行為。</p>
+      <p>表裡每一條都有 checker。視覺 baseline 覆蓋 390 到 1720；空間狀態、深度映射、reduced motion、i18n 和 Shop 路徑都有自動化檢查。只有 c-7 保留 human，因為模擬器能驗狀態，不能完全證明手指抓住 sheet 時的連續感。</p>
+      <p>D-1 仍需確認；D-2 已 settled，c-3 也已補成 compact sheet 與 type-specific full view 的正式欄位映射。討論結束前我會再檢查 open decision、所有 criterion 的 data-check，並把每個理由留在 changelog。</p>
+    </aside>
+  </section>
+
+  <section data-changelog>
+    <ol data-log>
+      <li><time>2026-08-24</time> — D-1 定為 A（中層、行程優先）。Corix 直接採納簡報建議，<b>未經逐頁走查</b> —— 記下這點是因為「走查後同意」和「看了建議同意」對後面的人不是同一件事。D-2 於走查中定案。</li>
+      <li><time>2026-08-24</time>：建立 R-301。理由：用 apple-design 的行為準則翻新既有行程規劃頁，保留 Lume tokens 與現有產品範圍；D-1、D-2 為 <code>open</code>，c-7 為 <code>human</code>。</li>
+      <li><time>2026-08-24</time>：採用 live HTML mockup，不使用生成圖。理由：這次需要討論的是地圖、時間線、sheet 與 inspector 的空間關係，結構可編輯比像素風格更重要。</li>
+      <li><time>2026-08-24</time>：半透明材質限制在 top bar、bottom nav 與浮動 chrome。理由：Apple design 用材質表示層級，不等於把所有內容卡片玻璃化。</li>
+      <li><time>2026-08-24</time>：改用 html-ppt 的 presenter-mode-reveal 結構與 runtime。理由：簡報首先是給人看的，需要鍵盤導覽、speaker notes、presenter view 與穩定的 16:9 版面。</li>
+      <li><time>2026-08-24</time>：把複雜 UI mockup 全部改成 imagegen 圖像。理由：視覺應先讓觀眾看懂空間與層級，再用短表格補決策成本；HTML 不再拼裝複雜產品畫面。</li>
+      <li><time>2026-08-24</time>：可見內容改為圖像優先，表格第二，文字最後。理由：上一版投影片像投影規格文件，觀眾需要讀太多才能理解提案。</li>
+      <li><time>2026-08-24</time>：移除 presenter popup、timer 與 notes overlay，改為單純的 <code>#/N</code> anchor 導覽。理由：講者可直接讀取 HTML notes 並控制 in-app browser URL，不需要額外的 always&#45;on&#45;top 視窗。</li>
+      <li><time>2026-08-24</time>：跨日總覽改以 stay segment 組織；同地點的連續日分組，實際 relocation 才顯示獨立的 travel day 與中性地圖路線，藍色只標示目前選取日。理由：使用者明確拒絕 swimlane，因為它難以理解，在手機上尤其不易掃讀。</li>
+      <li><time>2026-08-24</time>：D-2 決定採用單筆 item 的 compact sheet + type-specific full view。外層只保留 universal core 與立即可見的 ticket／booking status 或附件入口，More 才展開航班、住宿、交通或景點的類型欄位；返回時維持 day／item／sheet height。理由：使用者要求票券與 booking evidence 不可藏深，同時避免用四個以上互不相關的輸入塞滿 sheet，並把此決策嚴格限於單筆 item。</li>
+    </ol>
+  </section>
+
+</article>
+
+<script src="./assets/html-ppt/runtime.js"></script>
+</body>
+</html>
