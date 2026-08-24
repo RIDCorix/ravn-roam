@@ -9,7 +9,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "visual.spec.ts",
+  testMatch: /(visual|shop-states)\.spec\.ts$/,
   snapshotDir: "./visual",
   outputDir: "./visual/.artifacts",
   // Screenshots are only comparable against themselves when the machine is not also

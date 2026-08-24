@@ -100,7 +100,7 @@ import {
   CompanionsMenu,
   type CompanionsMenuLabels,
 } from "@/components/storefront/trips/companions-menu";
-import { SPOTLIGHT_EVENTS } from "@/components/storefront/explore/explore-spotlight";
+import { SPOTLIGHT_EVENTS } from "@/lib/spotlight-events";
 import {
   StorefrontTabs,
   StorefrontTabsList,

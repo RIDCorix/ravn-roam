@@ -16,7 +16,7 @@
 import { test, expect } from "@playwright/test";
 import routes from "./routes.json";
 
-type Route = { path: string; needs_api?: boolean; pending_issue?: string };
+type Route = { path: string; needs_api?: boolean; pending_issue?: string; states?: string };
 
 const API_UP = Boolean(process.env.ROAM_API_URL);
 const APPS: Array<{ app: "landing" | "web"; base: string | undefined }> = [
@@ -44,6 +44,14 @@ for (const { app, base } of APPS) {
         test.skip(
           Boolean(route.pending_issue),
           `${route.path} is not served yet — owed by ${route.pending_issue}`,
+        );
+        // A natural screenshot of a route whose content comes from an API captures
+        // whatever that API happened to answer — including its failure. Where the
+        // contract names the states, a state spec drives them deterministically and
+        // owns the baselines instead.
+        test.skip(
+          Boolean(route.states),
+          `${route.path} is covered state-by-state in ${route.states}`,
         );
         expect(base, `${app} was not booted — no base URL`).toBeTruthy();
         // "load", not "networkidle": a page with a map, a poller or a live connection
