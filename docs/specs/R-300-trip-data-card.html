@@ -84,42 +84,40 @@ p[data-resolution]{margin:0;padding-top:.7rem;border-top:1px dashed var(--line);
   font-size:.95rem;color:var(--ink-mid)}
 p[data-resolution]:empty::before{content:"未決 — 討論後填入";color:var(--ink-soft);font-style:italic}
 
-/* ── mockup: its own visual world, bounded ──────────────── */
+/* ── mockup: a generated image, plus the two things a picture cannot say ─ */
 .stage{background:var(--sunk);border:1px solid var(--line-soft);border-radius:4px;
-  padding:1.8rem 1rem;margin:1.4rem 0;display:flex;justify-content:center;
-  gap:1.4rem;flex-wrap:wrap}
-.phone{
-  --card-bg:#FFFFFF; --card-ink:#14171A; --card-mid:#61696F; --card-line:#E7EAEC;
-  --brand:#0E7C6B; --warn:#C2610F; --meter-track:#EDF0F1;
-  width:300px;flex:none;background:#F3F5F6;border:1px solid #DCE0E2;border-radius:22px;
-  padding:14px;font-family:system-ui,-apple-system,"Helvetica Neue",sans-serif;
-  box-shadow:0 1px 2px rgba(0,0,0,.05)}
-.phone .cap{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-  color:#8D9498;margin-bottom:10px;text-align:center}
+  padding:1.4rem;margin:1.4rem 0}
+figure[data-mockup]{margin:0;display:grid;gap:1rem;
+  grid-template-columns:minmax(0,300px) minmax(0,1fr);align-items:start}
+@media (max-width:640px){figure[data-mockup]{grid-template-columns:1fr}}
+figure[data-mockup] img{width:100%;height:auto;display:block;border-radius:10px;
+  border:1px solid var(--line);background:var(--surface)}
+figure[data-mockup] .ph{aspect-ratio:300/520;border:1px dashed var(--line);border-radius:10px;
+  display:grid;place-items:center;text-align:center;padding:1rem;background:var(--surface);
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--ink-soft);line-height:1.6}
+figcaption{font-size:.85rem;color:var(--ink-soft);
+  font-family:"Bricolage Grotesque",sans-serif;margin-top:.5rem}
 
-#mock-card,#mock-card-low{background:var(--card-bg);border:1px solid var(--card-line);
-  border-radius:14px;padding:16px}
-#mock-card-low{--brand:var(--warn)}
-.mk-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
-.mk-place{font-size:15px;font-weight:600;color:var(--card-ink);letter-spacing:-.01em}
-.mk-days{font-size:12px;color:var(--card-mid);font-variant-numeric:tabular-nums}
-.mk-figure{display:flex;align-items:baseline;gap:5px;margin-bottom:10px}
-.mk-num{font-size:34px;font-weight:600;color:var(--card-ink);letter-spacing:-.03em;
-  line-height:1;font-variant-numeric:tabular-nums}
-.mk-unit{font-size:13px;color:var(--card-mid)}
-.mk-meter{height:6px;background:var(--meter-track);border-radius:3px;overflow:hidden;margin-bottom:6px}
-.mk-fill{height:100%;background:var(--brand);border-radius:3px}
-.mk-sub{font-size:11.5px;color:var(--card-mid);margin-bottom:14px;font-variant-numeric:tabular-nums}
-.mk-cta{display:block;width:100%;background:var(--brand);color:#fff;border:0;
-  border-radius:9px;padding:11px;font-size:13.5px;font-weight:600;cursor:pointer;
-  font-family:inherit}
-.mk-alt{display:block;width:100%;background:none;border:0;color:var(--card-mid);
-  font-size:12px;padding:9px 0 0;cursor:pointer;font-family:inherit}
-.mk-flag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
-  color:var(--warn);background:#FDF1E3;border-radius:20px;padding:3px 9px;margin-bottom:10px}
+/* The two things a generated image cannot say for itself. Without them an image is
+   either chased pixel-for-pixel or ignored, and both are worse than a wireframe. */
+ul[data-normative]{list-style:none;padding:0;margin:0 0 .9rem}
+ul[data-normative] li{position:relative;padding-left:1.4rem;margin-bottom:.45rem;font-size:.95rem}
+ul[data-normative] li::before{content:"■";position:absolute;left:0;color:var(--agreed);font-size:.7em;top:.35em}
+ul[data-normative]::before{content:"規範 — 實作必須成立";display:block;padding-left:0;
+  font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.11em;
+  color:var(--agreed);margin-bottom:.5rem;text-transform:uppercase}
+p[data-incidental]{font-size:.9rem;color:var(--ink-soft);margin:0 0 .9rem;
+  padding-left:1.4rem;border-left:2px solid var(--line)}
+p[data-incidental]::before{content:"偶然 — 不從圖上取 · ";font-family:"JetBrains Mono",monospace;
+  font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
 
-.edit-note{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--ink-soft);
-  text-align:center;width:100%;margin-top:.4rem}
+details[data-prompt]{margin-top:.4rem;font-size:.88rem}
+details[data-prompt] summary{cursor:pointer;font-family:"JetBrains Mono",monospace;
+  font-size:.72rem;letter-spacing:.06em;color:var(--mach);
+  background:var(--mach-bg);display:inline-block;padding:.2em .55em;border-radius:2px}
+details[data-prompt] pre{white-space:pre-wrap;background:var(--sunk);border-radius:3px;
+  padding:.8rem .9rem;margin:.6rem 0 0;font-family:"JetBrains Mono",monospace;
+  font-size:.78rem;line-height:1.55;color:var(--ink-mid);overflow-x:auto}
 
 /* ── acceptance + changelog ─────────────────────────────── */
 .tablewrap{overflow-x:auto;border:1px solid var(--line-soft);border-radius:3px;
@@ -162,7 +160,8 @@ ol[data-log] time{font-family:"JetBrains Mono",monospace;font-size:.8em;color:va
     <ul>
       <li>這是規格本身，不是規格的簡報 —— 討論結論直接寫回這個檔案。</li>
       <li>每個 <code>data-decision</code> 討論後必須是 <code>agreed</code> 或 <code>deferred</code>，不能留在 <code>open</code>。結論寫進 <code>data-resolution</code>。</li>
-      <li>Mockup 是活的 HTML/CSS：<code>#mock-card</code>、<code>#mock-card-low</code>，顏色與尺寸集中在 <code>.phone</code> 的 CSS 變數。改了就會看到。</li>
+      <li>Mockup 是 <strong>Codex 生成的圖</strong>。可編輯的表面是 <code>data-prompt</code> 裡的 prompt，不是像素 —— 要改就改 prompt 再重生，並把版本號 +1。</li>
+      <li>每張圖旁邊有 <code>data-normative</code>（實作必須成立）與 <code>data-incidental</code>（不從圖上取）。<strong>沒有這兩個，一張生成圖不是被逐像素追、就是被忽略</strong>，兩種都比線框圖更糟。</li>
       <li>每條驗收條件都要有 <code>data-check</code>。<code>human</code> 是合法答案；沒宣告不是。</li>
       <li>Changelog <strong>只能追加</strong>。改了哪一條、為什麼，一行一筆。</li>
     </ul>
@@ -204,22 +203,34 @@ ol[data-log] time{font-family:"JetBrains Mono",monospace;font-size:.8em;color:va
     </div>
 
     <div class="stage">
-      <div class="phone">
-        <div class="cap">healthy · 390px</div>
-        <div id="mock-card">
-          <div class="mk-top">
-            <span class="mk-place">日本 · 東京</span>
-            <span class="mk-days">還有 4 天</span>
-          </div>
-          <div class="mk-figure">
-            <span class="mk-num">6.2</span><span class="mk-unit">GB 可用 / 10 GB</span>
-          </div>
-          <div class="mk-meter"><div class="mk-fill" style="width:62%"></div></div>
-          <div class="mk-sub">依目前用量，可用到 8 月 28 日</div>
-          <button class="mk-cta">查看方案詳情</button>
+      <figure data-mockup="m-1" data-state="healthy">
+        <div class="ph" data-awaiting>尚未生成<br><br>image_gen 後存成<br>assets/R-300/card-healthy.png<br>再把這個 div 換成 img</div>
+        <div>
+          <ul data-normative>
+            <li>剩餘流量是卡片上最大的元素</li>
+            <li>剩餘天數同時可見，不需捲動或點擊</li>
+            <li>一句依用量推估的白話結論（「可用到 X 日」）</li>
+            <li>單一主要動作，位置在摺線以上</li>
+          </ul>
+          <p data-incidental>顏色、字體、圓角、陰影一律取自 Lume tokens。圖上的視覺是生成器的即興，不是決定。</p>
+          <details data-prompt>
+            <summary>generation prompt · v1</summary>
+<pre>A mobile app card, 390px wide, iOS-style, on a light neutral background.
+Travel eSIM data usage card for a trip to Tokyo.
+
+Hierarchy, largest to smallest:
+  1. remaining data as a large number with unit - "6.2 GB 可用 / 10 GB"
+  2. a thin horizontal progress meter, about 62% filled, calm green
+  3. one line of plain-language projection - "依目前用量，可用到 8 月 28 日"
+  4. a single full-width primary button - "查看方案詳情"
+Top row, smaller: destination "日本 · 東京" left, "還有 4 天" right.
+
+Calm and non-commercial. Generous whitespace. Traditional Chinese text.
+No phone frame, no hands, no logos, no photographic background.</pre>
+          </details>
         </div>
-      </div>
-      <p class="edit-note">#mock-card · 可直接改</p>
+      </figure>
+      <figcaption>m-1 · healthy · 390px</figcaption>
     </div>
 
     <div data-decision="d-1" data-status="open">
@@ -250,26 +261,35 @@ ol[data-log] time{font-family:"JetBrains Mono",monospace;font-size:.8em;color:va
     </div>
 
     <div class="stage">
-      <div class="phone">
-        <div class="cap">low · 390px</div>
-        <div id="mock-card-low">
-          <div class="mk-top">
-            <span class="mk-place">日本 · 東京</span>
-            <span class="mk-days">還有 3 天</span>
-          </div>
-          <span class="mk-flag">流量可能不夠用到行程結束</span>
-          <div class="mk-figure">
-            <span class="mk-num">0.8</span><span class="mk-unit">GB 可用 / 10 GB</span>
-          </div>
-          <div class="mk-meter"><div class="mk-fill" style="width:8%"></div></div>
-          <div class="mk-sub">依目前用量，約可再用 14 小時</div>
-          <button class="mk-cta">加購 5 GB · NT$ 390</button>
-          <button class="mk-alt">看其他方案</button>
-        </div>
-      </div>
-      <p class="edit-note">#mock-card-low · 可直接改</p>
-    </div>
+      <figure data-mockup="m-2" data-state="low">
+        <div class="ph" data-awaiting>尚未生成<br><br>image_gen 後存成<br>assets/R-300/card-low.png<br>再把這個 div 換成 img</div>
+        <div>
+          <ul data-normative>
+            <li>快用完的狀態在視覺上與健康狀態明顯不同，不只是數字變小</li>
+            <li>推估從「日期」換成「時數」—— 剩不到一天時說天數沒有用</li>
+            <li>主要動作變成解決流量不足，不再是「查看詳情」</li>
+            <li>次要出口存在，且不與主要動作競爭</li>
+          </ul>
+          <p data-incidental>警示色的確切色階、圓角、按鈕高度取自 Lume tokens。</p>
+          <details data-prompt>
+            <summary>generation prompt · v1</summary>
+<pre>Same card as before, now in a low-data state.
 
+Changes from the healthy version:
+  - a small pill above the number - "流量可能不夠用到行程結束" - in a warm
+    amber, not red; this is a heads-up, not an error
+  - the number reads "0.8 GB 可用 / 10 GB", meter about 8% filled, same amber
+  - the projection line switches to hours - "依目前用量，約可再用 14 小時"
+  - primary button becomes "加購 5 GB · NT$ 390"
+  - a quiet text-only secondary below it - "看其他方案"
+
+Still calm. It should read as useful, not as an upsell.
+Traditional Chinese text, no phone frame, no logos.</pre>
+          </details>
+        </div>
+      </figure>
+      <figcaption>m-2 · low · 390px</figcaption>
+    </div>
     <div data-decision="d-2" data-status="open">
       <span class="tag">未決 D-2</span>
       <p data-question>主要動作是「加購一個具體方案」還是「去看所有方案」？</p>
@@ -337,6 +357,7 @@ ol[data-log] time{font-family:"JetBrains Mono",monospace;font-size:.8em;color:va
     <p class="col" style="color:var(--ink-mid);font-size:.97rem">只能追加。記錄「這條為什麼變了」，能改寫的話就只是現況的另一份副本。</p>
     <ol data-log>
       <li><time>2026-08-24</time> — 建立。D-1、D-2 皆為 <code>open</code>；c-6 標為 <code>human</code>，待 D-1 決定後嘗試降級為可測規則。</li>
+      <li><time>2026-08-24</time> — mockup 從手寫 HTML 改為生成圖 + prompt。理由：複雜頁面用圖比較快，想像空間也大；代價是圖裡有上千個偶然決定，所以同時加入 <code>data-normative</code> / <code>data-incidental</code> 區分規範與偶然。兩張圖尚未生成。</li>
     </ol>
   </section>
 

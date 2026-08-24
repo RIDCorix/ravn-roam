@@ -2,7 +2,7 @@
 name: present-spec
 description: "Use when Corix gives you a roam-spec file or URL and wants to walk through it out loud — 講一下這份 spec, present this spec, 我們來討論這個規格, design review. Presents it slide by slide over voice, and writes every decision back into the file as it is made."
 user-invocable: true
-allowed-tools: Bash(git *), Bash(gh *), Bash(rg *), Bash(sed *), Bash(cat *)
+allowed-tools: Bash(git *), Bash(gh *), Bash(rg *), Bash(sed *), Bash(cat *), image_gen
 ---
 
 # Presenting a spec
@@ -62,20 +62,40 @@ data-status="open"  →  "agreed"      (or "deferred", with what it is waiting f
 Write it **in his words where you can**. A resolution paraphrased into spec-prose loses the
 reasoning, and the reasoning is what the next reader needs.
 
-## Editing the mockups
+## The mockups
 
-Mockups are live HTML with stable ids and their colours hoisted into CSS variables on the
-`.phone` scope. When he asks for a change, make it — do not describe what it would look
-like.
+Mockups here are **generated images**, not hand-authored markup. For anything beyond a
+single component that is the right call — a picture carries a whole screen faster than
+markup does, and leaves room to react to rather than parse.
 
-- Colour, weight, spacing: change the variable, not the rule that uses it.
-- Structure: keep the ids (`#mock-card`, `#mock-card-low`); other things anchor to them.
-- After each edit, **say what you changed in one sentence** so he can tell whether the
-  change he is now looking at is the one he asked for.
+It also means **the editable surface is the prompt, not the pixels.** When he asks for a
+change, edit the `<pre>` inside `data-prompt`, bump the version in the `<summary>`, and
+regenerate with `image_gen`. Save to the path the placeholder names, swap the placeholder
+`div` for an `<img>`, and say in one sentence what you changed in the prompt — he needs to
+know whether the picture he is now looking at is the change he asked for.
 
-If a request cannot be done by editing — it needs a component that does not exist — say so
-and record it as a new open decision or a criterion. Do not fake it in the mockup; a mockup
-showing something the product cannot do is worse than no mockup.
+Never hand-edit a generated image's surrounding markup to fake a change the image does not
+show. A mockup that disagrees with itself is worse than no mockup.
+
+### The two lists beside each image are the point
+
+A generated image contains a thousand decisions nobody made — an exact shade, a corner
+radius, a typeface that does not exist in the product. Claude implements from this file. If
+the image is the spec, it will chase pixels that were never decided; if the image is
+ignored, the design was pointless.
+
+So every mockup carries both:
+
+- `data-normative` — what must be true in the implementation. Hierarchy, what is visible
+  without scrolling, what the primary action is. Statements about **behaviour and
+  priority**, never about appearance.
+- `data-incidental` — what comes from Lume tokens instead of from the picture.
+
+When a discussion changes what the image shows, ask yourself which list moved. Often the
+answer is neither — he reacted to something incidental, and the right response is to say
+so rather than to promote his taste into a requirement. Sometimes the answer is that a new
+normative line exists, and **that line is the actual output of the conversation** — more so
+than the regenerated picture.
 
 ## The changelog is not a closing step
 
@@ -90,7 +110,7 @@ a decision is reversed, that is a new entry saying so.
 
 ## Before you finish
 
-Check all four, and say the result out loud even when everything passes:
+Check all five, and say the result out loud even when everything passes:
 
 1. **No `data-status="open"` remains.** Anything unresolved is `deferred` with a named
    condition — never left open because you ran out of time.
@@ -102,7 +122,10 @@ Check all four, and say the result out loud even when everything passes:
 3. **Any `human` criterion that just became testable is downgraded.** A decision often does
    this: once the rule is settled, a check exists that did not before. Say which ones you
    moved, and to what.
-4. **The changelog covers every change.** Compare against the diff, not your memory.
+4. **Every regenerated image has its prompt version bumped**, and the file on disk matches
+   the prompt beside it. An image whose prompt no longer produces it cannot be revised by
+   the next person.
+5. **The changelog covers every change.** Compare against the diff, not your memory.
 
 Then commit — `docs(spec): R-xxx …` — and tell him the branch. If `multica` is on PATH and
 authenticated, post the file back to the issue and set the node's exit; if it is not, say so
