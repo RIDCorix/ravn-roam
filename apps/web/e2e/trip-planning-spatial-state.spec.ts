@@ -27,11 +27,37 @@ test.describe("trip planning spatial state", () => {
     await expect(items.first()).toBeInViewport();
   });
 
-  test("c-1 guard: the sheet does not cover the bottom of the viewport", async ({ page }) => {
-    const box = await page.getByTestId("trip-planning-sheet").boundingBox();
-    expect(box).not.toBeNull();
-    // The full detent stops at 0.92 so the bottom nav strip stays reachable.
-    expect(box!.height).toBeLessThan(MOBILE.height * 0.93);
+  test("c-1: the sheet never intersects the bottom nav, at any detent", async ({ page }) => {
+    // Measured against the real nav box, not against a fraction of the viewport. The
+    // first version of this asserted `height < 0.93 * viewport`, which passed while the
+    // sheet sat directly on top of the nav — capping the height reserves space at the
+    // TOP, and the nav is at the bottom.
+    const nav = page.getByTestId("storefront-bottom-nav");
+    const sheet = page.getByTestId("trip-planning-sheet");
+    const handle = page.getByTestId("trip-planning-sheet-handle");
+
+    const navBox = await nav.boundingBox();
+    expect(navBox, "the storefront bottom nav should be present on mobile").not.toBeNull();
+
+    for (const detent of ["mid", "full", "low"] as const) {
+      // Drive to each detent through the keyboard so the assertion covers all three.
+      await handle.focus();
+      const current = await sheet.getAttribute("data-detent");
+      const order = ["low", "mid", "full"];
+      const delta = order.indexOf(detent) - order.indexOf(current!);
+      for (let step = 0; step < Math.abs(delta); step += 1) {
+        await page.keyboard.press(delta > 0 ? "ArrowUp" : "ArrowDown");
+      }
+      await expect(sheet).toHaveAttribute("data-detent", detent);
+
+      const sheetBox = await sheet.boundingBox();
+      expect(sheetBox).not.toBeNull();
+      const sheetBottom = sheetBox!.y + sheetBox!.height;
+      expect(
+        sheetBottom,
+        `at detent "${detent}" the sheet bottom (${sheetBottom}) must sit above the nav top (${navBox!.y})`,
+      ).toBeLessThanOrEqual(navBox!.y + 1);
+    }
   });
 
   test("keeps day, item and sheet height across a full-view round trip", async ({ page }) => {

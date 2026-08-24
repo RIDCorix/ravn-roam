@@ -33,28 +33,37 @@ test.describe("shop prefilter path survives the R-301 refresh", () => {
     expect(box!.height).toBeLessThan(844 * 0.93);
   });
 
-  test("shop hrefs still carry their prefilter query", async ({ page }) => {
+  test("the checklist eSIM item still deep-links to a prefiltered shop URL", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 960 });
     await page.goto(ROUTE);
 
-    // Any shop link the planning surface renders must still be a prefilter link, not
-    // a bare /shop. Scoped to the trip workspace so an unrelated nav link cannot
-    // satisfy the assertion.
-    const workspace = page.getByTestId("trip-detail-workspace");
-    await expect(workspace).toBeVisible();
+    // Drive the actual CTA rather than scanning first paint. The previous version
+    // skipped when no link was visible, which satisfied the criterion by looking away
+    // from it.
+    const inspector = page.getByTestId("trip-planning-inspector");
+    await expect(inspector).toBeVisible();
+    const checklistTab = inspector.getByRole("tab").filter({ hasText: /檢查|清單|Checklist|Tasks/i });
+    if (await checklistTab.count()) await checklistTab.first().click();
 
-    const shopLinks = workspace.locator('a[href*="/shop"]');
+    const shopLinks = page.locator('a[href*="/shop"]');
+    await expect(
+      shopLinks.first(),
+      "the checklist eSIM shortcut should expose a shop link",
+    ).toBeAttached({ timeout: 5000 });
+
     const count = await shopLinks.count();
-    // Zero is a legitimate state for this fixture — it has an eSIM checklist item but
-    // the CTA lives behind the checklist tab. Reported rather than silently passing,
-    // because a check that asserts nothing when it finds nothing reads like a pass.
-    test.skip(count === 0, "fixture renders no shop link on first paint");
-
+    let prefiltered = 0;
     for (let index = 0; index < count; index += 1) {
       const href = await shopLinks.nth(index).getAttribute("href");
-      expect(href).toBeTruthy();
-      expect(href).toMatch(/\/shop(\/[A-Za-z-]+)?(\?|$)/);
+      // A bare /shop is precisely the regression: the chain is trip context -> SHOP
+      // PREFILTER -> comparison, and a link that drops the filter has severed it.
+      if (/\/shop\/[A-Za-z-]+/.test(href ?? "") || /\/shop\?[^=]+=/.test(href ?? "")) {
+        prefiltered += 1;
+      }
     }
+    expect(prefiltered, "no shop link carried a country segment or a filter query").toBeGreaterThan(0);
   });
 
   test("the eSIM checklist item is still reachable from the planning surface", async ({

@@ -206,19 +206,38 @@ export function TripPlanningSheet({
       data-motion={profile.kind}
       data-full-view={fullViewOpen ? "open" : "closed"}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-[22px] border-t border-divider bg-paper-raised shadow-[var(--shadow-xl)] xl:hidden",
+        // The bottom nav is `fixed ... z-20` at `bottom: 16px + safe-area` and is 78px
+        // tall (storefront/shell.tsx), and it is `md:hidden`. Anchoring the sheet at
+        // bottom-0 put it ON TOP of the nav — a higher z-index does not "reserve"
+        // anything, and capping the height at 0.92 reserved that space at the TOP of
+        // the viewport where nothing needed it. The inset is a variable so the height
+        // below is computed against the space that is actually free.
+        "fixed inset-x-0 z-40 flex flex-col rounded-t-[22px] border-t border-divider bg-paper-raised shadow-[var(--shadow-xl)] xl:hidden",
+        "[--roam-nav-inset:calc(94px+env(safe-area-inset-bottom))] md:[--roam-nav-inset:0px]",
         // Reduced transparency and higher contrast get their own treatment rather
         // than being folded into the default: the sheet is the only surface on this
         // screen that sits over the map, so it is the one that has to stay legible.
         "supports-[backdrop-filter]:bg-paper-raised/95 supports-[backdrop-filter]:backdrop-blur-xl",
         "[@media(prefers-reduced-transparency:reduce)]:bg-paper-raised [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none",
         "[@media(prefers-contrast:more)]:border-fg [@media(prefers-contrast:more)]:border-t-2",
-        dragFraction === null && "transition-[height] ease-out",
-        prefersReducedMotion && "transition-none",
+        // Full motion: the height itself animates. Reduced motion: the height snaps
+        // and the CONTENT cross-fades instead (see the keyed wrapper below). Going
+        // inert would be a regression dressed up as an accommodation.
+        dragFraction === null && !prefersReducedMotion && "transition-[height] ease-out",
+        prefersReducedMotion && "transition-[height] duration-0",
       )}
       style={{
-        height: `${(fraction * 100).toFixed(2)}svh`,
-        transitionDuration: dragFraction === null ? `${profile.durationMs}ms` : undefined,
+        bottom: "var(--roam-nav-inset)",
+        // Fraction of the space ABOVE the nav, not of the viewport. This is what makes
+        // D-1's "map keeps ~38%" a measurable claim rather than an aspiration.
+        height: `calc(${fraction.toFixed(4)} * (100svh - var(--roam-nav-inset)))`,
+        // Only the spring profile animates the HEIGHT. Under reduced motion the inline
+        // duration was still 120ms and beat the `duration-0` class, so the sheet kept
+        // sliding while claiming to cross-fade — the exact masking c-4 exists to catch.
+        transitionDuration:
+          dragFraction === null && profile.kind === "spring"
+            ? `${profile.durationMs}ms`
+            : "0s",
       }}
     >
       {/* Grab handle. Its own element so the drag target is the handle and the list
@@ -254,6 +273,18 @@ export function TripPlanningSheet({
         <div className="mx-auto h-1 w-9 rounded-full bg-divider-strong" />
       </div>
 
+      {/* Keyed on the state the height animation would otherwise have expressed. Under
+          reduced motion the key change remounts this and replays a 120ms opacity
+          cross-fade; under full motion the class is absent and the height transition
+          above carries the change instead. */}
+      <div
+        key={prefersReducedMotion ? `${state.detent}-${fullViewOpen}` : "static"}
+        data-testid="trip-planning-sheet-body"
+        className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          prefersReducedMotion && "roam-sheet-crossfade",
+        )}
+      >
       {fullViewOpen && activeItem ? (
         <FullView
           item={activeItem}
@@ -305,6 +336,7 @@ export function TripPlanningSheet({
           </ul>
         </>
       )}
+      </div>
     </div>
   );
 }

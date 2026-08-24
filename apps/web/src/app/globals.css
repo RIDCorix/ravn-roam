@@ -706,6 +706,14 @@ body {
 }
 .lume-screen { animation: lume-fade-in 260ms var(--ease-out-soft); }
 
+/* R-301 c-4: the reduced-motion substitute for the sheet's height animation.
+   Opacity only — no transform, because displacement is the thing being removed. */
+@keyframes roam-sheet-crossfade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.roam-sheet-crossfade { animation: roam-sheet-crossfade 120ms ease-out; }
+
 /* ============================================================
    Keyframes used by storefront — small set, additive only.
    ============================================================ */
