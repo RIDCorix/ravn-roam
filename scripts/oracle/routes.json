@@ -1,0 +1,17 @@
+{
+  "_": "Routes the smoke gate drives against the production build. Keep this in step with the app: a route that exists here and not in the app fails the gate, and a route in the app and not here is simply not covered. needs_api routes are skipped (and the skip printed) when ROAM_API_URL is unset or down. Default locale is zh-TW.",
+  "landing": [
+    { "path": "/zh-TW" },
+    { "path": "/zh-TW/plans" },
+    { "path": "/zh-TW/faq" },
+    { "path": "/zh-TW/privacy" }
+  ],
+  "web": [
+    { "path": "/zh-TW" },
+    { "path": "/zh-TW/explore" },
+    { "path": "/zh-TW/login" },
+    { "path": "/zh-TW/trips", "needs_api": true },
+    { "path": "/zh-TW/me",    "needs_api": true },
+    { "path": "/zh-TW/admin", "needs_api": true }
+  ]
+}
