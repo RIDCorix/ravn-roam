@@ -47,3 +47,22 @@ jobs:
 
       - name: Test catalog
         run: pnpm --filter @roam/catalog test
+
+      # Nothing above proves the app BUILDS from clean or that the built app renders.
+      # A typecheck says the code is well-formed; it does not say the page comes up.
+      - name: Build
+        run: ./scripts/oracle/run.sh --only build
+
+      - name: Smoke — boot the build and drive its routes
+        run: ./scripts/oracle/run.sh --only smoke
+
+      - name: Verdict
+        if: always()
+        run: ./scripts/oracle/run.sh --json > oracle.json || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oracle-verdict
+          path: oracle.json
+          if-no-files-found: ignore
