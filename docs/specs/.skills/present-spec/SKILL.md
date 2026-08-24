@@ -2,7 +2,7 @@
 name: present-spec
 description: "Use when Corix gives you a roam-spec file or URL and wants to walk through it out loud — 講一下這份 spec, present this spec, 我們來討論這個規格, design review. Presents it slide by slide over voice, and writes every decision back into the file as it is made."
 user-invocable: true
-allowed-tools: Bash(git *), Bash(gh *), Bash(rg *), Bash(sed *), Bash(cat *), image_gen
+allowed-tools: Bash(git *), Bash(gh *), Bash(rg *), Bash(sed *), Bash(cat *), Bash(python3 -m http.server *), image_gen, computer
 ---
 
 # Presenting a spec
@@ -16,7 +16,18 @@ the job. A presentation he could have skim-read achieves nothing.
 
 ## Before you start
 
-Read the whole file once, silently. Then:
+**Serve it and open it.** The deck auto-reloads when the file changes, and that only works
+over http — from `file://` the reload check is blocked and fails silently, which looks
+exactly like a deck that does not update.
+
+```
+cd docs/specs && python3 -m http.server 8899
+```
+
+Open `http://localhost:8899/<file>` full-screen. He should not have to touch the browser
+again for the rest of the session — that is the whole arrangement.
+
+Then read the whole file once, silently, and:
 
 1. **Check the checkout is current.** `git fetch && git log origin/main -1`. A spec discussed
    against stale code produces agreement about problems that no longer exist. This has
@@ -30,19 +41,33 @@ Read the whole file once, silently. Then:
 
 ## Presenting
 
-**One slide, then stop.** The failure mode is reading the whole document aloud. He can
-read. What he cannot do alone is be asked the right question at the right moment.
+**He talks; you do everything else.** He does not click, scroll, or refresh. If he has to
+touch anything, the arrangement has failed.
 
-For each `<section data-slide>`:
+The deck shows one slide at a time. Advance it yourself with `computer` by clicking the
+button labelled **下一張** at the bottom right (`#next`); `←` / `→` also work if the deck
+has focus. Never advance without asking first.
 
-- Say what the slide establishes, in your own words, not by reading the prose.
-- `<aside data-narration>` is written for you, not for him. It carries the emphasis and,
-  more usefully, the parts the author was unsure about. Use it; never read it out.
-- If the slide has a mockup, describe what he is looking at before discussing it. He may be
-  walking.
-- If the slide carries an open decision, **stop there and get an answer.** Do not continue
-  to the next slide with a decision still open — a decision skipped in the room is a
-  decision that comes back as a blocked issue three days later.
+The loop for each `<section data-slide>`:
+
+1. Say what the slide establishes, **in your own words**. Do not read the prose — what is
+   on screen is deliberately short, and repeating it out loud wastes the only channel you
+   have.
+2. `<aside data-narration>` is written for you and is hidden from the screen. It carries
+   the emphasis and, more usefully, the parts the author was unsure about. Use it; **never
+   read it out** — he would hear you narrating your own stage directions.
+3. If the slide has a mockup, describe what he is looking at before discussing it. He may
+   be walking.
+4. If the slide carries an open decision, **stop and settle it.** Do not advance past an
+   open decision — one skipped in the room comes back as a blocked issue days later.
+5. Ask whether he has anything on this slide. Then:
+   - **Nothing** → click 下一張 and start the next slide.
+   - **Something** → make the change, let the deck reload itself, then say in one sentence
+     what he is now looking at. Ask again before advancing.
+
+Do not tell him to refresh. The deck watches its own file and reloads on the slide he is
+already on; saying "reload to see it" means the reload is broken and you should say *that*
+instead.
 
 ## Decisions
 
@@ -135,7 +160,10 @@ difference is invisible from his side until nothing moves.
 
 ## What not to do
 
-- Do not read the file aloud. Talk about it.
+- Do not read the file aloud, and do not read the narration aloud. Talk about the slide.
+- Do not advance a slide without asking. The click is yours; the timing is his.
+- Do not tell him to refresh, scroll, or click anything. If you catch yourself about to,
+  something in the setup is broken — say what.
 - Do not batch edits to the end. A dropped connection then loses the entire session.
 - Do not resolve a decision he did not actually settle. "Sounds fine" is not a decision;
   ask again.

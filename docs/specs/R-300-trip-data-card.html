@@ -1,220 +1,181 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Trip Data Card</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap">
 
 <style>
 :root{
-  --ground:#EFEEEA; --surface:#FAFAF8; --sunk:#E5E4DE;
-  --line:#D6D5CD; --line-soft:#E6E5DE;
-  --ink:#1A1A17; --ink-mid:#54544D; --ink-soft:#7B7B73;
-  --open:#B4451F;  --open-bg:#F8E5DC;
-  --agreed:#3F6B4A; --agreed-bg:#E3EDE4;
-  --mach:#3B5A80;  --mach-bg:#E2E9F1;
+  --ground:#F1F0EC; --surface:#FBFBF9; --sunk:#E4E3DC;
+  --line:#D3D2C9; --ink:#171713; --ink-mid:#5A5A52; --ink-soft:#87877E;
+  --open:#B4451F; --open-bg:#F8E6DD;
+  --agreed:#3D6A48; --agreed-bg:#E4EEE5;
+  --mach:#3A5980; --mach-bg:#E3EAF2;
 }
 :root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
-  --ground:#15150F; --surface:#1D1D17; --sunk:#111109;
-  --line:#33332B; --line-soft:#28282110;
-  --line-soft:#282821;
-  --ink:#EDEDE6; --ink-mid:#ADADA3; --ink-soft:#83837A;
-  --open:#F0855C; --open-bg:#33190F;
-  --agreed:#8FC49D; --agreed-bg:#16261A;
-  --mach:#8FB4DE; --mach-bg:#152234;
+  --ground:#131310; --surface:#1C1C18; --sunk:#0D0D0A;
+  --line:#32322A; --ink:#EFEFE8; --ink-mid:#B0B0A6; --ink-soft:#82827A;
+  --open:#F2895F; --open-bg:#331A10;
+  --agreed:#92C7A0; --agreed-bg:#17271B;
+  --mach:#91B6E0; --mach-bg:#152235;
 }}
 :root[data-theme="dark"]{
-  --ground:#15150F; --surface:#1D1D17; --sunk:#111109;
-  --line:#33332B; --line-soft:#282821;
-  --ink:#EDEDE6; --ink-mid:#ADADA3; --ink-soft:#83837A;
-  --open:#F0855C; --open-bg:#33190F;
-  --agreed:#8FC49D; --agreed-bg:#16261A;
-  --mach:#8FB4DE; --mach-bg:#152234;
+  --ground:#131310; --surface:#1C1C18; --sunk:#0D0D0A;
+  --line:#32322A; --ink:#EFEFE8; --ink-mid:#B0B0A6; --ink-soft:#82827A;
+  --open:#F2895F; --open-bg:#331A10;
+  --agreed:#92C7A0; --agreed-bg:#17271B;
+  --mach:#91B6E0; --mach-bg:#152235;
 }
 
 *{box-sizing:border-box}
-body{margin:0;background:var(--ground);color:var(--ink);
-  font-family:Newsreader,Georgia,serif;font-size:17px;line-height:1.6;
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);overflow:hidden;
+  font-family:"Bricolage Grotesque",system-ui,sans-serif;
   -webkit-font-smoothing:antialiased}
-.wrap{max-width:min(108ch,94vw);margin:0 auto;padding:clamp(2rem,5vw,4rem) 0 6rem}
-.col{max-width:68ch}
-h1,h2,h3,.ui{font-family:"Bricolage Grotesque",system-ui,sans-serif}
-h1{font-size:clamp(2rem,4.6vw,3.1rem);font-weight:700;line-height:1.06;
-  letter-spacing:-.025em;margin:0 0 .5rem;text-wrap:balance}
-h2{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin:0 0 .5rem;text-wrap:balance}
-h3{font-size:.95rem;font-weight:700;margin:2rem 0 .5rem;letter-spacing:-.005em}
-p{margin:0 0 1rem}
-.eyebrow{font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-soft);margin:0 0 .9rem}
-.lede{font-size:1.1rem;color:var(--ink-mid);margin-bottom:2rem}
-hr.rule{height:1px;background:var(--line);border:0;margin:3rem 0 2.4rem}
-code{font-family:"JetBrains Mono",monospace;font-size:.86em;
-  background:var(--sunk);padding:.1em .38em;border-radius:2px}
 
-/* ── slides ─────────────────────────────────────────────── */
-section[data-slide]{margin-top:3rem;padding-left:1.3rem;border-left:2px solid var(--line)}
-section[data-slide] > .n{font-family:"JetBrains Mono",monospace;font-size:.7rem;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);
-  display:block;margin-bottom:.3rem}
+/* Narration is written for the presenter, not the room. It stays in the file and
+   never on the screen — reading it aloud is the failure this deck is built against. */
+aside[data-narration],section[data-changelog],details[data-prompt]{display:none}
 
-aside[data-narration]{background:var(--sunk);border-radius:3px;
-  padding:.9rem 1.1rem;margin:1.2rem 0;font-size:.95rem;color:var(--ink-mid)}
-aside[data-narration]::before{content:"講稿";font-family:"JetBrains Mono",monospace;
-  font-size:.66rem;letter-spacing:.12em;color:var(--ink-soft);
-  display:block;margin-bottom:.35rem}
-aside[data-narration] p:last-child{margin-bottom:0}
+/* ── one slide at a time ─────────────────────────────────── */
+.deck{position:fixed;inset:0}
+section[data-slide]{
+  position:absolute;inset:0;display:none;
+  padding:clamp(2rem,4.5vh,3.5rem) clamp(2rem,6vw,5rem) 5.5rem;
+  flex-direction:column;
+}
+section[data-slide].on{display:flex;animation:in .28s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){section[data-slide].on{animation:none}}
 
-/* ── decisions: the reason the session exists ───────────── */
-div[data-decision]{border:1px solid var(--line);border-left:3px solid var(--open);
-  background:var(--open-bg);border-radius:0 4px 4px 0;padding:1.1rem 1.2rem;margin:1.4rem 0}
-div[data-decision][data-status="agreed"]{border-left-color:var(--agreed);background:var(--agreed-bg)}
-div[data-decision][data-status="deferred"]{border-left-color:var(--ink-soft);background:var(--sunk)}
-div[data-decision] .tag{font-family:"JetBrains Mono",monospace;font-size:.66rem;
-  letter-spacing:.11em;text-transform:uppercase;font-weight:500;color:var(--open);
-  display:block;margin-bottom:.4rem}
-div[data-decision][data-status="agreed"] .tag{color:var(--agreed)}
-div[data-decision][data-status="deferred"] .tag{color:var(--ink-soft)}
-p[data-question]{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;
-  font-size:1.05rem;margin:0 0 .7rem;letter-spacing:-.01em}
-ul[data-options]{list-style:none;padding:0;margin:0 0 .8rem}
-ul[data-options] li{margin-bottom:.5rem;padding-left:2.1rem;position:relative;font-size:.97rem}
-ul[data-options] li::before{content:attr(data-option);position:absolute;left:0;top:.15em;
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:500;
-  text-transform:uppercase;border:1px solid currentColor;border-radius:2px;
-  width:1.45rem;text-align:center;opacity:.75}
-p[data-resolution]{margin:0;padding-top:.7rem;border-top:1px dashed var(--line);
-  font-size:.95rem;color:var(--ink-mid)}
-p[data-resolution]:empty::before{content:"未決 — 討論後填入";color:var(--ink-soft);font-style:italic}
+.kicker{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-soft);margin:0 0 .6rem}
+h1{font-size:clamp(2.2rem,5.5vw,4rem);font-weight:800;letter-spacing:-.035em;
+  line-height:1.02;margin:0 0 1rem;text-wrap:balance}
+h2{font-size:clamp(1.5rem,3.4vw,2.5rem);font-weight:800;letter-spacing:-.03em;
+  line-height:1.08;margin:0 0 1.2rem;text-wrap:balance;max-width:22ch}
+.say{font-size:clamp(1rem,1.6vw,1.25rem);color:var(--ink-mid);max-width:46ch;
+  line-height:1.5;font-weight:400;margin:0}
 
-/* ── mockup: a generated image, plus the two things a picture cannot say ─ */
-.stage{background:var(--sunk);border:1px solid var(--line-soft);border-radius:4px;
-  padding:1.4rem;margin:1.4rem 0}
-figure[data-mockup]{margin:0;display:grid;gap:1rem;
-  grid-template-columns:minmax(0,300px) minmax(0,1fr);align-items:start}
-@media (max-width:640px){figure[data-mockup]{grid-template-columns:1fr}}
-figure[data-mockup] img{width:100%;height:auto;display:block;border-radius:10px;
-  border:1px solid var(--line);background:var(--surface)}
-figure[data-mockup] .ph{aspect-ratio:300/520;border:1px dashed var(--line);border-radius:10px;
-  display:grid;place-items:center;text-align:center;padding:1rem;background:var(--surface);
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--ink-soft);line-height:1.6}
-figcaption{font-size:.85rem;color:var(--ink-soft);
-  font-family:"Bricolage Grotesque",sans-serif;margin-top:.5rem}
+/* ── image first ─────────────────────────────────────────── */
+.body{flex:1;min-height:0;display:grid;gap:clamp(1.5rem,4vw,3.5rem);align-items:center}
+.body.split{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
+@media (max-width:900px){.body.split{grid-template-columns:1fr;align-content:start}}
 
-/* The two things a generated image cannot say for itself. Without them an image is
-   either chased pixel-for-pixel or ignored, and both are worse than a wireframe. */
-ul[data-normative]{list-style:none;padding:0;margin:0 0 .9rem}
-ul[data-normative] li{position:relative;padding-left:1.4rem;margin-bottom:.45rem;font-size:.95rem}
-ul[data-normative] li::before{content:"■";position:absolute;left:0;color:var(--agreed);font-size:.7em;top:.35em}
-ul[data-normative]::before{content:"規範 — 實作必須成立";display:block;padding-left:0;
-  font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.11em;
-  color:var(--agreed);margin-bottom:.5rem;text-transform:uppercase}
-p[data-incidental]{font-size:.9rem;color:var(--ink-soft);margin:0 0 .9rem;
-  padding-left:1.4rem;border-left:2px solid var(--line)}
-p[data-incidental]::before{content:"偶然 — 不從圖上取 · ";font-family:"JetBrains Mono",monospace;
-  font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
+figure[data-mockup]{margin:0;height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;min-height:0}
+figure[data-mockup] img{max-height:100%;max-width:100%;width:auto;object-fit:contain;
+  border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+figure[data-mockup] .ph{width:min(300px,100%);aspect-ratio:300/540;border:1px dashed var(--line);
+  border-radius:14px;display:grid;place-items:center;text-align:center;padding:1.5rem;
+  background:var(--surface);font-family:"JetBrains Mono",monospace;font-size:.74rem;
+  color:var(--ink-soft);line-height:1.7}
+figcaption{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.1em;
+  color:var(--ink-soft);margin-top:.9rem;text-transform:uppercase}
 
-details[data-prompt]{margin-top:.4rem;font-size:.88rem}
-details[data-prompt] summary{cursor:pointer;font-family:"JetBrains Mono",monospace;
-  font-size:.72rem;letter-spacing:.06em;color:var(--mach);
-  background:var(--mach-bg);display:inline-block;padding:.2em .55em;border-radius:2px}
-details[data-prompt] pre{white-space:pre-wrap;background:var(--sunk);border-radius:3px;
-  padding:.8rem .9rem;margin:.6rem 0 0;font-family:"JetBrains Mono",monospace;
-  font-size:.78rem;line-height:1.55;color:var(--ink-mid);overflow-x:auto}
-
-/* ── acceptance + changelog ─────────────────────────────── */
-.tablewrap{overflow-x:auto;border:1px solid var(--line-soft);border-radius:3px;
-  background:var(--surface);margin:1rem 0 1.6rem}
-table{border-collapse:collapse;width:100%;font-family:"Bricolage Grotesque",sans-serif;
-  font-size:.85rem;line-height:1.45}
-th{text-align:left;font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--ink-soft);font-weight:700;padding:.65rem .8rem;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:.65rem .8rem;border-bottom:1px solid var(--line-soft);vertical-align:top}
+/* ── tables carry the detail, prose does not ─────────────── */
+table{border-collapse:collapse;width:100%;font-size:clamp(.85rem,1.15vw,1rem)}
+th{text-align:left;font-family:"JetBrains Mono",monospace;font-size:.66rem;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-soft);font-weight:400;
+  padding:0 .9rem .55rem 0;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:.62rem .9rem .62rem 0;border-bottom:1px solid var(--line);vertical-align:top;
+  line-height:1.4}
 tr:last-child td{border-bottom:0}
-.chk{font-family:"JetBrains Mono",monospace;font-size:.72rem;padding:.12em .45em;
-  border-radius:2px;white-space:nowrap;display:inline-block}
-.chk.m{background:var(--mach-bg);color:var(--mach)}
+.chk{font-family:"JetBrains Mono",monospace;font-size:.72rem;padding:.14em .5em;
+  border-radius:2px;white-space:nowrap;background:var(--mach-bg);color:var(--mach)}
 .chk.h{background:var(--open-bg);color:var(--open)}
 
-ol[data-log]{padding-left:1.2rem;font-size:.93rem;color:var(--ink-mid)}
-ol[data-log] li{margin-bottom:.55rem}
-ol[data-log] time{font-family:"JetBrains Mono",monospace;font-size:.8em;color:var(--ink-soft)}
+ul[data-normative]{list-style:none;padding:0;margin:0}
+ul[data-normative] li{position:relative;padding-left:1.5rem;margin-bottom:.7rem;
+  font-size:clamp(.95rem,1.35vw,1.12rem);line-height:1.4}
+ul[data-normative] li::before{content:"";position:absolute;left:0;top:.5em;
+  width:.5rem;height:.5rem;background:var(--agreed);border-radius:1px}
+ul[data-normative]::before{content:"實作必須成立";display:block;
+  font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.12em;
+  color:var(--agreed);margin-bottom:.9rem;text-transform:uppercase}
+p[data-incidental]{font-size:.88rem;color:var(--ink-soft);margin:1.1rem 0 0;
+  padding-left:1rem;border-left:2px solid var(--line);line-height:1.45}
+p[data-incidental]::before{content:"不從圖上取 · ";font-family:"JetBrains Mono",monospace;
+  font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
 
-.howto{border:1px dashed var(--line);border-radius:4px;padding:1.1rem 1.3rem;margin:1.6rem 0;
-  background:var(--surface);font-size:.94rem}
-.howto h3{margin-top:0}
-.howto ul{padding-left:1.15rem;margin:0}
-.howto li{margin-bottom:.45rem}
+/* ── decisions ───────────────────────────────────────────── */
+div[data-decision]{display:contents}
+p[data-question]{font-size:clamp(1.5rem,3.4vw,2.5rem);font-weight:800;letter-spacing:-.03em;
+  line-height:1.08;margin:0 0 1.4rem;max-width:20ch}
+ul[data-options]{list-style:none;padding:0;margin:0;display:grid;gap:.8rem;align-content:start}
+ul[data-options] li{background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--open);border-radius:0 5px 5px 0;padding:.9rem 1.1rem;
+  font-size:clamp(.9rem,1.25vw,1.05rem);line-height:1.45;position:relative;padding-left:3.2rem}
+ul[data-options] li::before{content:attr(data-option);position:absolute;left:1.1rem;top:.9rem;
+  font-family:"JetBrains Mono",monospace;font-size:.75rem;text-transform:uppercase;
+  color:var(--open);font-weight:500}
+ul[data-options] li b{font-weight:600}
+p[data-resolution]{margin:1.2rem 0 0;padding:.9rem 1.1rem;border-radius:5px;
+  background:var(--agreed-bg);color:var(--agreed);font-size:1rem;line-height:1.45}
+p[data-resolution]:empty{display:none}
+/* The label is derived from data-status so settling a decision is ONE edit. A pill whose
+   text has to be changed separately is a pill that goes stale the first time someone is
+   in a hurry. */
+.status{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.66rem;
+  letter-spacing:.12em;padding:.2em .6em;border-radius:2px;margin-bottom:.9rem;
+  background:var(--open-bg);color:var(--open)}
+[data-status="open"] .status::before{content:"未決"}
+[data-status="agreed"] .status{background:var(--agreed-bg);color:var(--agreed)}
+[data-status="agreed"] .status::before{content:"已決"}
+[data-status="deferred"] .status{background:var(--sunk);color:var(--ink-soft)}
+[data-status="deferred"] .status::before{content:"延後"}
+
+/* ── chrome: progress + the control computer-use clicks ──── */
+.bar{position:fixed;left:0;right:0;bottom:0;height:5.5rem;display:flex;align-items:center;
+  justify-content:space-between;padding:0 clamp(1.5rem,5vw,4rem);
+  background:linear-gradient(to top,var(--ground) 55%,transparent);pointer-events:none}
+.dots{display:flex;gap:.45rem;pointer-events:auto}
+.dots i{width:.5rem;height:.5rem;border-radius:50%;background:var(--line);cursor:pointer;
+  transition:background .2s,transform .2s}
+.dots i.on{background:var(--ink);transform:scale(1.25)}
+.nav{display:flex;gap:.6rem;pointer-events:auto}
+button.nv{font-family:"JetBrains Mono",monospace;font-size:.8rem;letter-spacing:.06em;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:6px;padding:.85rem 1.5rem;cursor:pointer;min-width:5.5rem}
+button.nv:hover{background:var(--sunk)}
+button.nv:focus-visible{outline:2px solid var(--mach);outline-offset:2px}
+button.nv:disabled{opacity:.3;cursor:default}
+#next{border-color:var(--ink);background:var(--ink);color:var(--ground);font-weight:500;
+  min-width:8rem}
+.count{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--ink-soft);
+  align-self:center;margin-right:.6rem;pointer-events:none}
 </style>
 
-<!-- roam-spec v1 · R-300 · editable in place -->
-<div class="wrap">
+<!-- roam-spec v2 · R-300 · deck · narration hidden, machine anchors intact -->
+<div class="deck">
 <article data-spec="R-300">
 
-  <p class="eyebrow">Roam · 規格簡報 · R-300</p>
-  <h1>行程資料用量卡</h1>
-  <p class="lede col">
-    旅客在行程中最常問的一件事：<strong>我還剩多少？</strong>目前 Roam 沒有任何地方回答它 ——
-    要知道用量得離開 app 去看電信商介面。這張卡把答案放進行程頁，並在快用完時給出下一步。
-  </p>
-
-  <div class="howto">
-    <h3>這份檔案怎麼用</h3>
-    <ul>
-      <li>這是規格本身，不是規格的簡報 —— 討論結論直接寫回這個檔案。</li>
-      <li>每個 <code>data-decision</code> 討論後必須是 <code>agreed</code> 或 <code>deferred</code>，不能留在 <code>open</code>。結論寫進 <code>data-resolution</code>。</li>
-      <li>Mockup 是 <strong>Codex 生成的圖</strong>。可編輯的表面是 <code>data-prompt</code> 裡的 prompt，不是像素 —— 要改就改 prompt 再重生，並把版本號 +1。</li>
-      <li>每張圖旁邊有 <code>data-normative</code>（實作必須成立）與 <code>data-incidental</code>（不從圖上取）。<strong>沒有這兩個，一張生成圖不是被逐像素追、就是被忽略</strong>，兩種都比線框圖更糟。</li>
-      <li>每條驗收條件都要有 <code>data-check</code>。<code>human</code> 是合法答案；沒宣告不是。</li>
-      <li>Changelog <strong>只能追加</strong>。改了哪一條、為什麼，一行一筆。</li>
-    </ul>
-  </div>
-
-  <hr class="rule">
-
-  <!-- ─────────────────────────────────────────────── -->
-  <section data-slide="1" data-topic="problem">
-    <span class="n">Slide 1</span>
-    <h2>它出現在哪，取代了什麼</h2>
-    <div class="col">
-      <p>
-        位置是行程詳情頁 <code>/zh-TW/trips/[id]</code> 的第一張卡，在行程時間軸之上。
-        它取代的不是某個既有元件 —— 而是取代「旅客切出去查電信商」這個動作。
-      </p>
-      <p>
-        因此它的成功條件不是好看，是<strong>不用點就答完</strong>：剩多少、還夠不夠用到行程結束、
-        不夠的話下一步是什麼。三件事，在摺線以上。
+  <!-- ─────────────────────────── -->
+  <section data-slide="1" data-topic="problem" class="on">
+    <p class="kicker">Roam · R-300</p>
+    <h1>行程資料用量卡</h1>
+    <div class="body">
+      <p class="say">
+        旅客在行程中最常問的一件事 ——「我還剩多少？」<br><br>
+        Roam 現在沒有任何地方回答它。要知道用量，得離開 app 去看電信商介面。
       </p>
     </div>
     <aside data-narration>
-      <p>先說旅客的實際行為：現在他們要離開 app。這張卡的存在理由是消滅那個動作，不是增加一個功能。</p>
-      <p>強調「不用點就答完」——這會直接決定後面兩個決策怎麼選。</p>
+      <p>先講旅客的實際行為：現在他們要離開 app。這張卡的存在理由是消滅那個動作，不是增加一個功能。</p>
+      <p>報告：這份有兩個未決事項要他決定。講完這頁問有沒有問題再往下。</p>
     </aside>
   </section>
 
-  <!-- ─────────────────────────────────────────────── -->
-  <section data-slide="2" data-topic="two-dimensions">
-    <span class="n">Slide 2</span>
-    <h2>兩個維度的難題</h2>
-    <div class="col">
-      <p>
-        「還剩多少」其實是兩個數字：<strong>剩餘流量</strong>和<strong>剩餘天數</strong>。
-        它們會不同步 —— 流量剩 80% 但明天到期，跟流量剩 5% 但還有六天，是完全不同的處境，
-        而且需要不同的下一步。
-      </p>
-      <p>下面的 mockup 目前只讓流量主導，天數退到次要位置。</p>
-    </div>
-
-    <div class="stage">
+  <!-- ─────────────────────────── -->
+  <section data-slide="2" data-topic="healthy">
+    <p class="kicker">Slide 2 · 健康狀態</p>
+    <div class="body split">
       <figure data-mockup="m-1" data-state="healthy">
-        <div class="ph" data-awaiting>尚未生成<br><br>image_gen 後存成<br>assets/R-300/card-healthy.png<br>再把這個 div 換成 img</div>
-        <div>
-          <ul data-normative>
-            <li>剩餘流量是卡片上最大的元素</li>
-            <li>剩餘天數同時可見，不需捲動或點擊</li>
-            <li>一句依用量推估的白話結論（「可用到 X 日」）</li>
-            <li>單一主要動作，位置在摺線以上</li>
-          </ul>
-          <p data-incidental>顏色、字體、圓角、陰影一律取自 Lume tokens。圖上的視覺是生成器的即興，不是決定。</p>
-          <details data-prompt>
-            <summary>generation prompt · v1</summary>
+        <div class="ph" data-awaiting>尚未生成<br><br>image_gen 後存成<br>assets/R-300/card-healthy.png<br><br>再把這個 div 換成 img</div>
+        <figcaption>m-1 · healthy · 390px</figcaption>
+        <details data-prompt>
+          <summary>generation prompt · v1</summary>
 <pre>A mobile app card, 390px wide, iOS-style, on a light neutral background.
 Travel eSIM data usage card for a trip to Tokyo.
 
@@ -227,52 +188,57 @@ Top row, smaller: destination "日本 · 東京" left, "還有 4 天" right.
 
 Calm and non-commercial. Generous whitespace. Traditional Chinese text.
 No phone frame, no hands, no logos, no photographic background.</pre>
-          </details>
-        </div>
+        </details>
       </figure>
-      <figcaption>m-1 · healthy · 390px</figcaption>
+      <div>
+        <ul data-normative>
+          <li>剩餘流量是卡片上最大的元素</li>
+          <li>剩餘天數同時可見，不需捲動或點擊</li>
+          <li>一句白話推估結論（「可用到 X 日」）</li>
+          <li>單一主要動作，在摺線以上</li>
+        </ul>
+        <p data-incidental>顏色、字體、圓角、陰影一律取自 Lume tokens。圖上的視覺是生成器的即興，不是決定。</p>
+      </div>
     </div>
-
-    <div data-decision="d-1" data-status="open">
-      <span class="tag">未決 D-1</span>
-      <p data-question>流量和天數，哪一個當主要數字？</p>
-      <ul data-options>
-        <li data-option="a"><strong>流量主導</strong>（目前 mockup）—— 大字是 GB，天數退為次要。旅客對流量更焦慮，但「明天到期還有 8GB」會被藏起來。</li>
-        <li data-option="b"><strong>取較緊的那個</strong>—— 卡片自己判斷哪個先耗盡，把那個放大。誠實，但同一張卡在不同時候長得不一樣，可預期性差。</li>
-        <li data-option="c"><strong>兩個並列</strong>—— 都用中等字級。不用選，但失去「一眼看完」，而那正是這張卡的目的。</li>
-      </ul>
-      <p data-resolution></p>
-    </div>
-
     <aside data-narration>
-      <p>這是這次要談的核心。先示範 A 的失效情境：讓他想像「明天到期但還有 8GB」這張卡長什麼樣 —— 大字寫 8.0 GB，旅客完全不會警覺。</p>
-      <p>B 是我傾向的，但要老實說它的代價：同一張卡在不同時候長得不一樣。問他能不能接受。</p>
+      <p>先描述他在看什麼（他可能在走路）。再帶到右邊四條 —— 那些才是實作要遵守的，圖只是讓他有反應的對象。</p>
     </aside>
   </section>
 
-  <!-- ─────────────────────────────────────────────── -->
-  <section data-slide="3" data-topic="low-state">
-    <span class="n">Slide 3</span>
-    <h2>快用完的時候</h2>
-    <div class="col">
-      <p>
-        這是這張卡真正要賺回成本的時刻。健康狀態下它只是資訊；快用完時它是一個決定。
-      </p>
+  <!-- ─────────────────────────── -->
+  <section data-slide="3" data-topic="two-dimensions">
+    <p class="kicker">Slide 3 · 未決 D-1</p>
+    <div data-decision="d-1" data-status="open">
+      <span class="status"></span>
+      <p data-question>流量和天數，哪一個當主要數字？</p>
+      <div class="body split">
+        <ul data-options>
+          <li data-option="a"><b>流量主導</b>（目前）—— 大字是 GB。旅客對流量更焦慮，但「明天到期還有 8GB」會被藏起來。</li>
+          <li data-option="b"><b>取較緊的那個</b> —— 卡片自己判斷哪個先耗盡。誠實，但同一張卡在不同時候長得不一樣。</li>
+          <li data-option="c"><b>兩個並列</b> —— 不用選，但失去「一眼看完」，而那正是這張卡的目的。</li>
+        </ul>
+        <p class="say">
+          「還剩多少」其實是兩個數字，而且它們會不同步。<br><br>
+          流量剩 80% 但明天到期，跟流量剩 5% 但還有六天 —— 是完全不同的處境，需要不同的下一步。
+        </p>
+      </div>
+      <p data-resolution></p>
     </div>
+    <aside data-narration>
+      <p>這是核心。先示範 A 的失效情境：讓他想像「明天到期但還有 8GB」那張卡 —— 大字寫 8.0 GB，旅客完全不會警覺。</p>
+      <p>我傾向 B，但要老實說代價：同一張卡在不同時候長得不一樣。問他能不能接受。</p>
+    </aside>
+  </section>
 
-    <div class="stage">
+  <!-- ─────────────────────────── -->
+  <section data-slide="4" data-topic="low">
+    <p class="kicker">Slide 4 · 快用完</p>
+    <div class="body split">
       <figure data-mockup="m-2" data-state="low">
-        <div class="ph" data-awaiting>尚未生成<br><br>image_gen 後存成<br>assets/R-300/card-low.png<br>再把這個 div 換成 img</div>
-        <div>
-          <ul data-normative>
-            <li>快用完的狀態在視覺上與健康狀態明顯不同，不只是數字變小</li>
-            <li>推估從「日期」換成「時數」—— 剩不到一天時說天數沒有用</li>
-            <li>主要動作變成解決流量不足，不再是「查看詳情」</li>
-            <li>次要出口存在，且不與主要動作競爭</li>
-          </ul>
-          <p data-incidental>警示色的確切色階、圓角、按鈕高度取自 Lume tokens。</p>
-          <details data-prompt>
-            <summary>generation prompt · v1</summary>
+        <div class="ph" data-awaiting>尚未生成<br><br>image_gen 後存成<br>assets/R-300/card-low.png<br><br>再把這個 div 換成 img</div>
+        <figcaption>m-2 · low · 390px</figcaption>
+        <details data-prompt>
+          <summary>generation prompt · v1</summary>
 <pre>Same card as before, now in a low-data state.
 
 Changes from the healthy version:
@@ -285,81 +251,153 @@ Changes from the healthy version:
 
 Still calm. It should read as useful, not as an upsell.
 Traditional Chinese text, no phone frame, no logos.</pre>
-          </details>
-        </div>
+        </details>
       </figure>
-      <figcaption>m-2 · low · 390px</figcaption>
+      <div>
+        <ul data-normative>
+          <li>視覺上明顯不同於健康狀態，不只是數字變小</li>
+          <li>推估從「日期」換成「時數」</li>
+          <li>主要動作變成解決流量不足</li>
+          <li>次要出口存在，且不與主要動作競爭</li>
+        </ul>
+        <p data-incidental>警示色的確切色階、圓角、按鈕高度取自 Lume tokens。</p>
+      </div>
     </div>
-    <div data-decision="d-2" data-status="open">
-      <span class="tag">未決 D-2</span>
-      <p data-question>主要動作是「加購一個具體方案」還是「去看所有方案」？</p>
-      <ul data-options>
-        <li data-option="a"><strong>具體方案 + 價格</strong>（目前 mockup）—— 一鍵完成，但我們替旅客選了。選錯的話這個按鈕就是噪音，而且它長得像廣告。</li>
-        <li data-option="b"><strong>導到比較頁</strong>—— 誠實，但多一步，而且那一步發生在他正焦慮的時候。</li>
-      </ul>
-      <p data-resolution></p>
-    </div>
-
     <aside data-narration>
-      <p>先問他一句：這張卡是不是在賣東西？他的答案會直接決定 A 還是 B。</p>
-      <p>如果他選 A，要追問「我們怎麼決定推薦哪一個」—— 那會變成一條新的驗收條件，現在還沒有。</p>
+      <p>這是這張卡真正賺回成本的時刻。健康狀態下它只是資訊；快用完時它是一個決定。</p>
     </aside>
   </section>
 
-  <hr class="rule">
+  <!-- ─────────────────────────── -->
+  <section data-slide="5" data-topic="primary-action">
+    <p class="kicker">Slide 5 · 未決 D-2</p>
+    <div data-decision="d-2" data-status="open">
+      <span class="status"></span>
+      <p data-question>主要動作是「加購一個具體方案」還是「去看所有方案」？</p>
+      <div class="body split">
+        <ul data-options>
+          <li data-option="a"><b>具體方案 + 價格</b>（目前）—— 一鍵完成，但我們替旅客選了。選錯的話它就是噪音，而且長得像廣告。</li>
+          <li data-option="b"><b>導到比較頁</b> —— 誠實，但多一步，而那一步發生在他正焦慮的時候。</li>
+        </ul>
+        <p class="say">
+          先回答一個更上層的問題：<br><br>
+          <b>這張卡是不是在賣東西？</b>
+        </p>
+      </div>
+      <p data-resolution></p>
+    </div>
+    <aside data-narration>
+      <p>先問那句「這張卡是不是在賣東西」——他的答案會直接決定 A 還是 B，不用先講選項。</p>
+      <p>如果他選 A，追問「我們怎麼決定推薦哪一個」——那會變成一條新的驗收條件，現在還沒有。</p>
+    </aside>
+  </section>
 
-  <!-- ─────────────────────────────────────────────── -->
-  <section data-acceptance>
-    <h2>驗收條件</h2>
-    <p class="col" style="color:var(--ink-mid);font-size:.97rem">
-      每一條都宣告了誰來檢查。<code>human</code> 是合法答案 —— 沒宣告才不是。
-    </p>
-    <div class="tablewrap">
+  <!-- ─────────────────────────── -->
+  <section data-slide="6" data-topic="acceptance">
+    <p class="kicker">Slide 6 · 驗收</p>
+    <h2>每條都說了誰來檢查</h2>
+    <div class="body">
       <table>
-        <thead><tr><th>#</th><th>條件</th><th>檢查方式</th></tr></thead>
+        <thead><tr><th>#</th><th>條件</th><th>檢查</th></tr></thead>
         <tbody>
           <tr data-criterion="c-1" data-check="route:/zh-TW/trips/[id]">
-            <td><code>c-1</code></td><td>卡片出現在行程詳情頁第一位，時間軸之上</td>
-            <td><span class="chk m">smoke · routes.json</span></td>
-          </tr>
+            <td>c-1</td><td>卡片在行程頁第一位，時間軸之上</td><td><span class="chk">smoke</span></td></tr>
           <tr data-criterion="c-2" data-check="visual:trip-data-card-healthy,trip-data-card-low">
-            <td><code>c-2</code></td><td>healthy 與 low 兩個狀態在 390 / 1280 / 1440 都有 baseline</td>
-            <td><span class="chk m">visual gate</span></td>
-          </tr>
+            <td>c-2</td><td>兩個狀態在 390 / 1280 / 1440 都有 baseline</td><td><span class="chk">visual</span></td></tr>
           <tr data-criterion="c-3" data-check="test:packages/catalog/src/usage-projection.test.ts">
-            <td><code>c-3</code></td><td>「約可再用 N 小時」由近 3 日用量推估，用量為 0 時不顯示推估而非顯示無限大</td>
-            <td><span class="chk m">unit</span></td>
-          </tr>
+            <td>c-3</td><td>推估由近 3 日用量算出；用量為 0 時不顯示推估</td><td><span class="chk">unit</span></td></tr>
           <tr data-criterion="c-4" data-check="test:apps/web/test/trip-data-card.i18n.test.ts">
-            <td><code>c-4</code></td><td>所有文案在 zh-TW 與 en 都存在，數字用 locale 格式</td>
-            <td><span class="chk m">i18n-parity</span></td>
-          </tr>
+            <td>c-4</td><td>文案雙語齊全，數字用 locale 格式</td><td><span class="chk">i18n</span></td></tr>
           <tr data-criterion="c-5" data-check="test:apps/web/test/trip-data-card.states.test.ts">
-            <td><code>c-5</code></td><td>資料讀取失敗時卡片顯示「暫時讀不到用量」並保留行程資訊，不顯示 0 GB</td>
-            <td><span class="chk m">state driver</span></td>
-          </tr>
+            <td>c-5</td><td>讀取失敗顯示「暫時讀不到用量」，不顯示 0 GB</td><td><span class="chk">states</span></td></tr>
           <tr data-criterion="c-6" data-check="human">
-            <td><code>c-6</code></td><td>旅客一眼就能判斷「夠不夠用到行程結束」，不需要心算</td>
-            <td><span class="chk h">human</span></td>
-          </tr>
+            <td>c-6</td><td>一眼判斷夠不夠用到行程結束，不需心算</td><td><span class="chk h">human</span></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="col" style="font-size:.95rem;color:var(--ink-mid)">
-      <code>c-6</code> 是唯一需要人判斷的。這是刻意的 —— 它就是 D-1 要解決的問題，
-      而 D-1 一旦決定，它可能可以降級成一條可測的規則。討論時值得試試看。
-    </p>
+    <aside data-narration>
+      <p>只講 c-6：它是唯一需要人判斷的，而且它就是 D-1 要解決的問題。D-1 決定之後，它可能可以降級成可測規則 —— 當場試試看。</p>
+    </aside>
   </section>
 
-  <!-- ─────────────────────────────────────────────── -->
   <section data-changelog>
-    <h2>Decision changelog</h2>
-    <p class="col" style="color:var(--ink-mid);font-size:.97rem">只能追加。記錄「這條為什麼變了」，能改寫的話就只是現況的另一份副本。</p>
     <ol data-log>
       <li><time>2026-08-24</time> — 建立。D-1、D-2 皆為 <code>open</code>；c-6 標為 <code>human</code>，待 D-1 決定後嘗試降級為可測規則。</li>
-      <li><time>2026-08-24</time> — mockup 從手寫 HTML 改為生成圖 + prompt。理由：複雜頁面用圖比較快，想像空間也大；代價是圖裡有上千個偶然決定，所以同時加入 <code>data-normative</code> / <code>data-incidental</code> 區分規範與偶然。兩張圖尚未生成。</li>
+      <li><time>2026-08-24</time> — mockup 從手寫 HTML 改為生成圖 + prompt。理由：複雜頁面用圖比較快、想像空間也大；代價是圖裡有上千個偶然決定，所以同時加入 <code>data-normative</code> / <code>data-incidental</code> 區分規範與偶然。</li>
+      <li><time>2026-08-24</time> — 改成一次一張的簡報：圖 &gt; 表 &gt; 文字，講稿留在檔案內但不顯示。理由：這份是講給人聽的，不是給人讀的；螢幕上放得下的字量遠少於文件。</li>
     </ol>
   </section>
 
 </article>
 </div>
+
+<div class="bar">
+  <div class="dots" id="dots"></div>
+  <div class="nav">
+    <span class="count" id="count"></span>
+    <button class="nv" id="prev" aria-label="上一張">← 上一張</button>
+    <button class="nv" id="next" aria-label="下一張">下一張 →</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const slides = [...document.querySelectorAll('section[data-slide]')];
+  const dots = document.getElementById('dots');
+  const count = document.getElementById('count');
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('i');
+    d.onclick = () => go(i);
+    dots.appendChild(d);
+  });
+
+  // The index lives in the URL so an auto-reload after an edit comes back to the same
+  // slide. Landing on slide 1 after every change would make editing mid-presentation
+  // cost more than it saves.
+  let cur = Math.max(0, Math.min(slides.length - 1, (parseInt(location.hash.slice(2)) || 1) - 1));
+
+  function go(i){
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, n) => s.classList.toggle('on', n === cur));
+    [...dots.children].forEach((d, n) => d.classList.toggle('on', n === cur));
+    count.textContent = (cur + 1) + ' / ' + slides.length;
+    prev.disabled = cur === 0;
+    next.disabled = cur === slides.length - 1;
+    history.replaceState(null, '', '#s' + (cur + 1));
+  }
+  next.onclick = () => go(cur + 1);
+  prev.onclick = () => go(cur - 1);
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+  });
+  go(cur);
+
+  // Also follow the hash when it changes without a load — jumping to a slide by URL is
+  // how the presenter moves without touching the deck, and reading it only at startup
+  // makes that silently do nothing.
+  addEventListener('hashchange', () => {
+    const n = (parseInt(location.hash.slice(2)) || 1) - 1;
+    if (n !== cur) go(n);
+  });
+
+  // Reload when the file changes on disk, so an edit made during the conversation is on
+  // screen without anyone touching the browser. Needs to be served over http — over
+  // file:// the fetch is blocked and this quietly does nothing, which is why the skill
+  // says to start a server first.
+  let seen = null;
+  setInterval(async () => {
+    try {
+      const r = await fetch(location.pathname + '?t=' + Date.now(), {cache:'no-store'});
+      const t = await r.text();
+      let h = 0;
+      for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+      if (seen === null) { seen = h; return; }
+      if (h !== seen) location.reload();
+    } catch (e) { /* file:// or server down — presentation continues, just no auto-reload */ }
+  }, 1500);
+})();
+</script>
