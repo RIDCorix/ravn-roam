@@ -497,7 +497,7 @@ function CheckoutSheet(props: CheckoutSheetProps) {
     return (
       <Sheet open onOpenChange={props.onOpenChange}>
         <SheetContent side="bottom" className="mx-auto max-w-[430px] rounded-t-[28px] border-x bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5">
-          <SheetHeader className="px-0"><SheetTitle className="text-[20px] tracking-[-0.02em] text-fg">{props.labels.sign_in_to_continue}</SheetTitle><SheetDescription className="text-[13px] leading-relaxed text-fg-muted">{props.labels.checkout_body}</SheetDescription></SheetHeader>
+          <SheetHeader className="px-0"><SheetTitle className="text-[20px] tracking-[-0.02em] text-fg">{props.labels.sign_in_to_continue}</SheetTitle><SheetDescription className="text-[13px] leading-relaxed text-fg-muted">{props.labels.sign_in_body}</SheetDescription></SheetHeader>
           <SheetFooter className="px-0 pt-5"><Button asChild className="h-12 w-full rounded-full bg-accent text-white hover:bg-accent/90"><Link href={`/${props.lang}/login?next=${encodeURIComponent(returnTo)}`}>{props.labels.sign_in_to_buy}</Link></Button></SheetFooter>
         </SheetContent>
       </Sheet>

@@ -152,10 +152,19 @@ const STATES: State[] = [
       await planRow(page, /10 GB.+NT\$ 690/).click();
     },
     reached: async (page) => {
-      await expect(visible(page, L.sign_in_to_buy)).toBeVisible();
-      // The selected plan is still named on screen: the shopper's context survives
-      // the sign-in requirement rather than being discarded by it.
-      await expect(visible(page, L.checkout_title)).toBeVisible();
+      await expect(page.getByRole("dialog", { name: L.sign_in_to_continue })).toBeVisible();
+      const signIn = page.getByRole("link", { name: L.sign_in_to_buy });
+      await expect(signIn).toBeVisible();
+      // The body must describe the action actually on offer. It used to reuse
+      // checkout_body and promise the traveler an order was being placed with the
+      // supplier, while the only control signed them in.
+      await expect(visible(page, L.sign_in_body)).toBeVisible();
+      await expect(visible(page, L.checkout_body)).toHaveCount(0);
+      // The shopper's context survives the account requirement rather than being
+      // discarded by it: the return URL still carries the region and the chosen plan.
+      const next = decodeURIComponent((await signIn.getAttribute("href")) ?? "");
+      expect(next, `sign-in return URL dropped the selection: ${next}`).toContain("/shop/japan");
+      expect(next, `sign-in return URL dropped the selection: ${next}`).toContain("p-10gb");
     },
   },
   {
