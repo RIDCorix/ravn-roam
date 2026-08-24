@@ -1,0 +1,344 @@
+<title>Trip Data Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+
+<style>
+:root{
+  --ground:#EFEEEA; --surface:#FAFAF8; --sunk:#E5E4DE;
+  --line:#D6D5CD; --line-soft:#E6E5DE;
+  --ink:#1A1A17; --ink-mid:#54544D; --ink-soft:#7B7B73;
+  --open:#B4451F;  --open-bg:#F8E5DC;
+  --agreed:#3F6B4A; --agreed-bg:#E3EDE4;
+  --mach:#3B5A80;  --mach-bg:#E2E9F1;
+}
+:root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
+  --ground:#15150F; --surface:#1D1D17; --sunk:#111109;
+  --line:#33332B; --line-soft:#28282110;
+  --line-soft:#282821;
+  --ink:#EDEDE6; --ink-mid:#ADADA3; --ink-soft:#83837A;
+  --open:#F0855C; --open-bg:#33190F;
+  --agreed:#8FC49D; --agreed-bg:#16261A;
+  --mach:#8FB4DE; --mach-bg:#152234;
+}}
+:root[data-theme="dark"]{
+  --ground:#15150F; --surface:#1D1D17; --sunk:#111109;
+  --line:#33332B; --line-soft:#282821;
+  --ink:#EDEDE6; --ink-mid:#ADADA3; --ink-soft:#83837A;
+  --open:#F0855C; --open-bg:#33190F;
+  --agreed:#8FC49D; --agreed-bg:#16261A;
+  --mach:#8FB4DE; --mach-bg:#152234;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:Newsreader,Georgia,serif;font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:min(108ch,94vw);margin:0 auto;padding:clamp(2rem,5vw,4rem) 0 6rem}
+.col{max-width:68ch}
+h1,h2,h3,.ui{font-family:"Bricolage Grotesque",system-ui,sans-serif}
+h1{font-size:clamp(2rem,4.6vw,3.1rem);font-weight:700;line-height:1.06;
+  letter-spacing:-.025em;margin:0 0 .5rem;text-wrap:balance}
+h2{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin:0 0 .5rem;text-wrap:balance}
+h3{font-size:.95rem;font-weight:700;margin:2rem 0 .5rem;letter-spacing:-.005em}
+p{margin:0 0 1rem}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-soft);margin:0 0 .9rem}
+.lede{font-size:1.1rem;color:var(--ink-mid);margin-bottom:2rem}
+hr.rule{height:1px;background:var(--line);border:0;margin:3rem 0 2.4rem}
+code{font-family:"JetBrains Mono",monospace;font-size:.86em;
+  background:var(--sunk);padding:.1em .38em;border-radius:2px}
+
+/* ── slides ─────────────────────────────────────────────── */
+section[data-slide]{margin-top:3rem;padding-left:1.3rem;border-left:2px solid var(--line)}
+section[data-slide] > .n{font-family:"JetBrains Mono",monospace;font-size:.7rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);
+  display:block;margin-bottom:.3rem}
+
+aside[data-narration]{background:var(--sunk);border-radius:3px;
+  padding:.9rem 1.1rem;margin:1.2rem 0;font-size:.95rem;color:var(--ink-mid)}
+aside[data-narration]::before{content:"講稿";font-family:"JetBrains Mono",monospace;
+  font-size:.66rem;letter-spacing:.12em;color:var(--ink-soft);
+  display:block;margin-bottom:.35rem}
+aside[data-narration] p:last-child{margin-bottom:0}
+
+/* ── decisions: the reason the session exists ───────────── */
+div[data-decision]{border:1px solid var(--line);border-left:3px solid var(--open);
+  background:var(--open-bg);border-radius:0 4px 4px 0;padding:1.1rem 1.2rem;margin:1.4rem 0}
+div[data-decision][data-status="agreed"]{border-left-color:var(--agreed);background:var(--agreed-bg)}
+div[data-decision][data-status="deferred"]{border-left-color:var(--ink-soft);background:var(--sunk)}
+div[data-decision] .tag{font-family:"JetBrains Mono",monospace;font-size:.66rem;
+  letter-spacing:.11em;text-transform:uppercase;font-weight:500;color:var(--open);
+  display:block;margin-bottom:.4rem}
+div[data-decision][data-status="agreed"] .tag{color:var(--agreed)}
+div[data-decision][data-status="deferred"] .tag{color:var(--ink-soft)}
+p[data-question]{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;
+  font-size:1.05rem;margin:0 0 .7rem;letter-spacing:-.01em}
+ul[data-options]{list-style:none;padding:0;margin:0 0 .8rem}
+ul[data-options] li{margin-bottom:.5rem;padding-left:2.1rem;position:relative;font-size:.97rem}
+ul[data-options] li::before{content:attr(data-option);position:absolute;left:0;top:.15em;
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:500;
+  text-transform:uppercase;border:1px solid currentColor;border-radius:2px;
+  width:1.45rem;text-align:center;opacity:.75}
+p[data-resolution]{margin:0;padding-top:.7rem;border-top:1px dashed var(--line);
+  font-size:.95rem;color:var(--ink-mid)}
+p[data-resolution]:empty::before{content:"未決 — 討論後填入";color:var(--ink-soft);font-style:italic}
+
+/* ── mockup: its own visual world, bounded ──────────────── */
+.stage{background:var(--sunk);border:1px solid var(--line-soft);border-radius:4px;
+  padding:1.8rem 1rem;margin:1.4rem 0;display:flex;justify-content:center;
+  gap:1.4rem;flex-wrap:wrap}
+.phone{
+  --card-bg:#FFFFFF; --card-ink:#14171A; --card-mid:#61696F; --card-line:#E7EAEC;
+  --brand:#0E7C6B; --warn:#C2610F; --meter-track:#EDF0F1;
+  width:300px;flex:none;background:#F3F5F6;border:1px solid #DCE0E2;border-radius:22px;
+  padding:14px;font-family:system-ui,-apple-system,"Helvetica Neue",sans-serif;
+  box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.phone .cap{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:#8D9498;margin-bottom:10px;text-align:center}
+
+#mock-card,#mock-card-low{background:var(--card-bg);border:1px solid var(--card-line);
+  border-radius:14px;padding:16px}
+#mock-card-low{--brand:var(--warn)}
+.mk-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.mk-place{font-size:15px;font-weight:600;color:var(--card-ink);letter-spacing:-.01em}
+.mk-days{font-size:12px;color:var(--card-mid);font-variant-numeric:tabular-nums}
+.mk-figure{display:flex;align-items:baseline;gap:5px;margin-bottom:10px}
+.mk-num{font-size:34px;font-weight:600;color:var(--card-ink);letter-spacing:-.03em;
+  line-height:1;font-variant-numeric:tabular-nums}
+.mk-unit{font-size:13px;color:var(--card-mid)}
+.mk-meter{height:6px;background:var(--meter-track);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.mk-fill{height:100%;background:var(--brand);border-radius:3px}
+.mk-sub{font-size:11.5px;color:var(--card-mid);margin-bottom:14px;font-variant-numeric:tabular-nums}
+.mk-cta{display:block;width:100%;background:var(--brand);color:#fff;border:0;
+  border-radius:9px;padding:11px;font-size:13.5px;font-weight:600;cursor:pointer;
+  font-family:inherit}
+.mk-alt{display:block;width:100%;background:none;border:0;color:var(--card-mid);
+  font-size:12px;padding:9px 0 0;cursor:pointer;font-family:inherit}
+.mk-flag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  color:var(--warn);background:#FDF1E3;border-radius:20px;padding:3px 9px;margin-bottom:10px}
+
+.edit-note{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--ink-soft);
+  text-align:center;width:100%;margin-top:.4rem}
+
+/* ── acceptance + changelog ─────────────────────────────── */
+.tablewrap{overflow-x:auto;border:1px solid var(--line-soft);border-radius:3px;
+  background:var(--surface);margin:1rem 0 1.6rem}
+table{border-collapse:collapse;width:100%;font-family:"Bricolage Grotesque",sans-serif;
+  font-size:.85rem;line-height:1.45}
+th{text-align:left;font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-soft);font-weight:700;padding:.65rem .8rem;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:.65rem .8rem;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.chk{font-family:"JetBrains Mono",monospace;font-size:.72rem;padding:.12em .45em;
+  border-radius:2px;white-space:nowrap;display:inline-block}
+.chk.m{background:var(--mach-bg);color:var(--mach)}
+.chk.h{background:var(--open-bg);color:var(--open)}
+
+ol[data-log]{padding-left:1.2rem;font-size:.93rem;color:var(--ink-mid)}
+ol[data-log] li{margin-bottom:.55rem}
+ol[data-log] time{font-family:"JetBrains Mono",monospace;font-size:.8em;color:var(--ink-soft)}
+
+.howto{border:1px dashed var(--line);border-radius:4px;padding:1.1rem 1.3rem;margin:1.6rem 0;
+  background:var(--surface);font-size:.94rem}
+.howto h3{margin-top:0}
+.howto ul{padding-left:1.15rem;margin:0}
+.howto li{margin-bottom:.45rem}
+</style>
+
+<!-- roam-spec v1 · R-300 · editable in place -->
+<div class="wrap">
+<article data-spec="R-300">
+
+  <p class="eyebrow">Roam · 規格簡報 · R-300</p>
+  <h1>行程資料用量卡</h1>
+  <p class="lede col">
+    旅客在行程中最常問的一件事：<strong>我還剩多少？</strong>目前 Roam 沒有任何地方回答它 ——
+    要知道用量得離開 app 去看電信商介面。這張卡把答案放進行程頁，並在快用完時給出下一步。
+  </p>
+
+  <div class="howto">
+    <h3>這份檔案怎麼用</h3>
+    <ul>
+      <li>這是規格本身，不是規格的簡報 —— 討論結論直接寫回這個檔案。</li>
+      <li>每個 <code>data-decision</code> 討論後必須是 <code>agreed</code> 或 <code>deferred</code>，不能留在 <code>open</code>。結論寫進 <code>data-resolution</code>。</li>
+      <li>Mockup 是活的 HTML/CSS：<code>#mock-card</code>、<code>#mock-card-low</code>，顏色與尺寸集中在 <code>.phone</code> 的 CSS 變數。改了就會看到。</li>
+      <li>每條驗收條件都要有 <code>data-check</code>。<code>human</code> 是合法答案；沒宣告不是。</li>
+      <li>Changelog <strong>只能追加</strong>。改了哪一條、為什麼，一行一筆。</li>
+    </ul>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ─────────────────────────────────────────────── -->
+  <section data-slide="1" data-topic="problem">
+    <span class="n">Slide 1</span>
+    <h2>它出現在哪，取代了什麼</h2>
+    <div class="col">
+      <p>
+        位置是行程詳情頁 <code>/zh-TW/trips/[id]</code> 的第一張卡，在行程時間軸之上。
+        它取代的不是某個既有元件 —— 而是取代「旅客切出去查電信商」這個動作。
+      </p>
+      <p>
+        因此它的成功條件不是好看，是<strong>不用點就答完</strong>：剩多少、還夠不夠用到行程結束、
+        不夠的話下一步是什麼。三件事，在摺線以上。
+      </p>
+    </div>
+    <aside data-narration>
+      <p>先說旅客的實際行為：現在他們要離開 app。這張卡的存在理由是消滅那個動作，不是增加一個功能。</p>
+      <p>強調「不用點就答完」——這會直接決定後面兩個決策怎麼選。</p>
+    </aside>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── -->
+  <section data-slide="2" data-topic="two-dimensions">
+    <span class="n">Slide 2</span>
+    <h2>兩個維度的難題</h2>
+    <div class="col">
+      <p>
+        「還剩多少」其實是兩個數字：<strong>剩餘流量</strong>和<strong>剩餘天數</strong>。
+        它們會不同步 —— 流量剩 80% 但明天到期，跟流量剩 5% 但還有六天，是完全不同的處境，
+        而且需要不同的下一步。
+      </p>
+      <p>下面的 mockup 目前只讓流量主導，天數退到次要位置。</p>
+    </div>
+
+    <div class="stage">
+      <div class="phone">
+        <div class="cap">healthy · 390px</div>
+        <div id="mock-card">
+          <div class="mk-top">
+            <span class="mk-place">日本 · 東京</span>
+            <span class="mk-days">還有 4 天</span>
+          </div>
+          <div class="mk-figure">
+            <span class="mk-num">6.2</span><span class="mk-unit">GB 可用 / 10 GB</span>
+          </div>
+          <div class="mk-meter"><div class="mk-fill" style="width:62%"></div></div>
+          <div class="mk-sub">依目前用量，可用到 8 月 28 日</div>
+          <button class="mk-cta">查看方案詳情</button>
+        </div>
+      </div>
+      <p class="edit-note">#mock-card · 可直接改</p>
+    </div>
+
+    <div data-decision="d-1" data-status="open">
+      <span class="tag">未決 D-1</span>
+      <p data-question>流量和天數，哪一個當主要數字？</p>
+      <ul data-options>
+        <li data-option="a"><strong>流量主導</strong>（目前 mockup）—— 大字是 GB，天數退為次要。旅客對流量更焦慮，但「明天到期還有 8GB」會被藏起來。</li>
+        <li data-option="b"><strong>取較緊的那個</strong>—— 卡片自己判斷哪個先耗盡，把那個放大。誠實，但同一張卡在不同時候長得不一樣，可預期性差。</li>
+        <li data-option="c"><strong>兩個並列</strong>—— 都用中等字級。不用選，但失去「一眼看完」，而那正是這張卡的目的。</li>
+      </ul>
+      <p data-resolution></p>
+    </div>
+
+    <aside data-narration>
+      <p>這是這次要談的核心。先示範 A 的失效情境：讓他想像「明天到期但還有 8GB」這張卡長什麼樣 —— 大字寫 8.0 GB，旅客完全不會警覺。</p>
+      <p>B 是我傾向的，但要老實說它的代價：同一張卡在不同時候長得不一樣。問他能不能接受。</p>
+    </aside>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── -->
+  <section data-slide="3" data-topic="low-state">
+    <span class="n">Slide 3</span>
+    <h2>快用完的時候</h2>
+    <div class="col">
+      <p>
+        這是這張卡真正要賺回成本的時刻。健康狀態下它只是資訊；快用完時它是一個決定。
+      </p>
+    </div>
+
+    <div class="stage">
+      <div class="phone">
+        <div class="cap">low · 390px</div>
+        <div id="mock-card-low">
+          <div class="mk-top">
+            <span class="mk-place">日本 · 東京</span>
+            <span class="mk-days">還有 3 天</span>
+          </div>
+          <span class="mk-flag">流量可能不夠用到行程結束</span>
+          <div class="mk-figure">
+            <span class="mk-num">0.8</span><span class="mk-unit">GB 可用 / 10 GB</span>
+          </div>
+          <div class="mk-meter"><div class="mk-fill" style="width:8%"></div></div>
+          <div class="mk-sub">依目前用量，約可再用 14 小時</div>
+          <button class="mk-cta">加購 5 GB · NT$ 390</button>
+          <button class="mk-alt">看其他方案</button>
+        </div>
+      </div>
+      <p class="edit-note">#mock-card-low · 可直接改</p>
+    </div>
+
+    <div data-decision="d-2" data-status="open">
+      <span class="tag">未決 D-2</span>
+      <p data-question>主要動作是「加購一個具體方案」還是「去看所有方案」？</p>
+      <ul data-options>
+        <li data-option="a"><strong>具體方案 + 價格</strong>（目前 mockup）—— 一鍵完成，但我們替旅客選了。選錯的話這個按鈕就是噪音，而且它長得像廣告。</li>
+        <li data-option="b"><strong>導到比較頁</strong>—— 誠實，但多一步，而且那一步發生在他正焦慮的時候。</li>
+      </ul>
+      <p data-resolution></p>
+    </div>
+
+    <aside data-narration>
+      <p>先問他一句：這張卡是不是在賣東西？他的答案會直接決定 A 還是 B。</p>
+      <p>如果他選 A，要追問「我們怎麼決定推薦哪一個」—— 那會變成一條新的驗收條件，現在還沒有。</p>
+    </aside>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ─────────────────────────────────────────────── -->
+  <section data-acceptance>
+    <h2>驗收條件</h2>
+    <p class="col" style="color:var(--ink-mid);font-size:.97rem">
+      每一條都宣告了誰來檢查。<code>human</code> 是合法答案 —— 沒宣告才不是。
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>#</th><th>條件</th><th>檢查方式</th></tr></thead>
+        <tbody>
+          <tr data-criterion="c-1" data-check="route:/zh-TW/trips/[id]">
+            <td><code>c-1</code></td><td>卡片出現在行程詳情頁第一位，時間軸之上</td>
+            <td><span class="chk m">smoke · routes.json</span></td>
+          </tr>
+          <tr data-criterion="c-2" data-check="visual:trip-data-card-healthy,trip-data-card-low">
+            <td><code>c-2</code></td><td>healthy 與 low 兩個狀態在 390 / 1280 / 1440 都有 baseline</td>
+            <td><span class="chk m">visual gate</span></td>
+          </tr>
+          <tr data-criterion="c-3" data-check="test:packages/catalog/src/usage-projection.test.ts">
+            <td><code>c-3</code></td><td>「約可再用 N 小時」由近 3 日用量推估，用量為 0 時不顯示推估而非顯示無限大</td>
+            <td><span class="chk m">unit</span></td>
+          </tr>
+          <tr data-criterion="c-4" data-check="test:apps/web/test/trip-data-card.i18n.test.ts">
+            <td><code>c-4</code></td><td>所有文案在 zh-TW 與 en 都存在，數字用 locale 格式</td>
+            <td><span class="chk m">i18n-parity</span></td>
+          </tr>
+          <tr data-criterion="c-5" data-check="test:apps/web/test/trip-data-card.states.test.ts">
+            <td><code>c-5</code></td><td>資料讀取失敗時卡片顯示「暫時讀不到用量」並保留行程資訊，不顯示 0 GB</td>
+            <td><span class="chk m">state driver</span></td>
+          </tr>
+          <tr data-criterion="c-6" data-check="human">
+            <td><code>c-6</code></td><td>旅客一眼就能判斷「夠不夠用到行程結束」，不需要心算</td>
+            <td><span class="chk h">human</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="col" style="font-size:.95rem;color:var(--ink-mid)">
+      <code>c-6</code> 是唯一需要人判斷的。這是刻意的 —— 它就是 D-1 要解決的問題，
+      而 D-1 一旦決定，它可能可以降級成一條可測的規則。討論時值得試試看。
+    </p>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── -->
+  <section data-changelog>
+    <h2>Decision changelog</h2>
+    <p class="col" style="color:var(--ink-mid);font-size:.97rem">只能追加。記錄「這條為什麼變了」，能改寫的話就只是現況的另一份副本。</p>
+    <ol data-log>
+      <li><time>2026-08-24</time> — 建立。D-1、D-2 皆為 <code>open</code>；c-6 標為 <code>human</code>，待 D-1 決定後嘗試降級為可測規則。</li>
+    </ol>
+  </section>
+
+</article>
+</div>
