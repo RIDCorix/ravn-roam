@@ -25,7 +25,7 @@ check_routes() {
   local failed=0
   for app in landing web; do
     local base; base=$([ "$app" = landing ] && echo "$LANDING_URL" || echo "$WEB_URL")
-    while IFS=$'\t' read -r path needs_api; do
+    while IFS=$'\t' read -r path needs_api pending; do
       [ -n "$path" ] || continue
       if [ "$needs_api" = "true" ] && [ "$API_UP" = 0 ]; then
         echo "  [$app] SKIP $path (needs API; set ROAM_API_URL to include it)"; continue
@@ -33,6 +33,20 @@ check_routes() {
       local body code
       body=$(curl -sS -m 20 -w '\n%{http_code}' "$base$path" 2>/dev/null)
       code="${body##*$'\n'}"; body="${body%$'\n'*}"
+
+      # A pending route is one the product owes. It does not fail the gate while it is
+      # missing — but the moment it answers, the flag is stale, and a stale flag is how
+      # a route silently stops being checked.
+      if [ -n "$pending" ] && [ "$pending" != "-" ]; then
+        if [ "$code" = "200" ]; then
+          echo "  [$app] FAIL $path -> now serves 200; $pending is delivered — remove pending_issue so this route is gated"
+          failed=1
+        else
+          echo "  [$app] PENDING $path -> HTTP $code, owed by $pending"
+        fi
+        continue
+      fi
+
       if [ "$code" != "200" ]; then
         echo "  [$app] FAIL $path -> HTTP $code"; failed=1; continue
       fi
@@ -46,7 +60,7 @@ check_routes() {
     done < <(python3 -c "
 import json
 for r in json.load(open('$ROUTES')).get('$app', []):
-    print(r['path'] + '\t' + str(r.get('needs_api', False)).lower())
+    print('\t'.join([r['path'], str(r.get('needs_api', False)).lower(), r.get('pending_issue', '-')]))
 ")
   done
   return "$failed"

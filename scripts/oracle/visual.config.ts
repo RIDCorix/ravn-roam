@@ -32,8 +32,12 @@ export default defineConfig({
     trace: "retain-on-failure",
     deviceScaleFactor: 1,
   },
+  // The three viewports are not a preference — R-276's screen contract names
+  // 390x844, 1280x720 and 1440x900, so the gate checks the sizes the acceptance
+  // criteria were written against.
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
+    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 720 } } },
+    { name: "wide", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     // The consumer journey is mobile-first, so a desktop-only baseline would miss the
     // viewport most of its users are on. Chromium rather than the iPhone device preset,
     // which is WebKit: a regression gate wants ONE engine for both sizes, and a second
@@ -42,7 +46,7 @@ export default defineConfig({
       name: "mobile",
       use: {
         ...devices["Desktop Chrome"],
-        viewport: { width: 393, height: 852 },
+        viewport: { width: 390, height: 844 },
         isMobile: true,
         hasTouch: true,
       },

@@ -1,5 +1,7 @@
 {
-  "_": "Routes the smoke gate drives against the production build. Keep this in step with the app: a route that exists here and not in the app fails the gate, and a route in the app and not here is simply not covered. needs_api routes are skipped (and the skip printed) when ROAM_API_URL is unset or down. Default locale is zh-TW.",
+  "_": "Routes the smoke and visual gates drive against the production build. Keep this in step with the app: a route here and not in the app fails the gate, and a route in the app and not here is simply not covered. Default locale is zh-TW.",
+  "_needs_api": "Skipped, and the skip printed, when ROAM_API_URL is unset or down.",
+  "_pending": "A route the product does not serve YET, with the issue that owes it. It does not fail the gate — but the moment it starts answering, the gate fails and says to clear the flag. A route nobody is required to fix is not pending, it is absent: leave it out.",
   "landing": [
     { "path": "/zh-TW" },
     { "path": "/zh-TW/plans" },
@@ -10,6 +12,8 @@
     { "path": "/zh-TW" },
     { "path": "/zh-TW/explore" },
     { "path": "/zh-TW/login" },
+    { "path": "/zh-TW/shop",    "pending_issue": "R-276" },
+    { "path": "/zh-TW/shop/JP",  "pending_issue": "R-276" },
     { "path": "/zh-TW/trips", "needs_api": true },
     { "path": "/zh-TW/me",    "needs_api": true },
     { "path": "/zh-TW/admin", "needs_api": true }

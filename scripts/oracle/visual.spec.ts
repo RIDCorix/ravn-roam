@@ -16,7 +16,7 @@
 import { test, expect } from "@playwright/test";
 import routes from "./routes.json";
 
-type Route = { path: string; needs_api?: boolean };
+type Route = { path: string; needs_api?: boolean; pending_issue?: string };
 
 const API_UP = Boolean(process.env.ROAM_API_URL);
 const APPS: Array<{ app: "landing" | "web"; base: string | undefined }> = [
@@ -38,6 +38,12 @@ for (const { app, base } of APPS) {
         test.skip(
           Boolean(route.needs_api) && !API_UP,
           `${route.path} needs a live API; set ROAM_API_URL to include it`,
+        );
+        // A route the product does not serve yet has nothing to screenshot. The smoke
+        // gate owns noticing when it starts answering.
+        test.skip(
+          Boolean(route.pending_issue),
+          `${route.path} is not served yet — owed by ${route.pending_issue}`,
         );
         expect(base, `${app} was not booted — no base URL`).toBeTruthy();
         // "load", not "networkidle": a page with a map, a poller or a live connection
