@@ -385,11 +385,25 @@ Traditional Chinese text, no phone frame, no logos.</pre>
   });
 
   // Reload when the file changes on disk, so an edit made during the conversation is on
-  // screen without anyone touching the browser. Needs to be served over http — over
-  // file:// the fetch is blocked and this quietly does nothing, which is why the skill
-  // says to start a server first.
-  let seen = null;
-  setInterval(async () => {
+  // screen without anyone touching the browser.
+  //
+  // This only works over http. From file:// the fetch is blocked — and a check that fails
+  // silently is indistinguishable from a deck that simply does not update, which is the
+  // exact confusion this whole file exists to avoid. So it says so, on screen, once.
+  let seen = null, warned = false;
+  function warn(){
+    if (warned) return; warned = true;
+    const b = document.createElement('div');
+    b.id = 'noreload';
+    b.textContent = '自動重載未啟用 — 這份是用 file:// 開的。改用 http 才會在編輯後自己更新：'
+                  + ' python3 -m http.server 8899';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99;padding:.7rem 1.2rem;'
+      + 'background:var(--open-bg);color:var(--open);font-family:"JetBrains Mono",monospace;'
+      + 'font-size:.75rem;letter-spacing:.02em;text-align:center;border-bottom:1px solid currentColor';
+    document.body.appendChild(b);
+  }
+  if (location.protocol === 'file:') warn();
+  else setInterval(async () => {
     try {
       const r = await fetch(location.pathname + '?t=' + Date.now(), {cache:'no-store'});
       const t = await r.text();
@@ -397,7 +411,7 @@ Traditional Chinese text, no phone frame, no logos.</pre>
       for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
       if (seen === null) { seen = h; return; }
       if (h !== seen) location.reload();
-    } catch (e) { /* file:// or server down — presentation continues, just no auto-reload */ }
+    } catch (e) { warn(); }
   }, 1500);
 })();
 </script>

@@ -46,9 +46,9 @@ touch anything, the arrangement has failed.
 
 The deck shows one slide at a time. Advance it yourself with `computer` by clicking the
 button labelled **下一張** at the bottom right (`#next`); `←` / `→` also work if the deck
-has focus. Never advance without asking first.
+has focus. When to advance is your read of the conversation, not a script.
 
-The loop for each `<section data-slide>`:
+For each `<section data-slide>`:
 
 1. Say what the slide establishes, **in your own words**. Do not read the prose — what is
    on screen is deliberately short, and repeating it out loud wastes the only channel you
@@ -60,10 +60,9 @@ The loop for each `<section data-slide>`:
    be walking.
 4. If the slide carries an open decision, **stop and settle it.** Do not advance past an
    open decision — one skipped in the room comes back as a blocked issue days later.
-5. Ask whether he has anything on this slide. Then:
-   - **Nothing** → click 下一張 and start the next slide.
-   - **Something** → make the change, let the deck reload itself, then say in one sentence
-     what he is now looking at. Ask again before advancing.
+5. When he wants something changed, make the change, let the deck reload itself, and say
+   in one sentence what he is now looking at — he needs to know the thing on screen is the
+   thing he asked for.
 
 Do not tell him to refresh. The deck watches its own file and reloads on the slide he is
 already on; saying "reload to see it" means the reload is broken and you should say *that*
@@ -161,7 +160,6 @@ difference is invisible from his side until nothing moves.
 ## What not to do
 
 - Do not read the file aloud, and do not read the narration aloud. Talk about the slide.
-- Do not advance a slide without asking. The click is yours; the timing is his.
 - Do not tell him to refresh, scroll, or click anything. If you catch yourself about to,
   something in the setup is broken — say what.
 - Do not batch edits to the end. A dropped connection then loses the entire session.
