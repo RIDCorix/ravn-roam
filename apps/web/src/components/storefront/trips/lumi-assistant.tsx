@@ -1080,6 +1080,7 @@ export function LumiAssistant({
                     message={m}
                     labels={labels}
                     lang={lang}
+                    tripId={tripId}
                     pendingPhrase={thinkingPhrase}
                     onCreated={(messageId, newTripId) => {
                       setMessages((prev) =>
@@ -2630,12 +2631,14 @@ function Bubble({
   message,
   labels,
   lang,
+  tripId,
   pendingPhrase,
   onCreated,
 }: {
   message: Message;
   labels: LumiAssistantLabels;
   lang: string;
+  tripId: string | null;
   pendingPhrase: string;
   onCreated: (messageId: string, tripId: string) => void;
 }) {
@@ -2684,6 +2687,7 @@ function Bubble({
         <EsimSuggestionCard
           suggestion={message.esim_suggestion}
           lang={lang}
+          tripId={tripId}
         />
       )}
     </div>
@@ -2737,9 +2741,11 @@ function formatToolEvent(
 function EsimSuggestionCard({
   suggestion,
   lang,
+  tripId,
 }: {
   suggestion: EsimSuggestion;
   lang: string;
+  tripId: string | null;
 }) {
   const plans = suggestion.plans ?? [];
   if (plans.length === 0) return null;
@@ -2751,7 +2757,7 @@ function EsimSuggestionCard({
         </div>
       ) : null}
       {plans.map((p, i) => (
-        <EsimSuggestionLink key={i} plan={p} lang={lang} />
+        <EsimSuggestionLink key={i} plan={p} lang={lang} tripId={tripId} />
       ))}
     </div>
   );
@@ -2760,9 +2766,11 @@ function EsimSuggestionCard({
 function EsimSuggestionLink({
   plan,
   lang,
+  tripId,
 }: {
   plan: EsimSuggestionPlan;
   lang: string;
+  tripId: string | null;
 }) {
   const days = plan.days ?? undefined;
   const gb = plan.gb ?? undefined;
@@ -2770,7 +2778,7 @@ function EsimSuggestionLink({
     country: plan.country,
     days,
     gb,
-  });
+  }, tripId ? { tripId } : {});
   const label =
     plan.label ??
     `${plan.country}${days ? ` · ${days} 天` : ""}${

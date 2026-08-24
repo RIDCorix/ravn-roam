@@ -459,7 +459,10 @@
           "planner": "行程規劃",
           "esim": "eSIM"
         },
-        "title_lines": ["讓世界的美好，", "成為你的下一段旅程"],
+        "title_lines": [
+          "讓世界的美好，",
+          "成為你的下一段旅程"
+        ],
         "subtitle": "探索世界的精彩活動，開啟專屬於你的旅程",
         "search_placeholder": "想去哪裡？例如：紐西蘭、秘魯、冰島",
         "search_aria": "搜尋目的地或活動",
@@ -477,12 +480,30 @@
           "tasks_left": "{count} 項待辦未完成"
         },
         "cards": {
-          "iceland": { "title": "冰島 · 極光之旅", "months": "10 - 3月" },
-          "turkey": { "title": "土耳其 · 熱氣球", "months": "4 - 10月" },
-          "switzerland": { "title": "瑞士 · 少女峰", "months": "6 - 9月" },
-          "japan": { "title": "日本 · 櫻花季", "months": "3 - 4月" },
-          "greece": { "title": "希臘 · 聖托里尼", "months": "5 - 9月" },
-          "bali": { "title": "峇里島 · 度假時光", "months": "5 - 10月" }
+          "iceland": {
+            "title": "冰島 · 極光之旅",
+            "months": "10 - 3月"
+          },
+          "turkey": {
+            "title": "土耳其 · 熱氣球",
+            "months": "4 - 10月"
+          },
+          "switzerland": {
+            "title": "瑞士 · 少女峰",
+            "months": "6 - 9月"
+          },
+          "japan": {
+            "title": "日本 · 櫻花季",
+            "months": "3 - 4月"
+          },
+          "greece": {
+            "title": "希臘 · 聖托里尼",
+            "months": "5 - 9月"
+          },
+          "bali": {
+            "title": "峇里島 · 度假時光",
+            "months": "5 - 10月"
+          }
         },
         "dock": {
           "inspiration": "靈感探索",
@@ -627,30 +648,195 @@
       "panel_count": "5 個精選活動",
       "panel_body": "點選地圖上的活動，查看地區節奏、活動時間軸與適合的旅程入口。",
       "view_region": "查看地區介紹",
-      "spotlight_title_lines": ["世界很大，", "精彩無限"],
+      "spotlight_title_lines": [
+        "世界很大，",
+        "精彩無限"
+      ],
       "spotlight_subtitle": "探索全球正在發生的精彩活動，找到下一段旅程真正值得出發的理由。",
       "spotlight_more": "探索更多",
       "spotlight_previous": "上一個活動",
       "spotlight_next": "下一個活動",
       "spotlight_events": [
-        { "id": "venice-carnival", "title": "威尼斯狂歡節", "category": "節慶活動", "location": "義大利・威尼斯", "description": "面具、運河與燭光宮殿，讓威尼斯成為一段充滿戲劇感的冬季旅程。", "story_headline": "世界三大嘉年華之一，整座城市會變成一場水上劇場。", "story_timing_label": "最佳窗口", "story_timing_value": "2 月中旬" },
-        { "id": "rio-carnival", "title": "里約嘉年華", "category": "節慶活動", "location": "巴西・里約熱內盧", "description": "森巴遊行、海灘白天與深夜街頭派對，是跨越大西洋最鮮明的旅行理由之一。", "story_headline": "如果你想要一趟充滿能量的旅行，里約會把整座城市交給節奏。", "story_timing_label": "熱度高峰", "story_timing_value": "2 月下旬" },
-        { "id": "tomorrowland", "title": "Tomorrowland", "category": "音樂祭", "location": "比利時・Boom", "description": "全球 EDM 迷聚集的小鎮，舞台、露營與週末社群讓它更像一座臨時城市。", "story_headline": "全球最大 EDM 音樂祭之一，適合把歐洲夏天變成一趟派對旅行。", "story_timing_label": "夏季週末", "story_timing_value": "7 月" },
-        { "id": "iceland-lights", "title": "冰島極光", "category": "季節活動", "location": "冰島・雷克雅維克", "description": "漫長冬夜、地熱溫泉與極光窗口，讓冰島成為很適合用時間規劃的旅程。", "story_headline": "不是只看天空，而是把溫泉、公路與黑沙灘串成一段冬季儀式。", "story_timing_label": "最佳時間", "story_timing_value": "10 月 ~ 3 月" },
-        { "id": "taiwan-mazu", "title": "大甲媽祖遶境", "category": "節慶活動", "location": "台灣・台中", "description": "九天八夜的徒步進香，把台灣中部城鎮、廟口小吃與信仰能量串成一條路線。", "story_headline": "一場會移動的信仰節慶，適合把台灣地方文化排成慢旅行。", "story_timing_label": "年度遶境", "story_timing_value": "春季" },
-        { "id": "japan-gion", "title": "祇園祭", "category": "節慶活動", "location": "日本・京都", "description": "山鉾巡行、宵山夜市與夏日祭典，把京都變成一段充滿歷史感的旅程。", "story_headline": "京都夏天最有重量的祭典，夜市、巡行與老街會一起醒來。", "story_timing_label": "祭典月份", "story_timing_value": "7 月" },
-        { "id": "fuji-rock", "title": "Fuji Rock", "category": "音樂祭", "location": "日本・新潟", "description": "山林、露營與多舞台音樂，把日本夏天變成一趟需要提前卡位的戶外旅程。", "story_headline": "不是只看表演，而是在山裡住進一個短暫出現的音樂城市。", "story_timing_label": "夏季週末", "story_timing_value": "7 月" },
-        { "id": "jp-sakura", "title": "京都櫻花", "category": "季節活動", "location": "日本・京都", "description": "從鴨川、哲學之道到寺院夜櫻，京都櫻花適合慢慢排出一段散步旅程。", "story_headline": "不是只有拍照，是整座城市在兩週內變得柔軟。", "story_timing_label": "最佳時間", "story_timing_value": "3/20 ~ 4/10" },
-        { "id": "korankei-autumn", "title": "香嵐溪紅葉", "category": "季節活動", "location": "日本・愛知", "description": "河谷、吊橋與夜間點燈讓紅葉不只是風景，而是一段可以慢慢走的秋天路線。", "story_headline": "如果京都太滿，香嵐溪是更安靜但很有層次的紅葉目的地。", "story_timing_label": "最佳時間", "story_timing_value": "11 月" },
-        { "id": "korea-boryeong-mud", "title": "保寧泥漿節", "category": "節慶活動", "location": "韓國・保寧", "description": "海灘、泥漿遊戲與夏季音樂活動，把韓國西海岸變成很適合朋友同行的旅程。", "story_headline": "一個把海灘和節慶玩到很直接的夏天理由。", "story_timing_label": "夏季活動", "story_timing_value": "7 月" },
-        { "id": "korea-jinhae-cherry", "title": "鎮海櫻花祭", "category": "季節活動", "location": "韓國・鎮海", "description": "鐵道、溪流與滿城櫻花讓鎮海成為韓國春天最有畫面的城市之一。", "story_headline": "韓國春天的經典櫻花雷達點，適合和釜山一起排。", "story_timing_label": "最佳時間", "story_timing_value": "3 月底 ~ 4 月初" },
-        { "id": "hong-kong-sevens", "title": "香港國際七人欖球賽", "category": "城市活動", "location": "香港", "description": "球賽、派對與城市夜生活混在一起，是香港春季最有能量的週末之一。", "story_headline": "一場比賽把城市週末變成社交和夜生活的節奏。", "story_timing_label": "城市週末", "story_timing_value": "3 月" },
-        { "id": "hong-kong-flower-show", "title": "香港花卉展覽", "category": "季節活動", "location": "香港・維園", "description": "維多利亞公園的大型花展，適合和港島散步、茶餐廳與海港夜景排在一起。", "story_headline": "如果想要一趟輕量春日城市旅行，香港花展很好開始。", "story_timing_label": "春季花期", "story_timing_value": "3 月" },
-        { "id": "rainforest-world-music", "title": "雨林世界音樂節", "category": "音樂祭", "location": "馬來西亞・砂拉越", "description": "雨林、世界音樂與婆羅洲文化，讓音樂祭變成一段自然和城市之外的旅程。", "story_headline": "比起大型舞台，這更像走進雨林裡的音樂聚落。", "story_timing_label": "雨林週末", "story_timing_value": "6 月" },
-        { "id": "singapore-grand-prix", "title": "新加坡大獎賽", "category": "城市活動", "location": "新加坡", "description": "夜間賽車、濱海演唱會與深夜美食，讓新加坡成為節奏很強的短天數旅程。", "story_headline": "夜間城市賽道、演唱會與宵夜，把短旅行壓縮得很有密度。", "story_timing_label": "城市週末", "story_timing_value": "9 月" },
-        { "id": "singapore-durian", "title": "新馬榴槤季", "category": "美食饗宴", "location": "新加坡・馬來西亞", "description": "從熟成榴槤攤到宵夜路線，把新加坡和馬來西亞變成一趟味覺旅程。", "story_headline": "如果旅行動機是吃，榴槤季可以直接變成一條美食路線。", "story_timing_label": "盛產季節", "story_timing_value": "6 月 ~ 8 月" },
-        { "id": "taipei-feast", "title": "台北美食季", "category": "美食饗宴", "location": "台灣・台北", "description": "夜市、小吃、餐酒館與咖啡店密度很高，適合把城市探索變成一天多餐。", "story_headline": "不用等大型節慶，台北本身就能被規劃成一趟吃的旅行。", "story_timing_label": "城市美食", "story_timing_value": "全年" },
-        { "id": "taiwan-lantern", "title": "台灣燈會", "category": "季節活動", "location": "台灣", "description": "大型燈飾、地方夜市與城市散步路線，適合用光影和文化串起一段台灣旅程。", "story_headline": "從主燈到地方小吃，這是一種很容易開始的光影旅行。", "story_timing_label": "元宵前後", "story_timing_value": "2 月 ~ 3 月" }
+        {
+          "id": "venice-carnival",
+          "title": "威尼斯狂歡節",
+          "category": "節慶活動",
+          "location": "義大利・威尼斯",
+          "description": "面具、運河與燭光宮殿，讓威尼斯成為一段充滿戲劇感的冬季旅程。",
+          "story_headline": "世界三大嘉年華之一，整座城市會變成一場水上劇場。",
+          "story_timing_label": "最佳窗口",
+          "story_timing_value": "2 月中旬"
+        },
+        {
+          "id": "rio-carnival",
+          "title": "里約嘉年華",
+          "category": "節慶活動",
+          "location": "巴西・里約熱內盧",
+          "description": "森巴遊行、海灘白天與深夜街頭派對，是跨越大西洋最鮮明的旅行理由之一。",
+          "story_headline": "如果你想要一趟充滿能量的旅行，里約會把整座城市交給節奏。",
+          "story_timing_label": "熱度高峰",
+          "story_timing_value": "2 月下旬"
+        },
+        {
+          "id": "tomorrowland",
+          "title": "Tomorrowland",
+          "category": "音樂祭",
+          "location": "比利時・Boom",
+          "description": "全球 EDM 迷聚集的小鎮，舞台、露營與週末社群讓它更像一座臨時城市。",
+          "story_headline": "全球最大 EDM 音樂祭之一，適合把歐洲夏天變成一趟派對旅行。",
+          "story_timing_label": "夏季週末",
+          "story_timing_value": "7 月"
+        },
+        {
+          "id": "iceland-lights",
+          "title": "冰島極光",
+          "category": "季節活動",
+          "location": "冰島・雷克雅維克",
+          "description": "漫長冬夜、地熱溫泉與極光窗口，讓冰島成為很適合用時間規劃的旅程。",
+          "story_headline": "不是只看天空，而是把溫泉、公路與黑沙灘串成一段冬季儀式。",
+          "story_timing_label": "最佳時間",
+          "story_timing_value": "10 月 ~ 3 月"
+        },
+        {
+          "id": "taiwan-mazu",
+          "title": "大甲媽祖遶境",
+          "category": "節慶活動",
+          "location": "台灣・台中",
+          "description": "九天八夜的徒步進香，把台灣中部城鎮、廟口小吃與信仰能量串成一條路線。",
+          "story_headline": "一場會移動的信仰節慶，適合把台灣地方文化排成慢旅行。",
+          "story_timing_label": "年度遶境",
+          "story_timing_value": "春季"
+        },
+        {
+          "id": "japan-gion",
+          "title": "祇園祭",
+          "category": "節慶活動",
+          "location": "日本・京都",
+          "description": "山鉾巡行、宵山夜市與夏日祭典，把京都變成一段充滿歷史感的旅程。",
+          "story_headline": "京都夏天最有重量的祭典，夜市、巡行與老街會一起醒來。",
+          "story_timing_label": "祭典月份",
+          "story_timing_value": "7 月"
+        },
+        {
+          "id": "fuji-rock",
+          "title": "Fuji Rock",
+          "category": "音樂祭",
+          "location": "日本・新潟",
+          "description": "山林、露營與多舞台音樂，把日本夏天變成一趟需要提前卡位的戶外旅程。",
+          "story_headline": "不是只看表演，而是在山裡住進一個短暫出現的音樂城市。",
+          "story_timing_label": "夏季週末",
+          "story_timing_value": "7 月"
+        },
+        {
+          "id": "jp-sakura",
+          "title": "京都櫻花",
+          "category": "季節活動",
+          "location": "日本・京都",
+          "description": "從鴨川、哲學之道到寺院夜櫻，京都櫻花適合慢慢排出一段散步旅程。",
+          "story_headline": "不是只有拍照，是整座城市在兩週內變得柔軟。",
+          "story_timing_label": "最佳時間",
+          "story_timing_value": "3/20 ~ 4/10"
+        },
+        {
+          "id": "korankei-autumn",
+          "title": "香嵐溪紅葉",
+          "category": "季節活動",
+          "location": "日本・愛知",
+          "description": "河谷、吊橋與夜間點燈讓紅葉不只是風景，而是一段可以慢慢走的秋天路線。",
+          "story_headline": "如果京都太滿，香嵐溪是更安靜但很有層次的紅葉目的地。",
+          "story_timing_label": "最佳時間",
+          "story_timing_value": "11 月"
+        },
+        {
+          "id": "korea-boryeong-mud",
+          "title": "保寧泥漿節",
+          "category": "節慶活動",
+          "location": "韓國・保寧",
+          "description": "海灘、泥漿遊戲與夏季音樂活動，把韓國西海岸變成很適合朋友同行的旅程。",
+          "story_headline": "一個把海灘和節慶玩到很直接的夏天理由。",
+          "story_timing_label": "夏季活動",
+          "story_timing_value": "7 月"
+        },
+        {
+          "id": "korea-jinhae-cherry",
+          "title": "鎮海櫻花祭",
+          "category": "季節活動",
+          "location": "韓國・鎮海",
+          "description": "鐵道、溪流與滿城櫻花讓鎮海成為韓國春天最有畫面的城市之一。",
+          "story_headline": "韓國春天的經典櫻花雷達點，適合和釜山一起排。",
+          "story_timing_label": "最佳時間",
+          "story_timing_value": "3 月底 ~ 4 月初"
+        },
+        {
+          "id": "hong-kong-sevens",
+          "title": "香港國際七人欖球賽",
+          "category": "城市活動",
+          "location": "香港",
+          "description": "球賽、派對與城市夜生活混在一起，是香港春季最有能量的週末之一。",
+          "story_headline": "一場比賽把城市週末變成社交和夜生活的節奏。",
+          "story_timing_label": "城市週末",
+          "story_timing_value": "3 月"
+        },
+        {
+          "id": "hong-kong-flower-show",
+          "title": "香港花卉展覽",
+          "category": "季節活動",
+          "location": "香港・維園",
+          "description": "維多利亞公園的大型花展，適合和港島散步、茶餐廳與海港夜景排在一起。",
+          "story_headline": "如果想要一趟輕量春日城市旅行，香港花展很好開始。",
+          "story_timing_label": "春季花期",
+          "story_timing_value": "3 月"
+        },
+        {
+          "id": "rainforest-world-music",
+          "title": "雨林世界音樂節",
+          "category": "音樂祭",
+          "location": "馬來西亞・砂拉越",
+          "description": "雨林、世界音樂與婆羅洲文化，讓音樂祭變成一段自然和城市之外的旅程。",
+          "story_headline": "比起大型舞台，這更像走進雨林裡的音樂聚落。",
+          "story_timing_label": "雨林週末",
+          "story_timing_value": "6 月"
+        },
+        {
+          "id": "singapore-grand-prix",
+          "title": "新加坡大獎賽",
+          "category": "城市活動",
+          "location": "新加坡",
+          "description": "夜間賽車、濱海演唱會與深夜美食，讓新加坡成為節奏很強的短天數旅程。",
+          "story_headline": "夜間城市賽道、演唱會與宵夜，把短旅行壓縮得很有密度。",
+          "story_timing_label": "城市週末",
+          "story_timing_value": "9 月"
+        },
+        {
+          "id": "singapore-durian",
+          "title": "新馬榴槤季",
+          "category": "美食饗宴",
+          "location": "新加坡・馬來西亞",
+          "description": "從熟成榴槤攤到宵夜路線，把新加坡和馬來西亞變成一趟味覺旅程。",
+          "story_headline": "如果旅行動機是吃，榴槤季可以直接變成一條美食路線。",
+          "story_timing_label": "盛產季節",
+          "story_timing_value": "6 月 ~ 8 月"
+        },
+        {
+          "id": "taipei-feast",
+          "title": "台北美食季",
+          "category": "美食饗宴",
+          "location": "台灣・台北",
+          "description": "夜市、小吃、餐酒館與咖啡店密度很高，適合把城市探索變成一天多餐。",
+          "story_headline": "不用等大型節慶，台北本身就能被規劃成一趟吃的旅行。",
+          "story_timing_label": "城市美食",
+          "story_timing_value": "全年"
+        },
+        {
+          "id": "taiwan-lantern",
+          "title": "台灣燈會",
+          "category": "季節活動",
+          "location": "台灣",
+          "description": "大型燈飾、地方夜市與城市散步路線，適合用光影和文化串起一段台灣旅程。",
+          "story_headline": "從主燈到地方小吃，這是一種很容易開始的光影旅行。",
+          "story_timing_label": "元宵前後",
+          "story_timing_value": "2 月 ~ 3 月"
+        }
       ],
       "map_title": "行事曆檢視結合地圖",
       "map_hint": "用時間區間、地區與活動類型探索世界活動，再進入地區介紹頁規劃旅程。",
@@ -676,40 +862,201 @@
         "type": "活動類型"
       },
       "time_options": [
-        { "value": "all", "label": "所有日期" },
-        { "value": "jul", "label": "7 月" },
-        { "value": "aug", "label": "8 月" },
-        { "value": "summer", "label": "夏季" },
-        { "value": "winter", "label": "冬季" },
-        { "value": "spring", "label": "春季" }
+        {
+          "value": "all",
+          "label": "所有日期"
+        },
+        {
+          "value": "jul",
+          "label": "7 月"
+        },
+        {
+          "value": "aug",
+          "label": "8 月"
+        },
+        {
+          "value": "summer",
+          "label": "夏季"
+        },
+        {
+          "value": "winter",
+          "label": "冬季"
+        },
+        {
+          "value": "spring",
+          "label": "春季"
+        }
       ],
       "region_options": [
-        { "value": "all", "label": "所有地區" },
-        { "value": "asia", "label": "亞洲" },
-        { "value": "europe", "label": "歐洲" },
-        { "value": "americas", "label": "美洲" },
-        { "value": "oceania", "label": "大洋洲" }
+        {
+          "value": "all",
+          "label": "所有地區"
+        },
+        {
+          "value": "asia",
+          "label": "亞洲"
+        },
+        {
+          "value": "europe",
+          "label": "歐洲"
+        },
+        {
+          "value": "americas",
+          "label": "美洲"
+        },
+        {
+          "value": "oceania",
+          "label": "大洋洲"
+        }
       ],
       "type_options": [
-        { "value": "all", "label": "所有類型" },
-        { "value": "festival", "label": "節慶" },
-        { "value": "food", "label": "美食" },
-        { "value": "nature", "label": "自然景觀" },
-        { "value": "season", "label": "季節限定" },
-        { "value": "culture", "label": "文化藝術" }
+        {
+          "value": "all",
+          "label": "所有類型"
+        },
+        {
+          "value": "festival",
+          "label": "節慶"
+        },
+        {
+          "value": "food",
+          "label": "美食"
+        },
+        {
+          "value": "nature",
+          "label": "自然景觀"
+        },
+        {
+          "value": "season",
+          "label": "季節限定"
+        },
+        {
+          "value": "culture",
+          "label": "文化藝術"
+        }
       ],
       "events": [
-        { "id": "tomorrowland", "title": "Tomorrowland 音樂節", "meta": "比利時 · 音樂 · 7 月", "location": "比利時・Boom", "date": "7/19 - 7/21", "date_short": "7/19", "country": "比利時", "type_label": "節慶", "rating": "4.9" },
-        { "id": "singapore-food", "title": "新加坡美食節", "meta": "新加坡 · 美食 · 7 月", "location": "新加坡", "date": "7/19 - 7/28", "date_short": "7/22", "country": "新加坡", "type_label": "美食", "rating": "4.6" },
-        { "id": "edinburgh-fringe", "title": "愛丁堡藝術節", "meta": "英國 · 文化 · 8 月", "location": "英國・愛丁堡", "date": "8/2 - 8/25", "date_short": "8/8", "country": "英國", "type_label": "文化藝術", "rating": "4.7" },
-        { "id": "jp-sakura", "title": "日本櫻花季", "meta": "東京 · 京都 · 3 - 4月", "location": "日本・東京與京都", "date": "3/20 - 4/12", "date_short": "3/28", "country": "日本", "type_label": "季節限定", "rating": "4.8" },
-        { "id": "turkey-balloons", "title": "土耳其熱氣球", "meta": "卡帕多奇亞 · 4 - 10月", "location": "土耳其・卡帕多奇亞", "date": "4/1 - 10/31", "date_short": "7/16", "country": "土耳其", "type_label": "自然景觀", "rating": "4.8" },
-        { "id": "switzerland-alps", "title": "瑞士少女峰", "meta": "阿爾卑斯 · 6 - 9月", "location": "瑞士・少女峰", "date": "6/1 - 9/30", "date_short": "7/9", "country": "瑞士", "type_label": "自然景觀", "rating": "4.7" },
-        { "id": "iceland-lights", "title": "冰島極光之旅", "meta": "雷克雅維克 · 10 - 3月", "location": "冰島・雷克雅維克", "date": "10/1 - 3/31", "date_short": "1/3", "country": "冰島", "type_label": "季節限定", "rating": "4.8" },
-        { "id": "bali-holiday", "title": "峇里島度假時光", "meta": "印尼 · 5 - 10月", "location": "印尼・峇里島", "date": "5/1 - 10/31", "date_short": "7/26", "country": "印尼", "type_label": "自然景觀", "rating": "4.5" },
-        { "id": "rio-carnival", "title": "里約嘉年華", "meta": "巴西 · 節慶 · 春季", "location": "巴西・里約熱內盧", "date": "2/13 - 2/21", "date_short": "2/18", "country": "巴西", "type_label": "節慶", "rating": "4.9" },
-        { "id": "new-york-food", "title": "紐約夏季美食市集", "meta": "美國 · 美食 · 7 月", "location": "美國・紐約", "date": "7/5 - 7/27", "date_short": "7/6", "country": "美國", "type_label": "美食", "rating": "4.4" },
-        { "id": "sydney-light", "title": "雪梨光影季", "meta": "澳洲 · 節慶 · 冬季", "location": "澳洲・雪梨", "date": "5/24 - 6/15", "date_short": "6/28", "country": "澳洲", "type_label": "節慶", "rating": "4.6" }
+        {
+          "id": "tomorrowland",
+          "title": "Tomorrowland 音樂節",
+          "meta": "比利時 · 音樂 · 7 月",
+          "location": "比利時・Boom",
+          "date": "7/19 - 7/21",
+          "date_short": "7/19",
+          "country": "比利時",
+          "type_label": "節慶",
+          "rating": "4.9"
+        },
+        {
+          "id": "singapore-food",
+          "title": "新加坡美食節",
+          "meta": "新加坡 · 美食 · 7 月",
+          "location": "新加坡",
+          "date": "7/19 - 7/28",
+          "date_short": "7/22",
+          "country": "新加坡",
+          "type_label": "美食",
+          "rating": "4.6"
+        },
+        {
+          "id": "edinburgh-fringe",
+          "title": "愛丁堡藝術節",
+          "meta": "英國 · 文化 · 8 月",
+          "location": "英國・愛丁堡",
+          "date": "8/2 - 8/25",
+          "date_short": "8/8",
+          "country": "英國",
+          "type_label": "文化藝術",
+          "rating": "4.7"
+        },
+        {
+          "id": "jp-sakura",
+          "title": "日本櫻花季",
+          "meta": "東京 · 京都 · 3 - 4月",
+          "location": "日本・東京與京都",
+          "date": "3/20 - 4/12",
+          "date_short": "3/28",
+          "country": "日本",
+          "type_label": "季節限定",
+          "rating": "4.8"
+        },
+        {
+          "id": "turkey-balloons",
+          "title": "土耳其熱氣球",
+          "meta": "卡帕多奇亞 · 4 - 10月",
+          "location": "土耳其・卡帕多奇亞",
+          "date": "4/1 - 10/31",
+          "date_short": "7/16",
+          "country": "土耳其",
+          "type_label": "自然景觀",
+          "rating": "4.8"
+        },
+        {
+          "id": "switzerland-alps",
+          "title": "瑞士少女峰",
+          "meta": "阿爾卑斯 · 6 - 9月",
+          "location": "瑞士・少女峰",
+          "date": "6/1 - 9/30",
+          "date_short": "7/9",
+          "country": "瑞士",
+          "type_label": "自然景觀",
+          "rating": "4.7"
+        },
+        {
+          "id": "iceland-lights",
+          "title": "冰島極光之旅",
+          "meta": "雷克雅維克 · 10 - 3月",
+          "location": "冰島・雷克雅維克",
+          "date": "10/1 - 3/31",
+          "date_short": "1/3",
+          "country": "冰島",
+          "type_label": "季節限定",
+          "rating": "4.8"
+        },
+        {
+          "id": "bali-holiday",
+          "title": "峇里島度假時光",
+          "meta": "印尼 · 5 - 10月",
+          "location": "印尼・峇里島",
+          "date": "5/1 - 10/31",
+          "date_short": "7/26",
+          "country": "印尼",
+          "type_label": "自然景觀",
+          "rating": "4.5"
+        },
+        {
+          "id": "rio-carnival",
+          "title": "里約嘉年華",
+          "meta": "巴西 · 節慶 · 春季",
+          "location": "巴西・里約熱內盧",
+          "date": "2/13 - 2/21",
+          "date_short": "2/18",
+          "country": "巴西",
+          "type_label": "節慶",
+          "rating": "4.9"
+        },
+        {
+          "id": "new-york-food",
+          "title": "紐約夏季美食市集",
+          "meta": "美國 · 美食 · 7 月",
+          "location": "美國・紐約",
+          "date": "7/5 - 7/27",
+          "date_short": "7/6",
+          "country": "美國",
+          "type_label": "美食",
+          "rating": "4.4"
+        },
+        {
+          "id": "sydney-light",
+          "title": "雪梨光影季",
+          "meta": "澳洲 · 節慶 · 冬季",
+          "location": "澳洲・雪梨",
+          "date": "5/24 - 6/15",
+          "date_short": "6/28",
+          "country": "澳洲",
+          "type_label": "節慶",
+          "rating": "4.6"
+        }
       ]
     },
     "shop": {
@@ -726,6 +1073,18 @@
       "plans": "種方案",
       "destinations": "個目的地",
       "no_plans": "這個地區目前還沒有方案",
+      "no_coverage_title": "這個目的地目前沒有可用的方案。",
+      "no_coverage_body": "會保留這個目的地。你可以改看其他目的地的相容方案。",
+      "browse_destinations": "瀏覽目的地",
+      "plans_load_error": "目前無法載入方案。",
+      "plans_load_error_body": "目前無法讀取這個目的地的方案。再試一次會保留目的地與旅程資訊。",
+      "try_again": "再試一次",
+      "loading_plans": "正在載入方案",
+      "sign_in_to_continue": "登入後選擇這個方案",
+      "sign_in_to_buy": "登入後繼續",
+      "sign_in_body": "登入後就能選這個方案。你選的目的地與方案會保留。",
+      "back_to_shop": "返回 eSIM 商店",
+      "coverage_label": "eSIM 覆蓋範圍",
       "trip_length": "旅程天數",
       "options": "種",
       "day_unit": "天",
@@ -801,10 +1160,22 @@
         "timeline_subtitle": "先看季節節奏，再決定適合的出發時間。",
         "timeline_count": "{count} 個",
         "timeline_seasons": {
-          "spring": { "name": "春", "range": "3 - 5 月" },
-          "summer": { "name": "夏", "range": "6 - 8 月" },
-          "autumn": { "name": "秋", "range": "9 - 11 月" },
-          "winter": { "name": "冬", "range": "12 - 2 月" }
+          "spring": {
+            "name": "春",
+            "range": "3 - 5 月"
+          },
+          "summer": {
+            "name": "夏",
+            "range": "6 - 8 月"
+          },
+          "autumn": {
+            "name": "秋",
+            "range": "9 - 11 月"
+          },
+          "winter": {
+            "name": "冬",
+            "range": "12 - 2 月"
+          }
         },
         "featured_events_title": "精選活動",
         "featured_events_subtitle": "點選活動探索更多資訊與推薦行程。",
@@ -1011,14 +1382,32 @@
           "weather_link": "查看更多天氣",
           "read_time": "分鐘閱讀",
           "recommendations": [
-            { "title": "北境極光", "duration": "3–4 個月" },
-            { "title": "京都文化", "duration": "3–4 個月" },
-            { "title": "祇園祭", "duration": "3–4 個月" }
+            {
+              "title": "北境極光",
+              "duration": "3–4 個月"
+            },
+            {
+              "title": "京都文化",
+              "duration": "3–4 個月"
+            },
+            {
+              "title": "祇園祭",
+              "duration": "3–4 個月"
+            }
           ],
           "articles": [
-            { "title": "適合規劃第一趟路線的十座城市", "tag": "目的地" },
-            { "title": "機票確定前，如何保留彈性預算", "tag": "預算" },
-            { "title": "前往緊湊城市旅行前的準備清單", "tag": "待辦" }
+            {
+              "title": "適合規劃第一趟路線的十座城市",
+              "tag": "目的地"
+            },
+            {
+              "title": "機票確定前，如何保留彈性預算",
+              "tag": "預算"
+            },
+            {
+              "title": "前往緊湊城市旅行前的準備清單",
+              "tag": "待辦"
+            }
           ],
           "weather_summary": "大致晴朗 · 11°C / 22°C"
         }
@@ -1713,23 +2102,23 @@
         "failed_title": "Lumi 暫停了"
       },
       "lumi": {
-          "create_confirm": {
-            "title": "要建立行程嗎？",
-            "body": "我會先開一個空白行程，把你帶到行程頁，然後我們在那裡一起把它排出來。",
-            "confirm": "建立行程",
-            "cancel": "先不要"
-          },
-          "takeover": {
-            "intro": "行程開好了，我來幫你把基本盤定下來。",
-            "dates": "先把日期定下來…",
-            "places": "接著把你的落點放上地圖。",
-            "done": "基本盤放好了。日期和城市都可以再調整，準備好就往下排行程。",
-            "asking": "需要你幫我定一件事。",
-            "failed": "我先停在這裡，你可以自己選日期和城市，或再叫我一次。",
-            "answer_placeholder": "回覆 Lumi…",
-            "send": "送出",
-            "dismiss": "我自己來"
-          },
+        "create_confirm": {
+          "title": "要建立行程嗎？",
+          "body": "我會先開一個空白行程，把你帶到行程頁，然後我們在那裡一起把它排出來。",
+          "confirm": "建立行程",
+          "cancel": "先不要"
+        },
+        "takeover": {
+          "intro": "行程開好了，我來幫你把基本盤定下來。",
+          "dates": "先把日期定下來…",
+          "places": "接著把你的落點放上地圖。",
+          "done": "基本盤放好了。日期和城市都可以再調整，準備好就往下排行程。",
+          "asking": "需要你幫我定一件事。",
+          "failed": "我先停在這裡，你可以自己選日期和城市，或再叫我一次。",
+          "answer_placeholder": "回覆 Lumi…",
+          "send": "送出",
+          "dismiss": "我自己來"
+        },
         "name": "Lumi",
         "placeholder": "想怎麼調整行程？例：把京都排前面",
         "open": "打開 Lumi 助理",

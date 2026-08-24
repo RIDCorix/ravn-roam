@@ -11,7 +11,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Search, Sparkles, X } from "lucide-react";
 
 import { MotionButton, popIn } from "@/components/storefront/motion";
@@ -46,6 +46,10 @@ export function ShopSearchPill({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
+  const popoverMotion = reducedMotion
+    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 1 }, transition: { duration: 0 } }
+    : popIn;
   const {
     q,
     setQ,
@@ -116,7 +120,7 @@ export function ShopSearchPill({
             {showPopover ? (
               <motion.div
                 ref={popoverRef}
-                {...popIn}
+                {...popoverMotion}
                 className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 max-h-[60vh] overflow-y-auto rounded-2xl bg-surface py-2"
                 style={{ boxShadow: "var(--shadow-card-lg, var(--shadow-card))" }}
                 role="listbox"

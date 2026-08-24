@@ -459,7 +459,10 @@
           "planner": "Trip planning",
           "esim": "eSIM"
         },
-        "title_lines": ["Let the world's best moments", "become your next trip"],
+        "title_lines": [
+          "Let the world's best moments",
+          "become your next trip"
+        ],
         "subtitle": "Explore remarkable events around the world and start a trip that feels like yours.",
         "search_placeholder": "Where to next? New Zealand, Peru, Iceland...",
         "search_aria": "Search destinations or events",
@@ -477,12 +480,30 @@
           "tasks_left": "{count} tasks left"
         },
         "cards": {
-          "iceland": { "title": "Iceland · Northern lights", "months": "Oct - Mar" },
-          "turkey": { "title": "Turkey · Balloons", "months": "Apr - Oct" },
-          "switzerland": { "title": "Switzerland · Jungfrau", "months": "Jun - Sep" },
-          "japan": { "title": "Japan · Sakura season", "months": "Mar - Apr" },
-          "greece": { "title": "Greece · Santorini", "months": "May - Sep" },
-          "bali": { "title": "Bali · Holiday light", "months": "May - Oct" }
+          "iceland": {
+            "title": "Iceland · Northern lights",
+            "months": "Oct - Mar"
+          },
+          "turkey": {
+            "title": "Turkey · Balloons",
+            "months": "Apr - Oct"
+          },
+          "switzerland": {
+            "title": "Switzerland · Jungfrau",
+            "months": "Jun - Sep"
+          },
+          "japan": {
+            "title": "Japan · Sakura season",
+            "months": "Mar - Apr"
+          },
+          "greece": {
+            "title": "Greece · Santorini",
+            "months": "May - Sep"
+          },
+          "bali": {
+            "title": "Bali · Holiday light",
+            "months": "May - Oct"
+          }
         },
         "dock": {
           "inspiration": "Inspiration",
@@ -627,30 +648,195 @@
       "panel_count": "5 featured events",
       "panel_body": "Select an event on the map to scan regional timing, activity context, and trip entry points.",
       "view_region": "View region guide",
-      "spotlight_title_lines": ["The world is wide.", "The moments are endless."],
+      "spotlight_title_lines": [
+        "The world is wide.",
+        "The moments are endless."
+      ],
       "spotlight_subtitle": "Explore remarkable events happening around the world, then open the next trip with a clear reason to go.",
       "spotlight_more": "Explore more",
       "spotlight_previous": "Previous event",
       "spotlight_next": "Next event",
       "spotlight_events": [
-        { "id": "venice-carnival", "title": "Venice Carnival", "category": "Festival event", "location": "Venice, Italy", "description": "Masks, canals, and candlelit palaces turn Venice into a theatrical winter journey with history on every corner.", "story_headline": "One of the world's great carnivals, where the whole city becomes a floating stage.", "story_timing_label": "Best window", "story_timing_value": "Mid February" },
-        { "id": "rio-carnival", "title": "Rio Carnival", "category": "Festival event", "location": "Rio de Janeiro, Brazil", "description": "Samba schools, beach days, and late-night street parties create one of the most vivid reasons to cross the Atlantic.", "story_headline": "If you want a trip built around pure momentum, Rio hands the city over to rhythm.", "story_timing_label": "Peak energy", "story_timing_value": "Late February" },
-        { "id": "tomorrowland", "title": "Tomorrowland", "category": "Music festival", "location": "Boom, Belgium", "description": "A small Belgian town turns into a temporary city for EDM, stages, camping, and global weekend crews.", "story_headline": "One of the world's largest EDM festivals, made for turning a European summer into a party route.", "story_timing_label": "Summer weekends", "story_timing_value": "July" },
-        { "id": "iceland-lights", "title": "Northern lights", "category": "Seasonal event", "location": "Reykjavik, Iceland", "description": "Long winter nights, geothermal pools, and aurora windows make Iceland a compact trip built around timing and sky.", "story_headline": "It is not only about the sky: hot springs, roads, and black beaches become a winter ritual.", "story_timing_label": "Best timing", "story_timing_value": "Oct - Mar" },
-        { "id": "taiwan-mazu", "title": "Dajia Mazu pilgrimage", "category": "Festival event", "location": "Taichung, Taiwan", "description": "A multi-day walking pilgrimage connects temple towns, street food, and local belief across central Taiwan.", "story_headline": "A moving festival of faith and local culture, made for a slower Taiwan route.", "story_timing_label": "Annual pilgrimage", "story_timing_value": "Spring" },
-        { "id": "japan-gion", "title": "Gion Matsuri", "category": "Festival event", "location": "Kyoto, Japan", "description": "A month of historic floats, night markets, and summer rituals turns Kyoto into one of Japan's most atmospheric journeys.", "story_headline": "Kyoto's summer festival turns old streets, floats, and night markets into a living route.", "story_timing_label": "Festival month", "story_timing_value": "July" },
-        { "id": "fuji-rock", "title": "Fuji Rock", "category": "Music festival", "location": "Niigata, Japan", "description": "Forests, camping, and multi-stage music turn Japan's summer into an outdoor trip that rewards early planning.", "story_headline": "Not only a lineup. It is a temporary music city in the mountains.", "story_timing_label": "Summer weekend", "story_timing_value": "July" },
-        { "id": "jp-sakura", "title": "Kyoto sakura", "category": "Seasonal event", "location": "Kyoto, Japan", "description": "From the Kamo River and Philosopher's Path to temple night blossoms, Kyoto sakura rewards slow walking days.", "story_headline": "It is not just a photo season. The whole city softens for a short two-week window.", "story_timing_label": "Best timing", "story_timing_value": "Mar 20 - Apr 10" },
-        { "id": "korankei-autumn", "title": "Korankei autumn leaves", "category": "Seasonal event", "location": "Aichi, Japan", "description": "A river valley, bridges, and evening lights make autumn color feel like a walkable route.", "story_headline": "When Kyoto feels crowded, Korankei is a quieter autumn radar point with real texture.", "story_timing_label": "Best timing", "story_timing_value": "November" },
-        { "id": "korea-boryeong-mud", "title": "Boryeong Mud Festival", "category": "Festival event", "location": "Boryeong, Korea", "description": "Beach games, mud events, and summer concerts turn Korea's west coast into a friend-group trip.", "story_headline": "A very direct reason to turn a beach weekend into a festival trip.", "story_timing_label": "Summer event", "story_timing_value": "July" },
-        { "id": "korea-jinhae-cherry", "title": "Jinhae cherry blossom", "category": "Seasonal event", "location": "Jinhae, Korea", "description": "Railways, streams, and citywide blossoms make Jinhae one of Korea's most visual spring trips.", "story_headline": "A classic Korean spring radar point that pairs naturally with Busan.", "story_timing_label": "Best timing", "story_timing_value": "Late Mar - early Apr" },
-        { "id": "hong-kong-sevens", "title": "Hong Kong Sevens", "category": "City event", "location": "Hong Kong", "description": "Rugby, parties, and nightlife make this one of Hong Kong's highest-energy weekends.", "story_headline": "One sporting weekend turns the city into a social and nightlife route.", "story_timing_label": "City weekend", "story_timing_value": "March" },
-        { "id": "hong-kong-flower-show", "title": "Hong Kong Flower Show", "category": "Seasonal event", "location": "Victoria Park, Hong Kong", "description": "A large city flower show that pairs well with Hong Kong Island walks, cafes, and harbor nights.", "story_headline": "For a light spring city trip, Hong Kong's flower show is an easy starting point.", "story_timing_label": "Spring bloom", "story_timing_value": "March" },
-        { "id": "rainforest-world-music", "title": "Rainforest World Music Festival", "category": "Music festival", "location": "Sarawak, Malaysia", "description": "Rainforest settings, global music, and Borneo culture make this a festival far from normal city routes.", "story_headline": "Less mega-stage, more music village inside the rainforest.", "story_timing_label": "Rainforest weekend", "story_timing_value": "June" },
-        { "id": "singapore-grand-prix", "title": "Singapore Grand Prix", "category": "City event", "location": "Singapore", "description": "Night racing, waterfront concerts, and late city dining make Singapore a compact trip built around high-energy evenings.", "story_headline": "Night racing, concerts, and late food compress a short city trip into one dense weekend.", "story_timing_label": "City weekend", "story_timing_value": "September" },
-        { "id": "singapore-durian", "title": "Singapore and Malaysia durian season", "category": "Food journey", "location": "Singapore and Malaysia", "description": "Ripe durian stalls and late-night food routes turn Singapore and Malaysia into a flavor-first trip.", "story_headline": "When the travel reason is eating, durian season can become the whole route.", "story_timing_label": "Peak season", "story_timing_value": "Jun - Aug" },
-        { "id": "taipei-feast", "title": "Taipei food season", "category": "Food journey", "location": "Taipei, Taiwan", "description": "Night markets, snacks, bistros, and cafes make Taipei easy to plan around multiple meals a day.", "story_headline": "Taipei does not need a huge festival to become a food-first trip.", "story_timing_label": "City food", "story_timing_value": "Year-round" },
-        { "id": "taiwan-lantern", "title": "Taiwan Lantern Festival", "category": "Seasonal event", "location": "Taiwan", "description": "Large-scale lantern installations and local night markets create an easy route for travelers who want light, food, and culture.", "story_headline": "Main lanterns, local food, and evening walks make this an easy light-based journey.", "story_timing_label": "Lantern season", "story_timing_value": "Feb - Mar" }
+        {
+          "id": "venice-carnival",
+          "title": "Venice Carnival",
+          "category": "Festival event",
+          "location": "Venice, Italy",
+          "description": "Masks, canals, and candlelit palaces turn Venice into a theatrical winter journey with history on every corner.",
+          "story_headline": "One of the world's great carnivals, where the whole city becomes a floating stage.",
+          "story_timing_label": "Best window",
+          "story_timing_value": "Mid February"
+        },
+        {
+          "id": "rio-carnival",
+          "title": "Rio Carnival",
+          "category": "Festival event",
+          "location": "Rio de Janeiro, Brazil",
+          "description": "Samba schools, beach days, and late-night street parties create one of the most vivid reasons to cross the Atlantic.",
+          "story_headline": "If you want a trip built around pure momentum, Rio hands the city over to rhythm.",
+          "story_timing_label": "Peak energy",
+          "story_timing_value": "Late February"
+        },
+        {
+          "id": "tomorrowland",
+          "title": "Tomorrowland",
+          "category": "Music festival",
+          "location": "Boom, Belgium",
+          "description": "A small Belgian town turns into a temporary city for EDM, stages, camping, and global weekend crews.",
+          "story_headline": "One of the world's largest EDM festivals, made for turning a European summer into a party route.",
+          "story_timing_label": "Summer weekends",
+          "story_timing_value": "July"
+        },
+        {
+          "id": "iceland-lights",
+          "title": "Northern lights",
+          "category": "Seasonal event",
+          "location": "Reykjavik, Iceland",
+          "description": "Long winter nights, geothermal pools, and aurora windows make Iceland a compact trip built around timing and sky.",
+          "story_headline": "It is not only about the sky: hot springs, roads, and black beaches become a winter ritual.",
+          "story_timing_label": "Best timing",
+          "story_timing_value": "Oct - Mar"
+        },
+        {
+          "id": "taiwan-mazu",
+          "title": "Dajia Mazu pilgrimage",
+          "category": "Festival event",
+          "location": "Taichung, Taiwan",
+          "description": "A multi-day walking pilgrimage connects temple towns, street food, and local belief across central Taiwan.",
+          "story_headline": "A moving festival of faith and local culture, made for a slower Taiwan route.",
+          "story_timing_label": "Annual pilgrimage",
+          "story_timing_value": "Spring"
+        },
+        {
+          "id": "japan-gion",
+          "title": "Gion Matsuri",
+          "category": "Festival event",
+          "location": "Kyoto, Japan",
+          "description": "A month of historic floats, night markets, and summer rituals turns Kyoto into one of Japan's most atmospheric journeys.",
+          "story_headline": "Kyoto's summer festival turns old streets, floats, and night markets into a living route.",
+          "story_timing_label": "Festival month",
+          "story_timing_value": "July"
+        },
+        {
+          "id": "fuji-rock",
+          "title": "Fuji Rock",
+          "category": "Music festival",
+          "location": "Niigata, Japan",
+          "description": "Forests, camping, and multi-stage music turn Japan's summer into an outdoor trip that rewards early planning.",
+          "story_headline": "Not only a lineup. It is a temporary music city in the mountains.",
+          "story_timing_label": "Summer weekend",
+          "story_timing_value": "July"
+        },
+        {
+          "id": "jp-sakura",
+          "title": "Kyoto sakura",
+          "category": "Seasonal event",
+          "location": "Kyoto, Japan",
+          "description": "From the Kamo River and Philosopher's Path to temple night blossoms, Kyoto sakura rewards slow walking days.",
+          "story_headline": "It is not just a photo season. The whole city softens for a short two-week window.",
+          "story_timing_label": "Best timing",
+          "story_timing_value": "Mar 20 - Apr 10"
+        },
+        {
+          "id": "korankei-autumn",
+          "title": "Korankei autumn leaves",
+          "category": "Seasonal event",
+          "location": "Aichi, Japan",
+          "description": "A river valley, bridges, and evening lights make autumn color feel like a walkable route.",
+          "story_headline": "When Kyoto feels crowded, Korankei is a quieter autumn radar point with real texture.",
+          "story_timing_label": "Best timing",
+          "story_timing_value": "November"
+        },
+        {
+          "id": "korea-boryeong-mud",
+          "title": "Boryeong Mud Festival",
+          "category": "Festival event",
+          "location": "Boryeong, Korea",
+          "description": "Beach games, mud events, and summer concerts turn Korea's west coast into a friend-group trip.",
+          "story_headline": "A very direct reason to turn a beach weekend into a festival trip.",
+          "story_timing_label": "Summer event",
+          "story_timing_value": "July"
+        },
+        {
+          "id": "korea-jinhae-cherry",
+          "title": "Jinhae cherry blossom",
+          "category": "Seasonal event",
+          "location": "Jinhae, Korea",
+          "description": "Railways, streams, and citywide blossoms make Jinhae one of Korea's most visual spring trips.",
+          "story_headline": "A classic Korean spring radar point that pairs naturally with Busan.",
+          "story_timing_label": "Best timing",
+          "story_timing_value": "Late Mar - early Apr"
+        },
+        {
+          "id": "hong-kong-sevens",
+          "title": "Hong Kong Sevens",
+          "category": "City event",
+          "location": "Hong Kong",
+          "description": "Rugby, parties, and nightlife make this one of Hong Kong's highest-energy weekends.",
+          "story_headline": "One sporting weekend turns the city into a social and nightlife route.",
+          "story_timing_label": "City weekend",
+          "story_timing_value": "March"
+        },
+        {
+          "id": "hong-kong-flower-show",
+          "title": "Hong Kong Flower Show",
+          "category": "Seasonal event",
+          "location": "Victoria Park, Hong Kong",
+          "description": "A large city flower show that pairs well with Hong Kong Island walks, cafes, and harbor nights.",
+          "story_headline": "For a light spring city trip, Hong Kong's flower show is an easy starting point.",
+          "story_timing_label": "Spring bloom",
+          "story_timing_value": "March"
+        },
+        {
+          "id": "rainforest-world-music",
+          "title": "Rainforest World Music Festival",
+          "category": "Music festival",
+          "location": "Sarawak, Malaysia",
+          "description": "Rainforest settings, global music, and Borneo culture make this a festival far from normal city routes.",
+          "story_headline": "Less mega-stage, more music village inside the rainforest.",
+          "story_timing_label": "Rainforest weekend",
+          "story_timing_value": "June"
+        },
+        {
+          "id": "singapore-grand-prix",
+          "title": "Singapore Grand Prix",
+          "category": "City event",
+          "location": "Singapore",
+          "description": "Night racing, waterfront concerts, and late city dining make Singapore a compact trip built around high-energy evenings.",
+          "story_headline": "Night racing, concerts, and late food compress a short city trip into one dense weekend.",
+          "story_timing_label": "City weekend",
+          "story_timing_value": "September"
+        },
+        {
+          "id": "singapore-durian",
+          "title": "Singapore and Malaysia durian season",
+          "category": "Food journey",
+          "location": "Singapore and Malaysia",
+          "description": "Ripe durian stalls and late-night food routes turn Singapore and Malaysia into a flavor-first trip.",
+          "story_headline": "When the travel reason is eating, durian season can become the whole route.",
+          "story_timing_label": "Peak season",
+          "story_timing_value": "Jun - Aug"
+        },
+        {
+          "id": "taipei-feast",
+          "title": "Taipei food season",
+          "category": "Food journey",
+          "location": "Taipei, Taiwan",
+          "description": "Night markets, snacks, bistros, and cafes make Taipei easy to plan around multiple meals a day.",
+          "story_headline": "Taipei does not need a huge festival to become a food-first trip.",
+          "story_timing_label": "City food",
+          "story_timing_value": "Year-round"
+        },
+        {
+          "id": "taiwan-lantern",
+          "title": "Taiwan Lantern Festival",
+          "category": "Seasonal event",
+          "location": "Taiwan",
+          "description": "Large-scale lantern installations and local night markets create an easy route for travelers who want light, food, and culture.",
+          "story_headline": "Main lanterns, local food, and evening walks make this an easy light-based journey.",
+          "story_timing_label": "Lantern season",
+          "story_timing_value": "Feb - Mar"
+        }
       ],
       "map_title": "Event calendar with map",
       "map_hint": "Explore seasonal events by date, region, and activity type before opening the region guide.",
@@ -676,40 +862,201 @@
         "type": "Activity type"
       },
       "time_options": [
-        { "value": "all", "label": "All dates" },
-        { "value": "jul", "label": "July" },
-        { "value": "aug", "label": "August" },
-        { "value": "summer", "label": "Summer" },
-        { "value": "winter", "label": "Winter" },
-        { "value": "spring", "label": "Spring" }
+        {
+          "value": "all",
+          "label": "All dates"
+        },
+        {
+          "value": "jul",
+          "label": "July"
+        },
+        {
+          "value": "aug",
+          "label": "August"
+        },
+        {
+          "value": "summer",
+          "label": "Summer"
+        },
+        {
+          "value": "winter",
+          "label": "Winter"
+        },
+        {
+          "value": "spring",
+          "label": "Spring"
+        }
       ],
       "region_options": [
-        { "value": "all", "label": "All regions" },
-        { "value": "asia", "label": "Asia" },
-        { "value": "europe", "label": "Europe" },
-        { "value": "americas", "label": "Americas" },
-        { "value": "oceania", "label": "Oceania" }
+        {
+          "value": "all",
+          "label": "All regions"
+        },
+        {
+          "value": "asia",
+          "label": "Asia"
+        },
+        {
+          "value": "europe",
+          "label": "Europe"
+        },
+        {
+          "value": "americas",
+          "label": "Americas"
+        },
+        {
+          "value": "oceania",
+          "label": "Oceania"
+        }
       ],
       "type_options": [
-        { "value": "all", "label": "All types" },
-        { "value": "festival", "label": "Festival" },
-        { "value": "food", "label": "Food" },
-        { "value": "nature", "label": "Nature" },
-        { "value": "season", "label": "Seasonal" },
-        { "value": "culture", "label": "Culture" }
+        {
+          "value": "all",
+          "label": "All types"
+        },
+        {
+          "value": "festival",
+          "label": "Festival"
+        },
+        {
+          "value": "food",
+          "label": "Food"
+        },
+        {
+          "value": "nature",
+          "label": "Nature"
+        },
+        {
+          "value": "season",
+          "label": "Seasonal"
+        },
+        {
+          "value": "culture",
+          "label": "Culture"
+        }
       ],
       "events": [
-        { "id": "tomorrowland", "title": "Tomorrowland weekend", "meta": "Belgium · Music · Jul", "location": "Boom, Belgium", "date": "Jul 19 - Jul 21", "date_short": "Jul 19", "country": "Belgium", "type_label": "Festival", "rating": "4.9" },
-        { "id": "singapore-food", "title": "Singapore food festival", "meta": "Singapore · Food · Jul", "location": "Singapore", "date": "Jul 19 - Jul 28", "date_short": "Jul 22", "country": "Singapore", "type_label": "Food", "rating": "4.6" },
-        { "id": "edinburgh-fringe", "title": "Edinburgh Fringe", "meta": "United Kingdom · Culture · Aug", "location": "Edinburgh, United Kingdom", "date": "Aug 2 - Aug 25", "date_short": "Aug 8", "country": "United Kingdom", "type_label": "Culture", "rating": "4.7" },
-        { "id": "jp-sakura", "title": "Japan sakura season", "meta": "Tokyo · Kyoto · Mar - Apr", "location": "Tokyo and Kyoto, Japan", "date": "Mar 20 - Apr 12", "date_short": "Mar 28", "country": "Japan", "type_label": "Seasonal", "rating": "4.8" },
-        { "id": "turkey-balloons", "title": "Turkey balloons", "meta": "Cappadocia · Apr - Oct", "location": "Cappadocia, Turkey", "date": "Apr 1 - Oct 31", "date_short": "Jul 16", "country": "Turkey", "type_label": "Nature", "rating": "4.8" },
-        { "id": "switzerland-alps", "title": "Switzerland Jungfrau", "meta": "Alps · Jun - Sep", "location": "Jungfrau, Switzerland", "date": "Jun 1 - Sep 30", "date_short": "Jul 9", "country": "Switzerland", "type_label": "Nature", "rating": "4.7" },
-        { "id": "iceland-lights", "title": "Iceland northern lights", "meta": "Reykjavik · Oct - Mar", "location": "Reykjavik, Iceland", "date": "Oct 1 - Mar 31", "date_short": "Jan 3", "country": "Iceland", "type_label": "Seasonal", "rating": "4.8" },
-        { "id": "bali-holiday", "title": "Bali holiday light", "meta": "Indonesia · May - Oct", "location": "Bali, Indonesia", "date": "May 1 - Oct 31", "date_short": "Jul 26", "country": "Indonesia", "type_label": "Nature", "rating": "4.5" },
-        { "id": "rio-carnival", "title": "Rio carnival", "meta": "Brazil · Festival · Spring", "location": "Rio de Janeiro, Brazil", "date": "Feb 13 - Feb 21", "date_short": "Feb 18", "country": "Brazil", "type_label": "Festival", "rating": "4.9" },
-        { "id": "new-york-food", "title": "New York summer food halls", "meta": "United States · Food · Jul", "location": "New York, United States", "date": "Jul 5 - Jul 27", "date_short": "Jul 6", "country": "United States", "type_label": "Food", "rating": "4.4" },
-        { "id": "sydney-light", "title": "Sydney light season", "meta": "Australia · Festival · Winter", "location": "Sydney, Australia", "date": "May 24 - Jun 15", "date_short": "Jun 28", "country": "Australia", "type_label": "Festival", "rating": "4.6" }
+        {
+          "id": "tomorrowland",
+          "title": "Tomorrowland weekend",
+          "meta": "Belgium · Music · Jul",
+          "location": "Boom, Belgium",
+          "date": "Jul 19 - Jul 21",
+          "date_short": "Jul 19",
+          "country": "Belgium",
+          "type_label": "Festival",
+          "rating": "4.9"
+        },
+        {
+          "id": "singapore-food",
+          "title": "Singapore food festival",
+          "meta": "Singapore · Food · Jul",
+          "location": "Singapore",
+          "date": "Jul 19 - Jul 28",
+          "date_short": "Jul 22",
+          "country": "Singapore",
+          "type_label": "Food",
+          "rating": "4.6"
+        },
+        {
+          "id": "edinburgh-fringe",
+          "title": "Edinburgh Fringe",
+          "meta": "United Kingdom · Culture · Aug",
+          "location": "Edinburgh, United Kingdom",
+          "date": "Aug 2 - Aug 25",
+          "date_short": "Aug 8",
+          "country": "United Kingdom",
+          "type_label": "Culture",
+          "rating": "4.7"
+        },
+        {
+          "id": "jp-sakura",
+          "title": "Japan sakura season",
+          "meta": "Tokyo · Kyoto · Mar - Apr",
+          "location": "Tokyo and Kyoto, Japan",
+          "date": "Mar 20 - Apr 12",
+          "date_short": "Mar 28",
+          "country": "Japan",
+          "type_label": "Seasonal",
+          "rating": "4.8"
+        },
+        {
+          "id": "turkey-balloons",
+          "title": "Turkey balloons",
+          "meta": "Cappadocia · Apr - Oct",
+          "location": "Cappadocia, Turkey",
+          "date": "Apr 1 - Oct 31",
+          "date_short": "Jul 16",
+          "country": "Turkey",
+          "type_label": "Nature",
+          "rating": "4.8"
+        },
+        {
+          "id": "switzerland-alps",
+          "title": "Switzerland Jungfrau",
+          "meta": "Alps · Jun - Sep",
+          "location": "Jungfrau, Switzerland",
+          "date": "Jun 1 - Sep 30",
+          "date_short": "Jul 9",
+          "country": "Switzerland",
+          "type_label": "Nature",
+          "rating": "4.7"
+        },
+        {
+          "id": "iceland-lights",
+          "title": "Iceland northern lights",
+          "meta": "Reykjavik · Oct - Mar",
+          "location": "Reykjavik, Iceland",
+          "date": "Oct 1 - Mar 31",
+          "date_short": "Jan 3",
+          "country": "Iceland",
+          "type_label": "Seasonal",
+          "rating": "4.8"
+        },
+        {
+          "id": "bali-holiday",
+          "title": "Bali holiday light",
+          "meta": "Indonesia · May - Oct",
+          "location": "Bali, Indonesia",
+          "date": "May 1 - Oct 31",
+          "date_short": "Jul 26",
+          "country": "Indonesia",
+          "type_label": "Nature",
+          "rating": "4.5"
+        },
+        {
+          "id": "rio-carnival",
+          "title": "Rio carnival",
+          "meta": "Brazil · Festival · Spring",
+          "location": "Rio de Janeiro, Brazil",
+          "date": "Feb 13 - Feb 21",
+          "date_short": "Feb 18",
+          "country": "Brazil",
+          "type_label": "Festival",
+          "rating": "4.9"
+        },
+        {
+          "id": "new-york-food",
+          "title": "New York summer food halls",
+          "meta": "United States · Food · Jul",
+          "location": "New York, United States",
+          "date": "Jul 5 - Jul 27",
+          "date_short": "Jul 6",
+          "country": "United States",
+          "type_label": "Food",
+          "rating": "4.4"
+        },
+        {
+          "id": "sydney-light",
+          "title": "Sydney light season",
+          "meta": "Australia · Festival · Winter",
+          "location": "Sydney, Australia",
+          "date": "May 24 - Jun 15",
+          "date_short": "Jun 28",
+          "country": "Australia",
+          "type_label": "Festival",
+          "rating": "4.6"
+        }
       ]
     },
     "shop": {
@@ -726,12 +1073,24 @@
       "plans": "plans",
       "destinations": "destinations",
       "no_plans": "No plans available for this region yet.",
+      "no_coverage_title": "Coverage is not available here yet.",
+      "no_coverage_body": "Keep this destination selected and browse another place to find a compatible plan.",
+      "browse_destinations": "Browse destinations",
+      "plans_load_error": "Plans could not load.",
+      "plans_load_error_body": "We couldn't read plans for this destination. Try again to keep your destination and trip details.",
+      "try_again": "Try again",
+      "loading_plans": "Loading plans",
+      "sign_in_to_continue": "Sign in to choose this plan",
+      "sign_in_to_buy": "Sign in to continue",
+      "sign_in_body": "Sign in to choose this plan. Your destination and plan are kept.",
+      "back_to_shop": "Back to eSIM shop",
+      "coverage_label": "eSIM coverage",
       "trip_length": "Trip length",
       "options": "options",
       "day_unit": "day(s)",
       "day_aria": "Trip length",
       "all": "All",
-      "plans_for_days": "Plans for {days} day(s)",
+      "plans_for_days": "Plans for {days} day(s) ({count})",
       "no_plan_duration": "No plan at this duration — pick a nearby day.",
       "tier_titanium": "Titanium",
       "tier_high_speed": "High speed",
@@ -801,10 +1160,22 @@
         "timeline_subtitle": "Scan the seasonal rhythm before choosing when to go.",
         "timeline_count": "{count}",
         "timeline_seasons": {
-          "spring": { "name": "Spring", "range": "Mar - May" },
-          "summer": { "name": "Summer", "range": "Jun - Aug" },
-          "autumn": { "name": "Autumn", "range": "Sep - Nov" },
-          "winter": { "name": "Winter", "range": "Dec - Feb" }
+          "spring": {
+            "name": "Spring",
+            "range": "Mar - May"
+          },
+          "summer": {
+            "name": "Summer",
+            "range": "Jun - Aug"
+          },
+          "autumn": {
+            "name": "Autumn",
+            "range": "Sep - Nov"
+          },
+          "winter": {
+            "name": "Winter",
+            "range": "Dec - Feb"
+          }
         },
         "featured_events_title": "Featured events",
         "featured_events_subtitle": "Open an event to explore more context and trip ideas.",
@@ -1011,14 +1382,32 @@
           "weather_link": "More weather",
           "read_time": "min read",
           "recommendations": [
-            { "title": "Northern lights", "duration": "3–4 months" },
-            { "title": "Kyoto culture", "duration": "3–4 months" },
-            { "title": "Gion festival", "duration": "3–4 months" }
+            {
+              "title": "Northern lights",
+              "duration": "3–4 months"
+            },
+            {
+              "title": "Kyoto culture",
+              "duration": "3–4 months"
+            },
+            {
+              "title": "Gion festival",
+              "duration": "3–4 months"
+            }
           ],
           "articles": [
-            { "title": "Ten cities worth building a first route around", "tag": "Destinations" },
-            { "title": "How to keep a flexible budget before tickets lock", "tag": "Budget" },
-            { "title": "What to prepare before a dense city trip", "tag": "Checklist" }
+            {
+              "title": "Ten cities worth building a first route around",
+              "tag": "Destinations"
+            },
+            {
+              "title": "How to keep a flexible budget before tickets lock",
+              "tag": "Budget"
+            },
+            {
+              "title": "What to prepare before a dense city trip",
+              "tag": "Checklist"
+            }
           ],
           "weather_summary": "Mostly clear · 11°C / 22°C"
         }
@@ -1713,23 +2102,23 @@
         "failed_title": "Lumi paused"
       },
       "lumi": {
-          "create_confirm": {
-            "title": "Create this trip?",
-            "body": "I will open a blank trip, take you to its page, and we will shape it together there.",
-            "confirm": "Create trip",
-            "cancel": "Not yet"
-          },
-          "takeover": {
-            "intro": "Trip created. Let me set up the basics for you.",
-            "dates": "Setting the dates first…",
-            "places": "Now pinning your places on the map.",
-            "done": "Basics are in. Dates and cities are still yours to adjust; continue when ready.",
-            "asking": "One thing needs your call.",
-            "failed": "I will stop here. Pick dates and cities yourself, or call me again.",
-            "answer_placeholder": "Reply to Lumi…",
-            "send": "Send",
-            "dismiss": "I will take it from here"
-          },
+        "create_confirm": {
+          "title": "Create this trip?",
+          "body": "I will open a blank trip, take you to its page, and we will shape it together there.",
+          "confirm": "Create trip",
+          "cancel": "Not yet"
+        },
+        "takeover": {
+          "intro": "Trip created. Let me set up the basics for you.",
+          "dates": "Setting the dates first…",
+          "places": "Now pinning your places on the map.",
+          "done": "Basics are in. Dates and cities are still yours to adjust; continue when ready.",
+          "asking": "One thing needs your call.",
+          "failed": "I will stop here. Pick dates and cities yourself, or call me again.",
+          "answer_placeholder": "Reply to Lumi…",
+          "send": "Send",
+          "dismiss": "I will take it from here"
+        },
         "name": "Lumi",
         "placeholder": "How should I tweak the trip? e.g. put Kyoto first",
         "open": "Open Lumi assistant",

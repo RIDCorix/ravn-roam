@@ -56,6 +56,8 @@ export function PublicJourneyHeader({
   const isLightRoute =
     pathname === `/${lang}/explore` ||
     pathname === `/${lang}/explore/` ||
+    pathname === `/${lang}/shop` ||
+    pathname === `/${lang}/shop/` ||
     pathname === `/${lang}/trips` ||
     pathname === `/${lang}/trips/` ||
     pathname?.startsWith(`/${lang}/trips/`) ||
@@ -77,7 +79,7 @@ export function PublicJourneyHeader({
   ];
 
   return (
-    <header className="absolute inset-x-0 top-0 z-20">
+    <header className="roam-public-header absolute inset-x-0 top-0 z-20">
       <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-4 px-4 sm:h-20 sm:px-8 md:gap-8">
         <Link
           href={prefix}

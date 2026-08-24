@@ -19,6 +19,8 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
+import { buildShopHref } from "@/lib/shop-link";
+import { SPOTLIGHT_EVENTS } from "@/lib/spotlight-events";
 import { cn } from "@/lib/utils";
 
 import type { SpotlightMapEvent } from "./spotlight-flag-map";
@@ -61,179 +63,15 @@ export type ExploreSpotlightLabels = {
   spotlight_events: SpotlightCopyEvent[];
 };
 
-const SPOTLIGHT_META = [
-  {
-    id: "venice-carnival",
-    regionSlug: "italy",
-    countryCode: "IT",
-    image: "/illustrations/cities/rome.jpg",
-    lat: 45.44,
-    lng: 12.315,
-    tone: "coral",
-  },
-  {
-    id: "rio-carnival",
-    regionSlug: "brazil",
-    countryCode: "BR",
-    image: "/illustrations/cities/rio.jpg",
-    lat: -22.906,
-    lng: -43.172,
-    tone: "green",
-  },
-  {
-    id: "tomorrowland",
-    regionSlug: "belgium",
-    countryCode: "BE",
-    image: "/illustrations/cities/europe.jpg",
-    lat: 51.09,
-    lng: 4.37,
-    tone: "violet",
-  },
-  {
-    id: "iceland-lights",
-    regionSlug: "iceland",
-    countryCode: "IS",
-    image: "/illustrations/timeline/seasons/winter.png",
-    lat: 64.147,
-    lng: -21.942,
-    tone: "violet",
-  },
-  {
-    id: "singapore-grand-prix",
-    regionSlug: "singapore",
-    countryCode: "SG",
-    image: "/illustrations/cities/singapore.jpg",
-    lat: 1.291,
-    lng: 103.864,
-    tone: "cyan",
-  },
-  {
-    id: "taiwan-lantern",
-    regionSlug: "taiwan",
-    countryCode: "TW",
-    image: "/illustrations/cities/taipei.jpg",
-    lat: 23.697,
-    lng: 120.96,
-    tone: "gold",
-  },
-  {
-    id: "taiwan-mazu",
-    regionSlug: "taiwan",
-    countryCode: "TW",
-    image: "/illustrations/events/taiwan-dajia-mazu-pilgrimage.png",
-    lat: 24.347,
-    lng: 120.623,
-    tone: "coral",
-  },
-  {
-    id: "japan-gion",
-    regionSlug: "japan",
-    countryCode: "JP",
-    image: "/illustrations/cities/kyoto.jpg",
-    lat: 35.011,
-    lng: 135.768,
-    tone: "rose",
-  },
-  {
-    id: "fuji-rock",
-    regionSlug: "japan",
-    countryCode: "JP",
-    image: "/illustrations/events/japan-fuji-rock-2026.png",
-    lat: 36.79,
-    lng: 138.78,
-    tone: "violet",
-  },
-  {
-    id: "jp-sakura",
-    regionSlug: "japan",
-    countryCode: "JP",
-    image: "/illustrations/events/jp-sakura-2026.png",
-    lat: 35.011,
-    lng: 135.768,
-    tone: "rose",
-  },
-  {
-    id: "korankei-autumn",
-    regionSlug: "japan",
-    countryCode: "JP",
-    image: "/illustrations/events/japan-korankei-autumn-festival.png",
-    lat: 35.133,
-    lng: 137.316,
-    tone: "gold",
-  },
-  {
-    id: "korea-boryeong-mud",
-    regionSlug: "korea",
-    countryCode: "KR",
-    image: "/illustrations/events/korea-boryeong-mud-festival-2026.png",
-    lat: 36.305,
-    lng: 126.517,
-    tone: "coral",
-  },
-  {
-    id: "korea-jinhae-cherry",
-    regionSlug: "korea",
-    countryCode: "KR",
-    image: "/illustrations/events/korea-jinhae-gunhangje-cherry-blossom.png",
-    lat: 35.15,
-    lng: 128.66,
-    tone: "rose",
-  },
-  {
-    id: "hong-kong-sevens",
-    regionSlug: "hong-kong",
-    countryCode: "HK",
-    image: "/illustrations/events/hong-kong-sevens-2026.png",
-    lat: 22.278,
-    lng: 114.182,
-    tone: "cyan",
-  },
-  {
-    id: "hong-kong-flower-show",
-    regionSlug: "hong-kong",
-    countryCode: "HK",
-    image: "/illustrations/events/hong-kong-flower-show.png",
-    lat: 22.281,
-    lng: 114.188,
-    tone: "rose",
-  },
-  {
-    id: "rainforest-world-music",
-    regionSlug: "malaysia",
-    countryCode: "MY",
-    image: "/illustrations/events/malaysia-rainforest-world-music-festival-2026.png",
-    lat: 1.744,
-    lng: 110.315,
-    tone: "green",
-  },
-  {
-    id: "singapore-durian",
-    regionSlug: "singapore",
-    countryCode: "SG",
-    image: "/illustrations/events/singapore-malaysia-durian-season.png",
-    lat: 1.352,
-    lng: 103.819,
-    tone: "green",
-  },
-  {
-    id: "taipei-feast",
-    regionSlug: "taiwan",
-    countryCode: "TW",
-    image: "/illustrations/events/taipei-taipei-feast-2026.png",
-    lat: 25.033,
-    lng: 121.565,
-    tone: "coral",
-  },
-] as const;
-
-export const SPOTLIGHT_EVENTS = SPOTLIGHT_META;
 
 export function ExploreSpotlight({
   lang,
   labels,
+  initialQuery,
 }: {
   lang: string;
   labels: ExploreSpotlightLabels;
+  initialQuery?: string;
 }) {
   const copyById = useMemo(
     () => new Map(labels.spotlight_events.map((event) => [event.id, event])),
@@ -241,13 +79,24 @@ export function ExploreSpotlight({
   );
   const events = useMemo(
     () =>
-      SPOTLIGHT_META.flatMap((event) => {
+      SPOTLIGHT_EVENTS.flatMap((event) => {
         const copy = copyById.get(event.id);
         return copy ? [{ ...event, ...copy }] : [];
       }),
     [copyById],
   );
-  const [activeIndex, setActiveIndex] = useState(0);
+  const initialIndex = useMemo(() => {
+    const query = initialQuery?.trim().toLocaleLowerCase();
+    if (!query) return 0;
+    const match = events.findIndex((event) =>
+      [event.title, event.location, event.countryCode, event.regionSlug]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(query),
+    );
+    return match >= 0 ? match : 0;
+  }, [events, initialQuery]);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const autoTimerRef = useRef<number | null>(null);
   const activeEvent = events[activeIndex] ?? events[0];
   const prefix = `/${lang}`;
@@ -408,7 +257,10 @@ export function ExploreSpotlight({
                 asChild
                 className="h-[52px] w-full rounded-[18px] bg-white px-6 text-[15px] font-semibold text-[#273a3f] shadow-[0_20px_48px_-24px_rgba(0,0,0,0.75)] hover:bg-white/92 sm:h-14 sm:w-auto sm:px-7 sm:text-[16px]"
               >
-                <Link href={`${prefix}/shop/${activeEvent.regionSlug}`}>
+                {/* countryCode, not regionSlug: regionSlug is editorial prose and seven events
+                    name a place /shop has no page for. buildShopHref resolves the ISO code to
+                    the canonical region. */}
+                <Link href={buildShopHref(lang, { country: activeEvent.countryCode })}>
                   {labels.spotlight_more}
                   <ArrowRight className="ml-3 h-5 w-5" />
                 </Link>

@@ -16,7 +16,7 @@
 import { test, expect } from "@playwright/test";
 import routes from "./routes.json";
 
-type Route = { path: string; needs_api?: boolean; pending_issue?: string };
+type Route = { path: string; needs_api?: boolean; pending_issue?: string; states?: string };
 
 const API_UP = Boolean(process.env.ROAM_API_URL);
 const APPS: Array<{ app: "landing" | "web"; base: string | undefined }> = [
@@ -45,6 +45,14 @@ for (const { app, base } of APPS) {
           Boolean(route.pending_issue),
           `${route.path} is not served yet — owed by ${route.pending_issue}`,
         );
+        // A natural screenshot of a route whose content comes from an API captures
+        // whatever that API happened to answer — including its failure. Where the
+        // contract names the states, a state spec drives them deterministically and
+        // owns the baselines instead.
+        test.skip(
+          Boolean(route.states),
+          `${route.path} is covered state-by-state in ${route.states}`,
+        );
         expect(base, `${app} was not booted — no base URL`).toBeTruthy();
         // "load", not "networkidle": a page with a map, a poller or a live connection
         // never goes idle, and /explore times out on it. Settling is handled explicitly
@@ -71,7 +79,15 @@ for (const { app, base } of APPS) {
 
         await expect(page).toHaveScreenshot(`${name}.png`, {
           fullPage: true,
-          maxDiffPixelRatio: 0.01,
+          // A component that advances itself on a timer cannot match a baseline, and
+          // loosening the tolerance for everyone to accommodate it is how a stale
+          // frame showing the wrong copy slipped through. Mask it instead: masked
+          // means NOT gated, which is the honest trade and stays visible in the code.
+          mask: [page.locator("[data-oracle-unstable]")],
+          // Pixels, not a ratio. 1% of a full-page 1440x900 shot is ~13,000 pixels —
+        // more than a whole sentence of changed copy, so a stale baseline showing the
+        // WRONG text passed. A budget this small still absorbs antialiasing.
+        maxDiffPixels: 150,
           animations: "disabled",
         });
       });
