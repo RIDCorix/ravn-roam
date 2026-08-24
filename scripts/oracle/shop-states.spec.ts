@@ -53,8 +53,8 @@ const OVERFLOWING = plan({
   id: "p-overflow",
   slug: "jp-overflow",
   display_name_i18n: {
-    "zh-TW": "日本全區高速吃到飽含北海道沖繩離島與機場接送優惠加值方案（限量）",
-    en: "Japan nationwide unlimited high-speed including Hokkaido, Okinawa and the outer islands",
+    "zh-TW": "日本全區高速吃到飽方案，含北海道、沖繩、九州與離島覆蓋，附機場接送優惠、行李延誤保障與 24 小時中文客服加值服務（2026 春季限量供應，售完不補）",
+    en: "Japan nationwide unlimited high-speed including Hokkaido, Okinawa, Kyushu and the outer islands, with airport transfer credit, baggage-delay cover and 24-hour support",
   },
   data_amount_mb: 100 * 1024,
   validity_days: 7,
@@ -181,14 +181,35 @@ const STATES: State[] = [
     fixture: (page) =>
       page.route(PRODUCTS_GLOB, (route) => route.fulfill(json([OVERFLOWING, plan()]))),
     reached: async (page) => {
-      await expect(planRow(page, /100 GB.+NT\$ 128,900/)).toBeVisible();
-      // The contract's actual promise: an unusually long name or price never pushes a
-      // CTA off-screen. A page wider than its own viewport is how that failure looks.
+      const longName = OVERFLOWING.display_name_i18n["zh-TW"]!;
+      const shortName = plan().display_name_i18n["zh-TW"]!;
+
+      // The name must be RENDERED before clamping it means anything. Asserting only
+      // the allowance and the price passed while the card ignored the name entirely.
+      const rendered = visible(page, longName);
+      await expect(rendered).toBeVisible();
+      await expect(visible(page, shortName)).toBeVisible();
+
+      // Clamped to one line, and the full string is longer than the box that shows it.
+      const geometry = await rendered.evaluate((el) => ({
+        height: el.getBoundingClientRect().height,
+        clipped: el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight,
+        right: el.getBoundingClientRect().right,
+        parentRight: el.parentElement!.getBoundingClientRect().right,
+      }));
+      expect(geometry.height, "the long plan name is not clamped to one line").toBeLessThanOrEqual(24);
+      expect(geometry.clipped, "the long name fits, so this fixture no longer tests clamping").toBe(true);
+      expect(geometry.right, "the name escapes its column").toBeLessThanOrEqual(geometry.parentRight + 1);
+
+      // …and the CTA it could have pushed away is still on screen.
+      const cta = planRow(page, new RegExp(longName.slice(0, 8)));
+      const box = (await cta.boundingBox())!;
+      const width = page.viewportSize()!.width;
+      expect(box.x + box.width, "the plan card is wider than the viewport").toBeLessThanOrEqual(width + 1);
       const spill = await page.evaluate(
         () => document.documentElement.scrollWidth - window.innerWidth,
       );
       expect(spill, "the page scrolls horizontally — content is not clamped").toBeLessThanOrEqual(1);
-      await expect(planRow(page, /100 GB/)).toBeVisible();
     },
   },
 ];
@@ -218,7 +239,10 @@ test.describe("shop region states", () => {
 
       await expect(page).toHaveScreenshot(`shop-region-${state.name}.png`, {
         fullPage: true,
-        maxDiffPixelRatio: 0.01,
+        // Pixels, not a ratio. 1% of a full-page 1440x900 shot is ~13,000 pixels —
+        // more than a whole sentence of changed copy, so a stale baseline showing the
+        // WRONG text passed. A budget this small still absorbs antialiasing.
+        maxDiffPixels: 150,
         animations: "disabled",
       });
     });

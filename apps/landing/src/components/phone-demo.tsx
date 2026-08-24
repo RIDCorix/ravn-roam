@@ -93,6 +93,11 @@ export function PhoneDemo({ dict }: { dict: DemoDict }) {
 
   return (
     <div
+      /* This hero advances its own step on a timer, so two screenshots of the same
+         build legitimately differ. The oracle masks anything carrying this attribute
+         rather than loosening its tolerance for every route — a masked region is
+         explicitly NOT visually gated, so keep it to what genuinely cannot hold still. */
+      data-oracle-unstable="cycles a demo step on an interval"
       style={{
         position: "relative",
         width: "100%",

@@ -79,7 +79,15 @@ for (const { app, base } of APPS) {
 
         await expect(page).toHaveScreenshot(`${name}.png`, {
           fullPage: true,
-          maxDiffPixelRatio: 0.01,
+          // A component that advances itself on a timer cannot match a baseline, and
+          // loosening the tolerance for everyone to accommodate it is how a stale
+          // frame showing the wrong copy slipped through. Mask it instead: masked
+          // means NOT gated, which is the honest trade and stays visible in the code.
+          mask: [page.locator("[data-oracle-unstable]")],
+          // Pixels, not a ratio. 1% of a full-page 1440x900 shot is ~13,000 pixels —
+        // more than a whole sentence of changed copy, so a stale baseline showing the
+        // WRONG text passed. A budget this small still absorbs antialiasing.
+        maxDiffPixels: 150,
           animations: "disabled",
         });
       });

@@ -120,6 +120,15 @@ export function PlanRow({
             ) : null}
           </div>
 
+          {/* The plan's own name. R-276 contracts that a card clamps a long one: a
+              supplier name can run to a full sentence, and letting it wrap pushes the
+              price and the CTA out of the row. One line, ellipsised. */}
+          <p className="mt-1 line-clamp-1 text-[12px] leading-[18px] text-fg-muted">
+            {product.display_name_i18n?.[localeKey] ??
+              product.display_name_i18n?.en ??
+              product.slug}
+          </p>
+
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px]">
             <CoverageBadge coverage={coverage} labels={labels} />
             {isUnlimited && !tierStyle.ribbon ? (

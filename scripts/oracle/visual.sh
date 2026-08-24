@@ -13,7 +13,10 @@ export PATH="/opt/homebrew/bin:$PATH"
 . "$ROOT/scripts/oracle/serve.sh"
 
 PW_ARGS=()
-[ "${1:-}" = "--accept" ] && PW_ARGS+=(--update-snapshots)
+# =all, not the default "changed": "changed" leaves any baseline whose diff fits under
+# the tolerance exactly as it was, so a re-record after a copy change silently kept the
+# desktop and wide frames showing the OLD sentence while mobile got the new one.
+[ "${1:-}" = "--accept" ] && PW_ARGS+=(--update-snapshots=all)
 
 run_playwright() {
   # Run from apps/web because that is where @playwright/test is installed; the config
