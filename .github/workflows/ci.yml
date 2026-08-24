@@ -56,6 +56,20 @@ jobs:
       - name: Smoke — boot the build and drive its routes
         run: ./scripts/oracle/run.sh --only smoke
 
+      # The visual gate deliberately does NOT run here yet. Font rasterisation differs
+      # between macOS and ubuntu-latest, so the committed darwin baselines would fail
+      # on this runner for reasons that have nothing to do with the design — and a gate
+      # that is expected to be red gets ignored, then bypassed.
+      #
+      # The agent runs it locally on every change, where the baselines match. To gate
+      # it here too, record a linux set once and commit it:
+      #   ./scripts/oracle/visual.sh --accept   (on ubuntu, e.g. via workflow_dispatch)
+      # then add the two steps below. snapshotPathTemplate already keeps the platforms
+      # apart, so the darwin baselines stay valid.
+      #
+      # - run: pnpm --filter @roam/web exec playwright install --with-deps chromium chromium-headless-shell
+      # - run: ./scripts/oracle/run.sh --only visual
+
       - name: Verdict
         if: always()
         run: ./scripts/oracle/run.sh --json > oracle.json || true
