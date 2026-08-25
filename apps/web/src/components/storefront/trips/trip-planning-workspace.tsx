@@ -175,6 +175,11 @@ import {
   type TakeoverFlightDetails,
 } from "@/components/storefront/trips/trip-explore-stage";
 import { cn } from "@/lib/utils";
+import {
+  TripPlanningSheet,
+  type PlanningDepthLabels,
+  type PlanningSheetDay,
+} from "./trip-planning-sheet";
 import { useDebouncedVersionedSave } from "@/lib/use-debounced-versioned-save";
 
 import {
@@ -202,6 +207,7 @@ import {
 import { TripTitleEditor } from "./trip-title-editor";
 
 export type TripPlanningLabels = {
+  planning_depth: PlanningDepthLabels;
   back_to_trips: string;
   explore_stage: {
     title: string;
@@ -2787,6 +2793,27 @@ export function TripPlanningWorkspace({
     );
   }
 
+  // R-301 D-1/D-2. Mapped here rather than inside the sheet so the sheet stays a pure
+  // renderer of the depth contract and the workspace keeps owning the trip model.
+  const planningSheetDays: PlanningSheetDay[] = model.days.map((day, dayIndex) => ({
+    id: day.date || `day-${dayIndex}`,
+    date: day.date,
+    city: day.city,
+    items: day.stops.map((stop, stopIndex) => ({
+      id: stop.id ?? `${day.date}-${stopIndex}`,
+      name: stop.name,
+      kind: stop.kind ?? "sight",
+      arrivalTime: stop.arrival_time ?? null,
+      durationMin: stop.duration_min ?? null,
+      note: stop.note ?? null,
+      placeName: stop.placeName ?? null,
+      attachmentCount: stop.attachments?.length ?? 0,
+      ticketRequired: (stop.attachments ?? []).some(
+        (attachment) => attachment.status === "required",
+      ),
+    })),
+  }));
+
   return (
     <div
       data-testid="trip-detail-workspace"
@@ -3090,6 +3117,16 @@ export function TripPlanningWorkspace({
           />
         ) : null}
       </div>
+
+      {/* R-301: the planning sheet owns the mobile surface. Rendered as a sibling of
+          the grid rather than inside it so its fixed positioning is measured against
+          the viewport, and hidden at xl where the side panel already is the layer. */}
+      {!exploringStage ? (
+        <TripPlanningSheet
+          days={planningSheetDays}
+          labels={labels.planning_depth}
+        />
+      ) : null}
     </div>
   );
 }

@@ -363,6 +363,7 @@ function MobileBottomNav({
   const rowWidth = tabs.length * slotWidth;
   return (
     <div
+      data-testid="storefront-bottom-nav"
       className="pointer-events-none fixed inset-x-0 z-20 flex justify-center px-4 md:hidden"
       style={{
         bottom: "calc(16px + env(safe-area-inset-bottom))",

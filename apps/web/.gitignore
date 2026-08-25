@@ -1,1 +1,4 @@
 .vercel
+
+# Playwright run artifacts
+test-results/

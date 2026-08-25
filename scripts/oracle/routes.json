@@ -14,6 +14,7 @@
     { "path": "/zh-TW/login" },
     { "path": "/zh-TW/shop",    "pending_issue": "R-276" },
     { "path": "/zh-TW/shop/JP",  "pending_issue": "R-276" },
+    { "path": "/zh-TW/dev/trips-editorial?view=detail" },
     { "path": "/zh-TW/trips", "needs_api": true },
     { "path": "/zh-TW/me",    "needs_api": true },
     { "path": "/zh-TW/admin", "needs_api": true }
