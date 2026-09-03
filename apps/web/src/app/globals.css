@@ -1118,3 +1118,886 @@ body {
     opacity: 0;
   }
 }
+
+/* ============================================================
+   R-301 trip planner.
+
+   The geometry is CSS-first so the first paint is already
+   correct: the planning space is what is left between the
+   planner's own top chrome and the space the bottom navigation
+   reserves, and the sheet takes a fixed share of it per detent.
+   JavaScript only takes over while a finger is on the grabber.
+   ============================================================ */
+
+.planner {
+  --planner-top-chrome: 88px;
+  /* 78px nav + 16px inset + a 2px hairline so the sheet never touches it. */
+  --planner-nav-reserve: calc(96px + env(safe-area-inset-bottom));
+  --planner-planning-space: calc(
+    100dvh - var(--planner-top-chrome) - var(--planner-nav-reserve)
+  );
+  --planner-sheet-fraction: 0.62;
+  --planner-sheet-height: calc(
+    var(--planner-planning-space) * var(--planner-sheet-fraction)
+  );
+  /* Translucency is a material, and only floating chrome wears it. */
+  --planner-chrome-bg: color-mix(in srgb, var(--surface) 82%, transparent);
+  --planner-chrome-blur: blur(20px) saturate(1.4);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.planner-chrome {
+  background: var(--planner-chrome-bg);
+  backdrop-filter: var(--planner-chrome-blur);
+  border-bottom: 1px solid var(--divider);
+}
+
+.planner-topbar {
+  height: var(--planner-top-chrome);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 20px;
+  z-index: 2;
+}
+
+.planner-topbar__title {
+  /* Two lines are reserved whether the title needs them or not, so a long
+     zh-TW or en title cannot push the meta row or shift the layout. */
+  margin: 0;
+  min-height: calc(2 * 1.3em);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.planner-topbar__meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--fg-secondary);
+}
+
+.planner-body {
+  position: relative;
+  flex: none;
+  height: var(--planner-planning-space);
+  min-height: 0;
+}
+
+.planner-map {
+  position: absolute;
+  inset: 0 0 var(--planner-sheet-height) 0;
+  overflow: hidden;
+  background: var(--surface-sunken);
+  /* Leaflet gives its panes z-indexes up to 700. Keep them inside the map
+     so the sheet and the full view are not painted under a tile. */
+  z-index: 0;
+  isolation: isolate;
+}
+
+.planner-map__placeholder {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #e7efee, #f1ece2);
+}
+
+.planner-sheet {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 1;
+  height: var(--planner-sheet-height);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: 22px 22px 0 0;
+  border: 1px solid var(--divider);
+  border-bottom: 0;
+  background: var(--surface);
+  box-shadow: 0 -14px 34px -22px rgba(17, 17, 32, 0.42);
+  transition: height 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+
+.planner-sheet.is-dragging {
+  transition: none;
+}
+
+.planner-sheet__handle-row {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 4px;
+}
+
+.planner-grabber {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+
+.planner-grabber:active {
+  cursor: grabbing;
+}
+
+.planner-grabber__bar {
+  display: block;
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.planner-detents {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+}
+
+.planner-detent {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--fg-secondary);
+  background: transparent;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.planner-detent[data-active="true"] {
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(17, 17, 32, 0.12);
+}
+
+.planner-sheet__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Sections keep their own height; the sheet scrolls instead of squashing. */
+.planner-sheet__scroll > * {
+  flex: none;
+}
+
+.planner-day-strip {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 0 10px;
+  background: var(--surface);
+  scrollbar-width: none;
+}
+
+.planner-day-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.planner-day-chip {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 76px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+  text-align: left;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.planner-day-chip__n {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.planner-day-chip__place {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--fg-secondary);
+}
+
+.planner-day-chip[data-active="true"] {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+.planner-day-chip[data-active="true"] .planner-day-chip__n,
+.planner-day-chip[data-active="true"] .planner-day-chip__place {
+  color: var(--accent);
+}
+
+.planner-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--divider);
+  background: var(--surface-elevated);
+}
+
+.planner-compact__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.planner-compact__headings {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.planner-compact__type {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.planner-compact__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.planner-compact__core {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.planner-compact__cell dt {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--fg-muted);
+}
+
+.planner-compact__cell dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.planner-ticket {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 14px;
+  background: var(--surface-sunken);
+  font-size: 12.5px;
+}
+
+.planner-ticket__title {
+  font-weight: 600;
+}
+
+.planner-ticket__state {
+  margin-left: auto;
+  color: var(--fg-secondary);
+}
+
+.planner-ticket[data-ticket-state="needed"] {
+  background: var(--warning-soft);
+}
+
+.planner-ticket[data-ticket-state="needed"] .planner-ticket__state {
+  color: var(--warning);
+}
+
+.planner-ticket[data-ticket-state="attached"] .planner-ticket__state {
+  color: var(--success);
+}
+
+.planner-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-items__empty {
+  font-size: 13px;
+  color: var(--fg-secondary);
+}
+
+.planner-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+  text-align: left;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.planner-item-row__time {
+  flex: none;
+  width: 46px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-secondary);
+}
+
+.planner-item-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planner-item-row__title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.planner-item-row__meta {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--fg-muted);
+}
+
+.planner-item-row__chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--fg-subtle);
+}
+
+.planner-item-row[data-selected="true"] {
+  border-color: var(--accent);
+  background: var(--accent-softer);
+}
+
+.planner-section__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.planner-overview__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-stay {
+  border-radius: 16px;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+  padding: 12px;
+}
+
+.planner-stay__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.planner-stay__place {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.planner-stay__range {
+  flex: none;
+  font-size: 12px;
+  color: var(--fg-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.planner-stay__days {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-stay__day {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  background: var(--surface-sunken);
+  font-size: 12px;
+  text-align: left;
+}
+
+.planner-stay__summary {
+  color: var(--fg-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.planner-stay__day[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.planner-stay__day[data-active="true"] .planner-stay__summary {
+  color: var(--accent);
+}
+
+.planner-travel__button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 16px;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+
+.planner-travel__label {
+  font-weight: 600;
+}
+
+.planner-travel__route {
+  color: var(--fg-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.planner-travel__button[data-active="true"] {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.planner-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.planner-legend__swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.planner-legend__swatch.is-active {
+  background: var(--accent);
+}
+
+.planner-lumi {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--accent-soft);
+  background: var(--accent-softer);
+}
+
+.planner-lumi__body {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fg-secondary);
+}
+
+.planner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--cta);
+  color: var(--cta-fg);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background-color 140ms ease;
+}
+
+.planner-cta:hover {
+  background: var(--cta-hover);
+}
+
+.planner-cta--small {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.planner-checklist__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-checklist__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.planner-checklist__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.planner-checklist__text[data-done="true"] {
+  color: var(--fg-muted);
+  text-decoration: line-through;
+}
+
+.planner-checklist__row .planner-cta {
+  margin-left: auto;
+  flex: none;
+}
+
+/* ---- Full view: one item, expanded to its own type -------------------- */
+
+.planner-full-view {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.planner-full-view__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 56px;
+  padding: 0 12px;
+}
+
+.planner-full-view__type {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-secondary);
+}
+
+.planner-full-view__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 620px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.planner-full-view__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.planner-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+}
+
+.planner-field-group__heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.planner-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.planner-field__label {
+  font-size: 12px;
+  color: var(--fg-secondary);
+}
+
+.planner-full-view__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.planner-full-view__saved {
+  font-size: 13px;
+  color: var(--success);
+  min-width: 72px;
+}
+
+/* ---- Map pins --------------------------------------------------------- */
+
+.planner-pin {
+  background: transparent;
+  border: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.planner-pin__dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  color: var(--fg-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.planner-pin__dot.is-active {
+  background: var(--accent);
+  border-color: #fff;
+  color: #fff;
+}
+
+.planner-pin__label {
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.planner-pin__label.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.planner-stop-pin {
+  background: transparent;
+  border: 0;
+}
+
+.planner-stop-pin__dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 2px;
+  border-radius: 999px;
+  background: var(--fg);
+  border: 2px solid #fff;
+  opacity: 0.72;
+}
+
+/* ---- Desktop: the sheet becomes a panel, the map keeps its own column -- */
+
+@media (min-width: 768px) {
+  .planner {
+    --planner-top-chrome: 76px;
+    --planner-nav-reserve: 0px;
+  }
+
+  .planner-topbar {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 14px;
+  }
+
+  .planner-topbar__title {
+    min-height: 0;
+    font-size: 18px;
+  }
+
+  .planner-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  }
+
+  .planner-map {
+    position: relative;
+    inset: auto;
+    height: 100%;
+  }
+
+  .planner-sheet {
+    position: relative;
+    inset: auto;
+    height: 100%;
+    border-radius: 0;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 1px solid var(--divider);
+    box-shadow: none;
+    transition: none;
+  }
+
+  .planner-sheet__handle-row {
+    justify-content: flex-end;
+    padding: 10px 16px 0;
+  }
+
+  .planner-grabber,
+  .planner-detents {
+    display: none;
+  }
+}
+
+/* ---- Accessibility modes --------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* No height slide. The sheet lands at its detent and the content
+     cross-fades instead. */
+  .planner-sheet {
+    transition: none;
+  }
+
+  .planner-sheet__scroll {
+    animation: planner-cross-fade 180ms ease both;
+  }
+
+  .planner-detent,
+  .planner-day-chip,
+  .planner-item-row {
+    transition: none;
+  }
+}
+
+@keyframes planner-cross-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .planner {
+    --planner-chrome-bg: var(--surface);
+    --planner-chrome-blur: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .planner-chrome,
+  .planner-sheet,
+  .planner-item-row,
+  .planner-day-chip,
+  .planner-stay,
+  .planner-checklist__row,
+  .planner-field-group {
+    border-color: var(--fg);
+  }
+
+  .planner-topbar__meta,
+  .planner-item-row__meta,
+  .planner-compact__cell dt,
+  .planner-legend {
+    color: var(--fg);
+  }
+
+  .planner-sheet {
+    box-shadow: none;
+  }
+}

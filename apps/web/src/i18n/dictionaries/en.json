@@ -874,6 +874,80 @@
       "esim_wallet_profiles": "{count} profiles"
     },
     "trips": {
+      "planner": {
+        "trip_meta": "{days} days · {places} places",
+        "overview": {
+          "title": "Across the trip",
+          "day_range": "Days {start}–{end}",
+          "day_range_single": "Day {start}",
+          "day_summary": "{stops} stops · {items} planned",
+          "travel_day": "Travel day",
+          "travel_route": "{from} → {to}",
+          "legend_selected": "Selected day",
+          "legend_neutral": "Other days"
+        },
+        "day": {
+          "label": "Day {n}",
+          "empty": "Nothing planned yet.",
+          "select_aria": "Day {n}, {date}"
+        },
+        "sheet": {
+          "region": "Itinerary",
+          "handle_aria": "Resize the itinerary sheet",
+          "detent_map": "Map",
+          "detent_plan": "Itinerary",
+          "detent_full": "Full"
+        },
+        "item": {
+          "types": {
+            "place": "Place",
+            "transport": "Transport",
+            "flight": "Flight",
+            "stay": "Stay"
+          },
+          "date": "Date",
+          "start_time": "Time",
+          "duration": "Duration",
+          "duration_value": "{minutes} min",
+          "more": "More",
+          "back": "Back to the itinerary",
+          "select_aria": "Open {title}",
+          "full_title": "Edit item",
+          "save": "Save",
+          "saved": "Saved.",
+          "type_section": "{type} details"
+        },
+        "ticket": {
+          "title": "Ticket & booking",
+          "missing": "Not added",
+          "needed": "Upload needed",
+          "attached": "One attached",
+          "state_label": "Status"
+        },
+        "fields": {
+          "placeName": "Place",
+          "admission": "Admission",
+          "bookingReference": "Booking reference",
+          "mode": "Mode",
+          "origin": "From",
+          "destination": "To",
+          "ticketReference": "Ticket reference",
+          "airline": "Airline",
+          "flightNumber": "Flight number",
+          "property": "Property",
+          "checkIn": "Check-in",
+          "checkOut": "Check-out"
+        },
+        "lumi": {
+          "title": "Lumi",
+          "body": "{days} days online in {country}. Compare the local data plans before you fly.",
+          "cta": "See eSIM plans"
+        },
+        "checklist": {
+          "title": "Before you go",
+          "esim_cta": "Choose a plan"
+        }
+      },
       "list": {
         "title": "Trips",
         "subtitle": "{count} active or upcoming",

@@ -140,6 +140,7 @@ export function StorefrontShell({
   signInLabel,
   lumiLabels,
   lumiAvatarId,
+  fullBleed = false,
 }: {
   lang: string;
   labels: StorefrontShellLabels;
@@ -150,6 +151,9 @@ export function StorefrontShell({
   // hidden — anonymous visitors don't have a Lumi context.
   lumiLabels: LumiAssistantLabels | null;
   lumiAvatarId?: string;
+  // App surfaces that own the whole viewport (the trip planner) opt out of
+  // the centered content column, but keep the real navigation.
+  fullBleed?: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -161,6 +165,7 @@ export function StorefrontShell({
     !isSignedIn &&
     (pathname === `/${lang}/explore` || pathname === `/${lang}/explore/`);
   const isPublicFullBleed = isPublicHome || isPublicExplore;
+  const contentFullBleed = fullBleed || isPublicFullBleed;
 
   return (
     <div className="flex min-h-screen bg-bg text-fg">
@@ -185,13 +190,15 @@ export function StorefrontShell({
         <main
           className={cn(
             "flex-1 min-w-0",
-            isPublicFullBleed ? "pb-0" : "pb-28 md:pb-0",
+            contentFullBleed ? "pb-0" : "pb-28 md:pb-0",
           )}
         >
           <div
             className={cn(
               "mx-auto w-full",
-              isPublicFullBleed ? "max-w-none" : "max-w-[980px] md:px-6 md:py-6",
+              contentFullBleed
+                ? "max-w-none"
+                : "max-w-[980px] md:px-6 md:py-6",
             )}
           >
             {children}

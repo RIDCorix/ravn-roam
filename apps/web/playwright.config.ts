@@ -1,14 +1,15 @@
 /**
- * Playwright config for @roam/web admin E2E.
+ * Playwright config for @roam/web E2E.
  *
- * Prerequisites for `pnpm e2e`:
+ * The trip planner and trips-editorial specs drive `/[lang]/dev/*` fixtures
+ * and need nothing but the web app. `supplier-admin.spec.ts` additionally
+ * needs:
  *   1. `pnpm --filter @roam/api dev`   (services/api on :3001 with a real DB)
- *   2. `pnpm --filter @roam/web dev`   (apps/web on :3010)
- *   3. The roam_poc schema must be migrated; the test seeds its own
- *      supplier row via the admin API so no fixtures are required.
+ *   2. The roam_poc schema migrated; the spec seeds its own supplier row
+ *      via the admin API so no fixtures are required.
  *
- * Run a real Postgres (Supabase or local docker is fine) and point the API
- * at it before invoking this — the spec exercises actual HTTP traffic.
+ * The web app starts on demand here. Point at an already-running instance
+ * with `ROAM_WEB_URL` to skip that.
  */
 
 import { defineConfig, devices } from "@playwright/test";
@@ -27,6 +28,20 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
+  // Visual baselines are per platform: a macOS baseline is not a Linux one.
+  snapshotPathTemplate:
+    "{testDir}/__screenshots__/{testFileName}/{arg}-{platform}{ext}",
+  expect: {
+    toHaveScreenshot: { maxDiffPixelRatio: 0.01 },
+  },
+  webServer: process.env.ROAM_WEB_URL
+    ? undefined
+    : {
+        command: `pnpm exec next dev --port ${PORT}`,
+        url: `http://localhost:${PORT}`,
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+      },
   projects: [
     {
       name: "chromium",

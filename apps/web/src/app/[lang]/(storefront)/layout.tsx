@@ -19,10 +19,19 @@ export default async function StorefrontLayout({
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
   const dict = await getDictionary(lang);
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Anonymous public browsing must remain available when auth is
+  // unavailable. Auth-only actions still validate at their own API boundary.
+  let user: Awaited<
+    ReturnType<
+      Awaited<ReturnType<typeof createSupabaseServerClient>>["auth"]["getUser"]
+    >
+  >["data"]["user"] = null;
+  try {
+    const supabase = await createSupabaseServerClient();
+    user = (await supabase.auth.getUser()).data.user;
+  } catch {
+    user = null;
+  }
   const lumiAvatarId =
     typeof user?.user_metadata?.lumi_avatar === "string"
       ? user.user_metadata.lumi_avatar

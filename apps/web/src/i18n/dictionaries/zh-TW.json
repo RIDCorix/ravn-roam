@@ -874,6 +874,80 @@
       "esim_wallet_profiles": "{count} 組資料"
     },
     "trips": {
+      "planner": {
+        "trip_meta": "{days} 天 · {places} 個地點",
+        "overview": {
+          "title": "跨日總覽",
+          "day_range": "第 {start}–{end} 天",
+          "day_range_single": "第 {start} 天",
+          "day_summary": "{stops} 個停留點 · {items} 項安排",
+          "travel_day": "移動日",
+          "travel_route": "{from} → {to}",
+          "legend_selected": "目前選取日",
+          "legend_neutral": "其他日期"
+        },
+        "day": {
+          "label": "第 {n} 天",
+          "empty": "這天還沒有安排。",
+          "select_aria": "第 {n} 天，{date}"
+        },
+        "sheet": {
+          "region": "行程",
+          "handle_aria": "調整行程面板高度",
+          "detent_map": "地圖",
+          "detent_plan": "行程",
+          "detent_full": "完整"
+        },
+        "item": {
+          "types": {
+            "place": "景點／地點",
+            "transport": "交通",
+            "flight": "航班",
+            "stay": "住宿"
+          },
+          "date": "日期",
+          "start_time": "時間",
+          "duration": "時長",
+          "duration_value": "{minutes} 分鐘",
+          "more": "更多",
+          "back": "返回行程",
+          "select_aria": "開啟 {title}",
+          "full_title": "編輯項目",
+          "save": "儲存",
+          "saved": "已儲存。",
+          "type_section": "{type}欄位"
+        },
+        "ticket": {
+          "title": "票券與訂房",
+          "missing": "尚未加入",
+          "needed": "需要上傳",
+          "attached": "已附一張",
+          "state_label": "狀態"
+        },
+        "fields": {
+          "placeName": "地點",
+          "admission": "票種",
+          "bookingReference": "訂位代號",
+          "mode": "方式",
+          "origin": "出發",
+          "destination": "抵達",
+          "ticketReference": "票券編號",
+          "airline": "航空公司",
+          "flightNumber": "班機號碼",
+          "property": "住宿名稱",
+          "checkIn": "入住",
+          "checkOut": "退房"
+        },
+        "lumi": {
+          "title": "Lumi",
+          "body": "在{country}連網 {days} 天。出發前先比較當地的上網方案。",
+          "cta": "查看 eSIM 方案"
+        },
+        "checklist": {
+          "title": "出發前",
+          "esim_cta": "選擇方案"
+        }
+      },
       "list": {
         "title": "行程",
         "subtitle": "{count} 個進行中或即將開始",
