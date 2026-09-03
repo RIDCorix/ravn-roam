@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "e2e": "playwright test",
+    "e2e:prod": "ROAM_WEB_MODE=prod playwright test e2e/trip-planner.spec.ts",
     "test": "vitest run"
   },
   "dependencies": {

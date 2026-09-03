@@ -37,10 +37,19 @@ export default defineConfig({
   webServer: process.env.ROAM_WEB_URL
     ? undefined
     : {
-        command: `pnpm exec next dev --port ${PORT}`,
+        // `ROAM_WEB_MODE=prod` (pnpm e2e:prod) runs the acceptance suite
+        // against a real production build. That matters: R-301's first UAT
+        // round was blocked because the fixture built fine in `next dev` and
+        // could not be reached at all in production. Only the planner spec
+        // survives there — the other `/dev` fixtures 404 in production by
+        // design, which is why the default stays `next dev`.
+        command:
+          process.env.ROAM_WEB_MODE === "prod"
+            ? `pnpm exec next build && pnpm exec next start --port ${PORT}`
+            : `pnpm exec next dev --port ${PORT}`,
         url: `http://localhost:${PORT}`,
         reuseExistingServer: !process.env.CI,
-        timeout: 180_000,
+        timeout: 300_000,
       },
   projects: [
     {

@@ -63,6 +63,36 @@ function intersects(
   );
 }
 
+// The bottom nav ships a "tasks" tab pointing at `/{lang}/tasks`, and no such
+// route has ever existed — it is already there at this branch's base, so it is
+// not R-301's to fix, but it is a real defect and is reported as one. It only
+// shows up against a production build, where Next prefetches nav links; `next
+// dev` does not prefetch, which is why the first UAT round never saw it.
+const KNOWN_DEAD_ROUTE = /\/(en|zh-TW)\/tasks(\?|$)/;
+
+/** A resource 404 tells you nothing without the URL that produced it. */
+const RESOURCE_404 =
+  /Failed to load resource: the server responded with a status of 404/;
+
+// ── c-0 · the UAT surface has to exist in the build UAT actually runs ───
+
+test("c-0 the fixture is reachable and unindexable in the build under test", async ({
+  page,
+}) => {
+  // The phone, because that is the device the gesture UAT runs on.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const response = (await page.goto(PLANNER_PATH("zh-TW")))!;
+  expect(response.status()).toBe(200);
+  // Reachable by URL, never by search. See `dev/uat-fixture-access.ts`.
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+  // The navigation is in the server-rendered HTML, not swapped in later — a
+  // gesture UAT cannot judge a sheet that shifts after first paint.
+  await expect(page.locator('nav[aria-label="Primary"]')).toBeVisible();
+});
+
 // ── c-1 · visual baselines on a fixture with the real navigation ────────
 
 const VIEWPORTS = [
@@ -75,9 +105,13 @@ const VIEWPORTS = [
 for (const viewport of VIEWPORTS) {
   test(`c-1 planner baseline at ${viewport.width}px`, async ({ page }) => {
     const errors: string[] = [];
+    const failedUrls: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("response", (response) => {
+      if (response.status() >= 400) failedUrls.push(response.url());
     });
 
     await page.setViewportSize(viewport);
@@ -132,7 +166,11 @@ for (const viewport of VIEWPORTS) {
       animations: "disabled",
     });
 
-    expect(errors).toEqual([]);
+    // Every request the surface makes must succeed, except the pre-existing
+    // dead nav route. Checking URLs rather than the console line means a real
+    // planner 404 still fails here — it just fails by name.
+    expect(failedUrls.filter((url) => !KNOWN_DEAD_ROUTE.test(url))).toEqual([]);
+    expect(errors.filter((error) => !RESOURCE_404.test(error))).toEqual([]);
   });
 }
 
@@ -348,15 +386,45 @@ test.describe("c-4 accessibility modes", () => {
     });
   }
 
+  /**
+   * Which transitions the detent change actually starts on the sheet.
+   *
+   * Counting distinct heights out of a rAF loop measures the sampler as much
+   * as the sheet: on a loaded machine the loop gets a handful of frames and a
+   * genuine slide reads as a jump. The animation the browser is running is the
+   * fact under test, and it is exact.
+   */
+  async function detentTransitions(page: Page) {
+    return page.evaluate(async () => {
+      const sheet = document.querySelector('[data-testid="planner-sheet"]')!;
+      (
+        document.querySelector(
+          '[data-testid="planner-detent-full"]',
+        ) as HTMLButtonElement
+      ).click();
+      // A transition is created at the next style recalculation, not on the
+      // click. One frame to let React commit the new detent, one for the
+      // browser to start the transition — both well inside its 320ms.
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      return sheet.getAnimations().map((animation) => ({
+        property: (animation as CSSTransition).transitionProperty ?? null,
+        duration: Number(animation.effect?.getTiming().duration ?? 0),
+      }));
+    });
+  }
+
   test("slides the sheet height when motion is allowed", async ({ page }) => {
     await gotoPlanner(page);
     await expect(page.getByTestId("planner")).toHaveAttribute(
       "data-motion",
       "full",
     );
-    const heights = await sampleDetentChange(page);
-    // A real transition passes through intermediate heights.
-    expect(heights.length).toBeGreaterThan(3);
+    // A real slide: the browser is running a height transition that takes time.
+    const transitions = await detentTransitions(page);
+    const height = transitions.find((t) => t.property === "height");
+    expect(height).toBeDefined();
+    expect(height!.duration).toBeGreaterThan(0);
     const animation = await page
       .getByTestId("planner-sheet-content")
       .evaluate((element) => getComputedStyle(element).animationName);
@@ -377,6 +445,10 @@ test.describe("c-4 accessibility modes", () => {
       .getByTestId("planner-sheet")
       .evaluate((element) => getComputedStyle(element).transitionProperty);
     expect(transition).not.toContain("height");
+
+    // Nothing animates the height at all — not merely too fast to sample.
+    const transitions = await detentTransitions(page);
+    expect(transitions.filter((t) => t.property === "height")).toEqual([]);
 
     const heights = await sampleDetentChange(page);
     // Only the height it left and the height it landed on.
