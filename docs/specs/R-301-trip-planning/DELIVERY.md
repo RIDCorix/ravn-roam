@@ -71,3 +71,76 @@ pnpm --filter @roam/web exec playwright test e2e/trip-planner.spec.ts
 ```
 
 Baselines are macOS baselines (`-darwin` suffix). A Linux CI run needs its own.
+
+## Reaching it for UAT (added after the first UAT round)
+
+The first UAT round could not run a single gesture check, and the reason was
+not the gestures. Two things were in the way, and both are fixed here.
+
+**1. The route could not survive a production build.** `StorefrontShell`
+reads `useSearchParams()` to carry the query string across navigation. The
+storefront routes never trip the static-generation bailout because Supabase
+makes them dynamic; this fixture has no backend, so Next tried to prerender
+it and `next build` failed outright on `/en/dev/trip-planner`. That failure
+was invisible for as long as the page called `notFound()` in production —
+the build never got far enough to render it. The route is now
+`export const dynamic = "force-dynamic"`, which is also what UAT wants:
+complete server-rendered HTML with the navigation already in it, rather than
+a Suspense fallback swapping out under the sheet mid-gesture.
+
+**2. The route deliberately 404'd in production.** Every other `/dev`
+fixture still does, and should. This one is the exception, because its
+remaining criteria — first frame on press, 1:1 tracking, mid-drag reversal,
+release velocity — can only be judged by a human on a real phone against the
+deployed build. A surface that 404s cannot be pressed; c-7 was not failing,
+it was unobservable.
+
+The access decision is in `apps/web/src/app/[lang]/dev/uat-fixture-access.ts`:
+
+- The trip is built in memory by `fixture-trip.ts`. The page reads no
+  backend, writes nothing, and no credential reaches it.
+- Nothing in the product links to it, and there is no sitemap entry.
+- It is served `noindex, nofollow, nocache`, so search cannot surface it.
+- `ROAM_DISABLE_UAT_FIXTURES=1` in the deployment environment takes it back
+  down after sign-off, with no code change. Verified: with the flag set, the
+  route 404s and `/zh-TW/shop` still serves 200.
+
+**The UAT URL is an app URL, not a dashboard URL.** `roam-system` is the
+Vercel project whose root directory is `apps/web` (`.ravn/project.yaml`), and
+it is public — `/zh-TW`, `/zh-TW/shop` and `/zh-TW/trips` all served 200
+during this round while `/zh-TW/dev/trip-planner` was the only 404. Once this
+commit deploys, the surface to hand the UAT operator is:
+
+```
+https://<roam-system-deployment>.vercel.app/zh-TW/dev/trip-planner
+```
+
+`roam-web` is a different project rooted at `apps/landing` and has
+Deployment Protection on; it never had this route and is not the UAT target.
+
+## Running the acceptance suite the way UAT sees it
+
+```
+pnpm --filter @roam/web e2e        # next dev — all fixtures, 27 checks
+pnpm --filter @roam/web e2e:prod   # next build + next start — planner only, 22 checks
+```
+
+`e2e:prod` exists because the whole first UAT round was lost to a difference
+between the two. The other `/dev` fixtures 404 in production by design, so
+only the planner spec runs there. `c-0` asserts the surface is reachable,
+`noindex`, and server-renders its navigation in whichever build is under
+test.
+
+## A defect found in production mode, not fixed here
+
+The bottom navigation's "tasks" tab points at `/{lang}/tasks`, and no such
+route exists — in any commit, including this branch's base `cda9665`. It is
+invisible in `next dev`, which does not prefetch, and produces a console
+resource 404 in production, where Next prefetches every nav link. A signed-in
+user who taps that tab on a real phone gets a 404 page.
+
+It is pre-existing and shared across every signed-in surface, and removing a
+tab would change the navigation this ticket was told to compose against and
+invalidate all four visual baselines, so it is reported rather than fixed.
+`c-1` names it explicitly: the check now records failing request *URLs* and
+allows only this one, so a genuine planner 404 still fails — by name.

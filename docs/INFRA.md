@@ -124,6 +124,17 @@ role, **not** a separate Supabase project. See
 | `EVENT_CRAWLER_PROVIDER`        | `services/api`                 | Server only      | No              | (n/a — `gemini` or `openai`)                        |
 | `EVENT_CRAWLER_REQUEST_DELAY_MS` | `services/api`                 | Server only      | No              | (n/a — optional crawler pacing)                     |
 | `EVENT_CRAWLER_MAX_RETRIES`      | `services/api`                 | Server only      | No              | (n/a — defaults to `4`)                             |
+| `ROAM_DISABLE_UAT_FIXTURES`     | `apps/web`                     | Server only      | No              | (n/a — set to `1` to take the R-301 planner UAT fixture down) |
+
+> **`ROAM_DISABLE_UAT_FIXTURES` gates one route, deliberately.**
+> `/[lang]/dev/trip-planner` is the only `/dev` fixture that survives a
+> production build. R-301's remaining acceptance criteria are gestures that
+> only a human on a real phone can judge, against the deployed build, so the
+> surface has to be reachable there. It reads no backend, writes nothing,
+> holds no credential, is linked from nowhere, and is served
+> `noindex, nofollow`. Set this to `1` once UAT signs off. Every other `/dev`
+> fixture still 404s in production unconditionally. See
+> `apps/web/src/app/[lang]/dev/uat-fixture-access.ts`.
 
 > **`ROAM_API_URL` and `ADMIN_API_TOKEN` are not optional in production.**
 > Without `ROAM_API_URL` the admin pages SSR-fetch `http://localhost:3001`
