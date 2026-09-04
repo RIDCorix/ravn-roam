@@ -160,6 +160,12 @@ async function record(page: Page, on: boolean) {
   }, on);
 }
 
+async function clearPresses(page: Page) {
+  await page.evaluate(() => {
+    window.__r301.presses = [];
+  });
+}
+
 async function readProbe(page: Page): Promise<Probe> {
   return page.evaluate(
     () => JSON.parse(JSON.stringify(window.__r301)) as Probe,
@@ -332,9 +338,9 @@ test.describe("c-7 sheet gesture under real touch input", () => {
   }) => {
     const touch = touchDriver(await page.context().newCDPSession(page));
     const heights = await detents(page);
-    const grab = await grabPoint(page);
 
     await settleTo(page, "plan");
+    const grab = await grabPoint(page);
 
     // The grabber has to opt out of browser scrolling explicitly. It happens
     // not to be load-bearing in today's layout — the planner owns the
@@ -373,7 +379,9 @@ test.describe("c-7 sheet gesture under real touch input", () => {
     }
     await touch.up(grab.x, grab.y + 40);
 
-    const press = (await readProbe(page)).presses[0]!;
+    const presses = (await readProbe(page)).presses;
+    expect(presses, "the touch must land on the grabber").toHaveLength(1);
+    const press = presses[0]!;
 
     // Measured inside the pointerdown listener: the sheet the finger landed
     // on versus the sheet one frame later, with no CDP round trip in
@@ -398,31 +406,54 @@ test.describe("c-7 sheet gesture under real touch input", () => {
   }) => {
     const touch = touchDriver(await page.context().newCDPSession(page));
     const heights = await detents(page);
-    const grab = await grabPoint(page);
 
-    await settleTo(page, "plan");
-    await record(page, true);
+    // Grab a real height transition while it is still running.
+    //
+    // Aiming at a moving 28px target is the awkward part, and it is a
+    // harness problem rather than a product one: the handle rides the top of
+    // the sheet, which climbs ~224px on the way to `full` at up to 1.6px/ms,
+    // so a grab point is only valid for the instant it was read. A point
+    // read *before* the click is stale by the whole transition and misses
+    // the handle entirely — which is what made this fail on the CI runner
+    // and pass here. Read it after the click, and if the round trip was slow
+    // enough that the touch still missed, say so and re-aim rather than
+    // reporting it as a defect.
+    let grab = await grabPoint(page);
+    let press: Press | undefined;
 
-    // Start a real height transition and grab it while it is still running.
-    await page.getByTestId("planner-detent-full").click();
-    await touch.down(grab.x, grab.y);
+    for (let attempt = 0; attempt < 5 && !press; attempt += 1) {
+      await settleTo(page, "plan");
+      await clearPresses(page);
+      await record(page, true);
+
+      await page.getByTestId("planner-detent-full").click();
+      grab = await grabPoint(page);
+      await touch.down(grab.x, grab.y);
+
+      // One frame has to pass before the probe can report where the sheet
+      // ended up, since that is read from a requestAnimationFrame callback.
+      await sheetOnNextFrame(page);
+      const landed = (await readProbe(page)).presses;
+      if (landed.length === 1) press = landed[0];
+      else await touch.up(grab.x, grab.y);
+    }
+    expect(press, "the touch must land on the moving grabber").toBeTruthy();
     const pressed = await sheetOnNextFrame(page);
 
-    const press = (await readProbe(page)).presses[0]!;
-    expect(press.pointerType).toBe("touch");
+    expect(press!.pointerType).toBe("touch");
     expect(
-      press.runningBefore,
+      press!.runningBefore,
       "the press must land while the sheet is still animating",
     ).toBeGreaterThan(0);
     // Continuity across the takeover: the sheet the finger grabbed is the
     // sheet it holds a frame later — no snap to either end of the animation
     // it interrupted. Both readings are taken in-page, one frame apart.
     expect(
-      Math.abs(press.after - press.before),
+      Math.abs(press!.after - press!.before),
       "takeover must not seam",
     ).toBeLessThanOrEqual(4);
-    expect(press.before).toBeGreaterThan(heights.plan - 4);
-    expect(press.before).toBeLessThan(heights.full + 4);
+    expect(press!.before).toBeGreaterThan(heights.plan - 4);
+    expect(press!.before).toBeLessThan(heights.full + 4);
     expect(pressed.dragging).toBe(true);
     expect(pressed.running, "the old animation must be dropped").toBe(0);
 
@@ -465,7 +496,7 @@ test.describe("c-7 sheet gesture under real touch input", () => {
     await record(page, false);
     // Once the finger is down, no frame of the drag is animation-driven.
     const animated = probe.frames.filter(
-      (frame) => frame.running > 0 && frame.t > press.t,
+      (frame) => frame.running > 0 && frame.t > press!.t,
     );
     expect(animated).toEqual([]);
   });
@@ -515,9 +546,9 @@ test.describe("c-7 sheet gesture under real touch input", () => {
     }, testInfo) => {
       const touch = touchDriver(await page.context().newCDPSession(page));
       const heights = await detents(page);
-      const grab = await grabPoint(page);
 
       await settleTo(page, "plan");
+      const grab = await grabPoint(page);
       const cadence = await frameCadence(page);
       await record(page, true);
 
