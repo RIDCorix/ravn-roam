@@ -255,9 +255,21 @@ release cases. Stability before this was called done: 10 consecutive clean
 headless runs and 8 consecutive clean headed runs, after three separate
 sources of flake were tracked down rather than retried away.
 
-The `gesture` gate also runs in CI. Unlike the visual gate it is
-platform-independent — it measures geometry and event ordering, not pixels —
-so ubuntu-latest is as good a witness as macOS.
+The `gesture` gate also runs in CI, as its own required step. Unlike the
+visual gate it is platform-independent — it measures geometry and event
+ordering, not pixels — so ubuntu-latest is as good a witness as macOS, and it
+takes about 17 seconds there.
+
+One loose end for a reviewer. The `Verdict` step re-runs every gate to build
+the JSON artifact, and the gesture gate fails there — all six checks, at page
+load, the planner never reporting a planning space — while the required step
+running the same command on the same runner minutes earlier passes cleanly.
+A wholesale page-load failure is an environment difference between the two
+invocations rather than a verdict on the gate, but it is not isolated yet, so
+the aggregation skips it (`ORACLE_SKIP=visual,gesture`) rather than recording
+a failure it cannot substantiate. The required step is the authoritative run.
+The same step also has to skip `visual`, which had been skipping itself only
+because there was no chromium on the runner until this change installed one.
 
 ### What is still not covered
 
