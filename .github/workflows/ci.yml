@@ -56,6 +56,17 @@ jobs:
       - name: Smoke — boot the build and drive its routes
         run: ./scripts/oracle/run.sh --only smoke
 
+      # Unlike the visual gate below, this one is platform-independent: it measures
+      # geometry and event ordering, not pixels, so the ubuntu runner is as good a
+      # witness as macOS. It is here because R-301 spent two UAT rounds unable to
+      # answer "does the sheet follow the finger" — the acceptance suite drove a
+      # mouse, which never takes the touch path at all.
+      - name: Install Playwright chromium
+        run: pnpm --filter @roam/web exec playwright install --with-deps chromium
+
+      - name: Gesture — drive the sheet with real touch input
+        run: ./scripts/oracle/run.sh --only gesture
+
       # The visual gate deliberately does NOT run here yet. Font rasterisation differs
       # between macOS and ubuntu-latest, so the committed darwin baselines would fail
       # on this runner for reasons that have nothing to do with the design — and a gate

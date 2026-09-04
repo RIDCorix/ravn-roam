@@ -61,6 +61,7 @@ gate_install() { pnpm install --frozen-lockfile; }
 gate_verify()  { pnpm verify:ci; }
 gate_build()   { pnpm -r --if-present build; }
 gate_smoke()   { bash "$ROOT/scripts/oracle/smoke.sh"; }
+gate_gesture() { bash "$ROOT/scripts/oracle/gesture.sh"; }
 gate_visual()  { bash "$ROOT/scripts/oracle/visual.sh"; }
 
 run_gate install "dependencies match the lockfile"      gate_install
@@ -68,6 +69,7 @@ run_gate verify  "pnpm verify:ci (typecheck/lint/test/audit)" gate_verify
 if [ "$FAST" = 0 ]; then
   run_gate build "every package builds from clean"      gate_build
   run_gate smoke  "the built app boots and serves its routes" gate_smoke
+  run_gate gesture "the sheet follows a real finger" gate_gesture
   run_gate visual "every route matches its committed baseline"  gate_visual
 fi
 
