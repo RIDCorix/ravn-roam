@@ -81,8 +81,15 @@ jobs:
       # - run: pnpm --filter @roam/web exec playwright install --with-deps chromium chromium-headless-shell
       # - run: ./scripts/oracle/run.sh --only visual
 
+      # ORACLE_SKIP=visual because this step runs every gate, and the visual one is
+      # deliberately not run here (see above). It used to skip itself by accident —
+      # there was no chromium on the runner for it to use — and the gesture gate's
+      # install changed that, turning a fast bogus failure into ten real minutes of
+      # writing baselines nobody will keep.
       - name: Verdict
         if: always()
+        env:
+          ORACLE_SKIP: visual
         run: ./scripts/oracle/run.sh --json > oracle.json || true
 
       - uses: actions/upload-artifact@v4
