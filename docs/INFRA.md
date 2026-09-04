@@ -132,8 +132,10 @@ role, **not** a separate Supabase project. See
 > only a human on a real phone can judge, against the deployed build, so the
 > surface has to be reachable there. It reads no backend, writes nothing,
 > holds no credential, is linked from nowhere, and is served
-> `noindex, nofollow`. Set this to `1` once UAT signs off. Every other `/dev`
-> fixture still 404s in production unconditionally. See
+> `noindex, nofollow`. Set this to `1` once UAT signs off — and in the same
+> change drop `/zh-TW/dev/trip-planner` from `scripts/oracle/routes.json`,
+> because the smoke gate drives that route and a disabled fixture answers 404.
+> Every other `/dev` fixture still 404s in production unconditionally. See
 > `apps/web/src/app/[lang]/dev/uat-fixture-access.ts`.
 
 > **`ROAM_API_URL` and `ADMIN_API_TOKEN` are not optional in production.**
