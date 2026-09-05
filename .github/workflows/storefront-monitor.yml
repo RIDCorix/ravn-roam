@@ -98,23 +98,39 @@ jobs:
             [.checks[] | select(.status != "pass") | "\(.name)=\(.status)"]
             | join(", ") | if . == "" then "unknown" else . end
           ' report.json)
-          body=$(printf '%s\n\n%s\n\n```json\n%s\n```\n' \
+          # Identifies the state, so a repeat of the same state can be
+          # recognised on the next run. Invisible in rendered markdown.
+          marker="<!-- storefront-monitor-state: $severity $summary -->"
+          body=$(printf '%s\n\n%s\n\n```json\n%s\n```\n\n%s\n' \
             "Automated probe of \`$BASE_URL\` reports **$severity**: $summary" \
             "Triage: docs/RUNBOOK-storefront.md — start at \`/readyz\`. Run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)." \
-            "$(cat report.json)")
+            "$(cat report.json)" "$marker")
 
           gh label create "$ALERT_LABEL" --color B60205 \
             --description "Automated storefront availability alert" 2>/dev/null || true
 
           existing=$(gh issue list --state open --label "$ALERT_LABEL" \
             --json number --jq '.[0].number // empty')
-          if [ -n "$existing" ]; then
-            # Keep one issue per outage so a 15-minute cron does not spam.
-            gh issue comment "$existing" --body "$body"
-          else
+          if [ -z "$existing" ]; then
             gh issue create --label "$ALERT_LABEL" \
               --title "Storefront $severity: $summary" --body "$body"
+            exit 0
           fi
+
+          # One issue per outage, and one comment per *change* of state.
+          # A storefront can sit in the same non-green state for a long time
+          # — an empty catalog after a rebuild, say — and a 15-minute cron
+          # commenting each round would bury the transition that matters.
+          latest=$(gh issue view "$existing" --json body,comments \
+            --jq '[.body] + [.comments[].body] | .[-1]')
+          if printf '%s' "$latest" | grep -qF "$marker"; then
+            echo "Unchanged since the last run ($severity: $summary);" \
+              "issue #$existing already reports it. Not commenting."
+            exit 0
+          fi
+
+          gh issue comment "$existing" --body "$body"
+          gh issue edit "$existing" --title "Storefront $severity: $summary"
 
       - name: Close the alert issue on recovery
         if: steps.probe.outputs.exit_code == '0'

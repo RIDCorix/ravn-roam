@@ -14,7 +14,7 @@
 import { Hono } from "hono";
 import { sql } from "drizzle-orm";
 
-import { env } from "../env.js";
+import { deploymentSha, env } from "../env.js";
 import { getDb } from "../db/client.js";
 import { describeError } from "../errors.js";
 import { countServableProducts } from "./storefront-catalog.js";
@@ -66,6 +66,8 @@ export interface HealthRouterDeps {
   databaseUrlConfigured?: () => boolean;
   /** Structured log sink; injectable so tests can assert on the record. */
   log?: (line: string) => void;
+  /** Defaults to the real deployment commit; injectable for tests. */
+  sha?: () => string | null;
 }
 
 /**
@@ -130,8 +132,9 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
   const databaseUrlConfigured =
     deps.databaseUrlConfigured ?? (() => Boolean(env.DATABASE_URL));
   const log = deps.log ?? ((line: string) => console.error(line));
+  const sha = deps.sha ?? (() => deploymentSha());
 
-  router.get("/healthz", (c) => c.json({ ok: true, sha: env.GIT_SHA ?? null }));
+  router.get("/healthz", (c) => c.json({ ok: true, sha: sha() }));
 
   router.get("/readyz", async (c) => {
     const checks: ReadinessCheck[] = [];
@@ -140,7 +143,7 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
     const finish = () => {
       const ok = !checks.some((check) => check.status === "fail");
       return c.json(
-        { ok, sha: env.GIT_SHA ?? null, checks, catalog },
+        { ok, sha: sha(), checks, catalog },
         ok ? 200 : 503,
       );
     };

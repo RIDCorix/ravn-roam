@@ -18,8 +18,9 @@ both worth fixing:
 
 - The running deployment dated from **2026-07-22**; every deployment after it
   is `SKIPPED`, so the service had not shipped code in six weeks.
-- `GIT_SHA` is not set on the Railway service, so `/healthz` and `/readyz`
-  both report `"sha": null` and you cannot tell which build is live.
+- `GIT_SHA` was not set on the Railway service, so `/healthz` and `/readyz`
+  both reported `"sha": null` and you could not tell which build was live.
+  Fixed in code — see §6.
 
 ## 1. Read the symptom correctly
 
@@ -133,10 +134,51 @@ exists. Confirm in one command — a live project always resolves:
 dig +short <project-ref>.supabase.co    # empty output = the project is gone
 ```
 
-No code change can recover from this. It needs a database provisioned per
-`agent-rules/06-shared-supabase.md`, the `roam_poc` schema and role created,
-the migrations applied (§3b), and a fresh `DATABASE_URL` set on the Railway
+No code change can recover from this. It needs a database provisioned, the
+migrations applied (§3b), and a fresh `DATABASE_URL` set on the Railway
 service.
+
+**What was actually done on 2026-09-05.** The Supabase project was
+unrecoverable (deleted, not paused — no DNS at all, so no data to export), so
+production moved to a Railway-managed Postgres in the same project rather
+than waiting on a new Supabase project. The catalog was recreated empty; the
+old rows are gone.
+
+| | |
+|---|---|
+| Railway project | `roam-api` — `1fdb4724-ce23-4fca-b15b-5140748ba8f6` |
+| Environment | `production` — `5ac4517d-93d4-4ab5-a43e-bb02deb0352b` |
+| API service | `roam-api` — `db3e9109-8def-4b81-a948-618b8566572f` |
+| Database service | `Postgres` — `557bc61e-1df7-472f-8fde-9dddf8049901` |
+
+`DATABASE_URL` on the API service is a cross-service reference, so a
+credential rotation on the database propagates on the next deploy instead of
+silently breaking the API:
+
+```
+postgresql://${{Postgres.PGUSER}}:${{Postgres.POSTGRES_PASSWORD}}@${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{Postgres.PGDATABASE}}?sslmode=disable&options=--search_path%3Droam_poc%2Cpublic
+```
+
+`sslmode=disable` is correct *only* because `RAILWAY_PRIVATE_DOMAIN` is the
+project's private network, which never leaves Railway. Anything reaching the
+database over the public TCP proxy must use TLS.
+
+To run migrations or psql against it from a laptop you need the public TCP
+proxy (`altaria.proxy.rlwy.net`, port `12670`) rather than the private
+domain; `railway variables --service Postgres` has the credentials.
+
+Two consequences of no longer being on the shared Supabase project, both
+harmless today but worth knowing before someone re-reads
+`agent-rules/06-shared-supabase.md` and gets confused:
+
+- There is no `roam_poc_user` / `service_role` / `anon` role. The RLS
+  migration (`0001_catalog_rls.sql`) is written with role-existence guards,
+  so it applies cleanly and simply creates fewer policies. The API connects
+  as `postgres`, which owns the tables and is therefore exempt from RLS.
+- `SUPABASE_URL` / `SUPABASE_ANON_KEY` on the API service still point at the
+  dead project. They are only used to verify JWTs on `/trips/*`, so the
+  storefront is unaffected — but consumer trip auth is broken independently
+  of this incident and needs its own fix.
 
 ## 3b. Apply pending migrations
 
@@ -190,9 +232,15 @@ Monitoring is committed, not aspirational:
 `.github/workflows/storefront-monitor.yml` runs
 `pnpm --filter @roam/api monitor:storefront` every 15 minutes against the
 production origin and files a GitHub issue labelled `storefront-outage` when
-the storefront stops serving. A subsequent green run closes that issue, and
-repeat failures comment on the existing one rather than opening a new issue
-every quarter hour.
+the storefront stops serving. A subsequent green run closes that issue.
+
+Repeat non-green runs never open a second issue, and they only comment when
+the *state changes* — the alert body carries a hidden
+`<!-- storefront-monitor-state: ... -->` marker and the next run compares
+against it. This matters because a storefront can sit in one non-green state
+for days: after the 2026-09-05 rebuild the catalog was empty, which is a real
+`DEGRADED` worth an open issue but not worth 96 comments a day. You get one
+comment when it starts, one when it changes, one when it recovers.
 
 The probe checks, in order (`services/api/src/monitor/storefront-probe.ts`):
 
@@ -207,7 +255,12 @@ The probe checks, in order (`services/api/src/monitor/storefront-probe.ts`):
 
 Exit codes are the alerting contract: `0` serving, `1` hard failure (an
 endpoint is down or 5xx), `2` degraded (serving, but a warning needs a human —
-empty catalog, missing `GIT_SHA`), `3` no base URL configured.
+empty catalog, or a build that cannot name its commit), `3` no base URL
+configured.
+
+Note that an empty catalog holds the monitor at `2`, so the alert issue stays
+open until products are published. That is deliberate: an empty shop is a
+customer-facing problem even though every endpoint answers 200.
 
 Run it by hand during an incident — it needs nothing but network access:
 
@@ -222,11 +275,10 @@ pnpm --filter @roam/api monitor:storefront -- \
   else, set the repository variable `ROAM_API_URL` (Settings → Secrets and
   variables → Actions → Variables), or use `workflow_dispatch` with a
   `base_url` input.
-- Set `GIT_SHA` on the Railway service (Railway exposes the commit as
-  `RAILWAY_GIT_COMMIT_SHA`, so `GIT_SHA=${{RAILWAY_GIT_COMMIT_SHA}}` is
-  enough). Until then `liveness` reports `warn` on every run and the monitor
-  sits at "degraded" — deliberately, because an anonymous build is exactly the
-  position the 2026-09 triage was in.
+- Nothing. The deployment sha resolves itself on Railway (§6). `liveness`
+  reports `warn` only if a build somehow answers `/healthz` without a sha,
+  which is deliberate: an anonymous build is exactly the position the 2026-09
+  triage was in.
 - GitHub issue alerting needs no secret beyond the built-in `GITHUB_TOKEN`. If
   you want to be paged rather than emailed, subscribe a pager to the
   `storefront-outage` label; the issue body carries the full probe report.
@@ -240,3 +292,27 @@ mechanisms do not conflict.
 Railway's own healthcheck should stay on `/healthz`: it gates whether a deploy
 is allowed to replace the previous one, and a database problem must not block
 shipping the fix for that database problem.
+
+## 6. Which build is live
+
+`/healthz` and `/readyz` both report `sha`. It resolves, in order:
+
+1. `GIT_SHA`, if set to a non-blank value — for hosts that are not Railway.
+2. `RAILWAY_GIT_COMMIT_SHA`, which Railway injects into the container of every
+   git-sourced deployment.
+
+Nothing needs to be configured on Railway. **Do not** set
+`GIT_SHA=${{RAILWAY_GIT_COMMIT_SHA}}`: Railway renders deployment-scoped git
+variables to an empty string inside a variable reference, so that setting
+reports `sha: ""` — which looks configured, identifies nothing, and shadows
+the value that does work. This was tried on 2026-09-05 and is why the
+fallback is in code:
+
+```
+$ railway ssh --service roam-api "printenv | grep -E '^(GIT_SHA|RAILWAY_GIT_COMMIT_SHA)'"
+RAILWAY_GIT_COMMIT_SHA=2c46c487d4b6aa30fa0b728a8c846cbece89cad3
+GIT_SHA=
+```
+
+`sha: null` means the build genuinely cannot identify itself; the monitor
+reports `liveness: warn` for it.

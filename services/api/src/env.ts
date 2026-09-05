@@ -7,6 +7,13 @@ import { z } from "zod";
 const schema = z.object({
   PORT: z.coerce.number().int().positive().optional(),
   GIT_SHA: z.string().optional(),
+  // Railway injects this into the running container for every git-sourced
+  // deployment. It is NOT usable from a `${{RAILWAY_GIT_COMMIT_SHA}}`
+  // variable reference — Railway renders deployment-scoped git variables to
+  // an empty string there, which is exactly how the 2026-09 incident ended
+  // up with `sha: ""` after the documented fix was applied. Reading it
+  // directly is the only thing that works, and it removes the manual step.
+  RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
 
   DATABASE_URL: z.string().url().optional(),
 
@@ -45,3 +52,18 @@ const schema = z.object({
 export type Env = z.infer<typeof schema>;
 
 export const env: Env = schema.parse(process.env);
+
+export type ShaSource = Pick<Env, "GIT_SHA" | "RAILWAY_GIT_COMMIT_SHA">;
+
+/**
+ * The commit this process is running, or `null` when it genuinely cannot be
+ * determined. `GIT_SHA` wins so a non-Railway host can still declare it;
+ * Railway's own deploy-time variable is the fallback.
+ *
+ * Blank is treated as absent: an unresolved variable reference renders as
+ * `""`, and reporting `sha: ""` would look like a configured value while
+ * telling an on-call responder nothing.
+ */
+export function deploymentSha(source: ShaSource = env): string | null {
+  return source.GIT_SHA?.trim() || source.RAILWAY_GIT_COMMIT_SHA?.trim() || null;
+}
