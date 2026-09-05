@@ -4,7 +4,9 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
 import { env } from "./env.js";
+import { createErrorHandler } from "./errors.js";
 import { createAdminRouter } from "./routes/admin.js";
+import { createHealthRouter } from "./routes/health.js";
 import { collectionRouter } from "./routes/collection.js";
 import { ordersRouter } from "./routes/orders.js";
 import { productsRouter } from "./routes/products.js";
@@ -35,7 +37,14 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-app.get("/healthz", (c) => c.json({ ok: true, sha: env.GIT_SHA ?? null }));
+// Any route error that escapes a handler lands here: one structured JSON
+// line to the runtime log (method, path, Postgres SQLSTATE, plain-language
+// hint) and a correlation id to the caller.
+app.onError(createErrorHandler());
+
+// `/healthz` is liveness only; `/readyz` walks the storefront dependency
+// chain. See routes/health.ts.
+app.route("/", createHealthRouter());
 
 // Catalog admin surface. No auth in Phase 2 — `roam_poc_user` BYPASSes RLS,
 // see services/api/src/db/migrations/0001_catalog_rls.sql. Mounted before

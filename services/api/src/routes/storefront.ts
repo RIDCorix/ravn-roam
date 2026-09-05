@@ -2,6 +2,7 @@
 // shop pages need to render before the user signs in.
 //
 //   GET /storefront/products?destinations=JP                  → all live products covering JP
+//   (`destinations` is required; a request without it is a 400, not an empty list)
 //   GET /storefront/products?destinations=JP,KR&days=7        → narrow to a duration
 //   GET /storefront/products?destinations=JP&include_drafts=1 → include unpublished (dev)
 
@@ -15,6 +16,10 @@ import { env } from "../env.js";
 import { getDb } from "../db/client.js";
 import schema from "../db/schema/index.js";
 import { getUser, requireAuth } from "./_auth.js";
+import {
+  joinSupplyChain,
+  servableProductConditions,
+} from "./storefront-catalog.js";
 import {
   readSupplierItems,
   readSupplierOrderId,
@@ -288,7 +293,6 @@ storefrontRouter.get("/events", async (c) => {
 });
 
 storefrontRouter.get("/products", async (c) => {
-  const db = getDb();
   const url = new URL(c.req.url);
   const destinationsRaw = url.searchParams.get("destinations") ?? "";
   const days = url.searchParams.get("days");
@@ -299,62 +303,50 @@ storefrontRouter.get("/products", async (c) => {
     .map((d) => d.trim().toUpperCase())
     .filter(Boolean);
 
+  // `destinations` is required. Answering a paramless probe with a
+  // 200 + empty list used to make a completely broken data layer look like
+  // an empty catalog — that is exactly how the 2026-09 outage was first
+  // misread. Every real caller passes destinations (see
+  // apps/web shop-region-client.tsx), so say what is actually wrong.
   if (destinations.length === 0) {
-    return c.json({ products: [] });
-  }
-
-  const conditions = [
-    // Any of the requested ISO codes appears in the product's
-    // marketing_destinations. Drizzle's `arrayOverlaps` emits `&&` with
-    // proper text[] binding (a raw sql tag template doesn't auto-cast
-    // a JS string[] to a postgres array).
-    arrayOverlaps(schema.product.marketingDestinations, destinations),
-    eq(schema.productSupplierMapping.enabled, true),
-    eq(schema.supplierPlan.available, true),
-    eq(schema.supplierPlan.adminEnabled, true),
-    eq(schema.supplier.code, "fastmove"),
-  ];
-  // By default exclude archived; drafts are still visible during the
-  // pre-launch window so ops can preview without publishing each SKU.
-  if (!includeDrafts) {
-    conditions.push(
-      inArray(schema.product.publicationState, [
-        "draft",
-        "published",
-      ] as never[]),
+    return c.json(
+      {
+        error: {
+          message:
+            "`destinations` is required — pass one or more ISO codes, e.g. ?destinations=JP",
+        },
+      },
+      400,
     );
   }
-  if (days) {
-    const n = Number(days);
-    if (Number.isFinite(n)) {
-      conditions.push(eq(schema.product.validityDays, Math.trunc(n)));
-    }
-  }
 
-  const rows = await db
-    .select({
-      id: schema.product.id,
-      slug: schema.product.slug,
-      displayNameI18n: schema.product.displayNameI18n,
-      marketingDestinations: schema.product.marketingDestinations,
-      dataAmountMb: schema.product.dataAmountMb,
-      validityDays: schema.product.validityDays,
-      pricing: schema.product.pricing,
-      tags: schema.product.tags,
-    })
-    .from(schema.product)
-    .innerJoin(
-      schema.productSupplierMapping,
-      eq(schema.productSupplierMapping.productId, schema.product.id),
-    )
-    .innerJoin(
-      schema.supplierPlan,
-      eq(schema.supplierPlan.id, schema.productSupplierMapping.supplierPlanId),
-    )
-    .innerJoin(
-      schema.supplier,
-      eq(schema.supplier.id, schema.supplierPlan.supplierId),
-    )
+  // Acquired only once the request is known to be valid — otherwise a
+  // missing DATABASE_URL turns a 400 into a 500.
+  const db = getDb();
+
+  // The predicate lives in ./storefront-catalog.ts so /readyz can count with
+  // exactly this definition of "servable" instead of an approximation.
+  const conditions = servableProductConditions({
+    destinations,
+    includeDrafts,
+    days,
+  });
+
+  const rows = await joinSupplyChain(
+    db
+      .select({
+        id: schema.product.id,
+        slug: schema.product.slug,
+        displayNameI18n: schema.product.displayNameI18n,
+        marketingDestinations: schema.product.marketingDestinations,
+        dataAmountMb: schema.product.dataAmountMb,
+        validityDays: schema.product.validityDays,
+        pricing: schema.product.pricing,
+        tags: schema.product.tags,
+      })
+      .from(schema.product)
+      .$dynamic(),
+  )
     .where(and(...conditions))
     .orderBy(asc(schema.product.validityDays), asc(schema.product.dataAmountMb))
     .limit(500);
