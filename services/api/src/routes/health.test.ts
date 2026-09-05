@@ -294,3 +294,32 @@ describe("/readyz does not leak internals", () => {
     expect(schema.detail).not.toContain("information_schema");
   });
 });
+
+describe("deployment identification", () => {
+  test("/healthz reports the deployment commit", async () => {
+    const res = await createHealthRouter({ sha: () => "abc1234" }).request(
+      "/healthz",
+    );
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ ok: true, sha: "abc1234" });
+  });
+
+  test("/healthz reports null — not '' — when the commit is unknown", async () => {
+    // A deployment that answers `sha: ""` looks configured but identifies
+    // nothing; the 2026-09 outage lost a day to exactly that ambiguity.
+    const res = await createHealthRouter({ sha: () => null }).request(
+      "/healthz",
+    );
+    await expect(res.json()).resolves.toEqual({ ok: true, sha: null });
+  });
+
+  test("/readyz carries the same commit as /healthz", async () => {
+    const result = await readyz({
+      databaseUrlConfigured: () => true,
+      probe: probe(),
+      sha: () => "abc1234",
+    });
+    expect(result.status).toBe(200);
+    expect(JSON.parse(result.raw).sha).toBe("abc1234");
+  });
+});

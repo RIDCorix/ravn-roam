@@ -130,12 +130,16 @@ export async function probeStorefront(
     const body = health.body as { sha?: string | null } | null;
     sha = body?.sha ?? null;
     record("liveness", "/healthz", health, {
-      // Without GIT_SHA every alert is anonymous: you cannot tell whether the
+      // Without a sha every alert is anonymous: you cannot tell whether the
       // fix you shipped is the code that is failing. That is worth a warning.
       status: sha ? "pass" : "warn",
       ...(sha
         ? {}
-        : { detail: "GIT_SHA is not set on this deployment — /healthz reports sha: null" }),
+        : {
+            detail:
+              "/healthz reports no sha — this build predates the automatic " +
+              "RAILWAY_GIT_COMMIT_SHA fallback, or GIT_SHA is set to an empty value",
+          }),
     });
   } else {
     record("liveness", "/healthz", health, {
