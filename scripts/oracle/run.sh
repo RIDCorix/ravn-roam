@@ -38,9 +38,21 @@ RESULTS=(); FAILED=0
 LOGDIR="${ORACLE_LOGDIR:-$(mktemp -d)}"; mkdir -p "$LOGDIR"
 say() { [ "$JSON" = 1 ] || printf '%s\n' "$*"; }
 
+# ORACLE_SKIP is a comma-separated list of gates to leave out. CI uses it for the
+# visual gate: that gate is deliberately not run there (see the workflow comment on
+# darwin-vs-linux baselines), and until the gesture gate needed a chromium install it
+# was "not run" only by accident, because there was no browser for it to fail with.
+# Accidental skips read as failures in the JSON verdict and take minutes to produce.
 run_gate() {
   local name="$1" desc="$2"; shift 2
   if [ -n "$ONLY" ] && [ "$ONLY" != "$name" ]; then return 0; fi
+  case ",${ORACLE_SKIP:-}," in
+    *",$name,"*)
+      say "── $name: $desc"
+      say "   SKIP (ORACLE_SKIP)"
+      RESULTS+=("{\"gate\":\"$name\",\"status\":\"skip\"}")
+      return 0 ;;
+  esac
   local log="$LOGDIR/$name.log" start=$SECONDS
   say "── $name: $desc"
   if "$@" >"$log" 2>&1; then
@@ -61,6 +73,7 @@ gate_install() { pnpm install --frozen-lockfile; }
 gate_verify()  { pnpm verify:ci; }
 gate_build()   { pnpm -r --if-present build; }
 gate_smoke()   { bash "$ROOT/scripts/oracle/smoke.sh"; }
+gate_gesture() { bash "$ROOT/scripts/oracle/gesture.sh"; }
 gate_visual()  { bash "$ROOT/scripts/oracle/visual.sh"; }
 
 run_gate install "dependencies match the lockfile"      gate_install
@@ -68,6 +81,7 @@ run_gate verify  "pnpm verify:ci (typecheck/lint/test/audit)" gate_verify
 if [ "$FAST" = 0 ]; then
   run_gate build "every package builds from clean"      gate_build
   run_gate smoke  "the built app boots and serves its routes" gate_smoke
+  run_gate gesture "the sheet follows a real finger" gate_gesture
   run_gate visual "every route matches its committed baseline"  gate_visual
 fi
 

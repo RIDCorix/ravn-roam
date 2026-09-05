@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "e2e": "playwright test",
     "e2e:prod": "ROAM_WEB_MODE=prod playwright test e2e/trip-planner.spec.ts",
+    "e2e:touch": "playwright test --project=mobile-touch",
+    "e2e:touch:60fps": "playwright test --project=mobile-touch --headed",
     "test": "vitest run"
   },
   "dependencies": {

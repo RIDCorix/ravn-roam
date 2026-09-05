@@ -55,6 +55,25 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      // The gesture spec needs a touchscreen; a desktop pointer cannot prove
+      // any of its assertions. It gets its own project below.
+      testIgnore: /trip-planner-touch\.spec\.ts/,
+    },
+    {
+      // R-301 c-7 only. A 390px phone with a real digitiser: `hasTouch` makes
+      // Chromium emit `touch` pointer events and honour `touch-action`, and
+      // `isMobile` applies the meta viewport the phone would. Keeping this
+      // separate from `chromium` also keeps it away from the committed visual
+      // baselines, which were recorded at DPR 1.
+      name: "mobile-touch",
+      testMatch: /trip-planner-touch\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 3,
+        isMobile: true,
+        hasTouch: true,
+      },
     },
   ],
 });
