@@ -15,6 +15,7 @@ import {
 } from "./health.js";
 
 const HEALTHY_CATALOG: CatalogInventory = {
+  servable_products: 12,
   published_products: 12,
   draft_products: 3,
   active_events: 4,
@@ -36,14 +37,22 @@ async function readyz(
   ok: boolean;
   checks: ReadinessCheck[];
   catalog: CatalogInventory | null;
+  /** Raw response text, for asserting on what did NOT leak into it. */
+  raw: string;
+  logs: string[];
 }> {
-  const res = await createHealthRouter(deps).request("/readyz");
-  const body = (await res.json()) as {
+  const logs: string[] = [];
+  const res = await createHealthRouter({
+    log: (line) => logs.push(line),
+    ...deps,
+  }).request("/readyz");
+  const raw = await res.text();
+  const body = JSON.parse(raw) as {
     ok: boolean;
     checks: ReadinessCheck[];
     catalog: CatalogInventory | null;
   };
-  return { status: res.status, ...body };
+  return { status: res.status, raw, logs, ...body };
 }
 
 function check(checks: ReadinessCheck[], name: string): ReadinessCheck {
@@ -166,6 +175,7 @@ describe("/readyz", () => {
       databaseUrlConfigured: () => true,
       probe: probe({
         countCatalog: async () => ({
+          servable_products: 0,
           published_products: 0,
           draft_products: 0,
           active_events: 0,
@@ -175,7 +185,37 @@ describe("/readyz", () => {
     expect(result.status).toBe(200);
     expect(result.ok).toBe(true);
     expect(check(result.checks, "catalog")).toMatchObject({ status: "warn" });
-    expect(result.catalog?.published_products).toBe(0);
+    expect(result.catalog?.servable_products).toBe(0);
+  });
+
+  /**
+   * The failure `/readyz` used to miss entirely. Every product is published,
+   * so a `publication_state` tally says the catalog is fine — but not one of
+   * them has an enabled supplier mapping with an available plan, so
+   * `/storefront/products` returns `[]` for every destination. The count now
+   * comes from the route's own predicate (see ./storefront-catalog.ts), so
+   * this reads as a warning instead of a pass.
+   */
+  test("warns when products are published but none are servable", async () => {
+    const result = await readyz({
+      databaseUrlConfigured: () => true,
+      probe: probe({
+        countCatalog: async () => ({
+          servable_products: 0,
+          published_products: 24,
+          draft_products: 2,
+          active_events: 6,
+        }),
+      }),
+    });
+    expect(result.status).toBe(200);
+    const catalog = check(result.checks, "catalog");
+    expect(catalog.status).toBe("warn");
+    // The detail has to point at the supplier chain, because that is where a
+    // published-but-unservable catalog actually breaks.
+    expect(catalog.detail).toContain("24 published");
+    expect(catalog.detail).toContain("supplier mappings");
+    expect(result.catalog?.servable_products).toBe(0);
   });
 
   test("does not throw out of the handler when a probe explodes", async () => {
@@ -188,9 +228,69 @@ describe("/readyz", () => {
       }),
     });
     expect(result.status).toBe(503);
-    expect(check(result.checks, "catalog")).toMatchObject({
-      status: "fail",
-      detail: "statement timeout",
+    expect(check(result.checks, "catalog").status).toBe("fail");
+  });
+});
+
+/**
+ * `/readyz` is unauthenticated. A driver error carries the database host, the
+ * role, and often a fragment of the failing statement; none of that may reach
+ * an anonymous caller, and all of it has to reach the log.
+ */
+describe("/readyz does not leak internals", () => {
+  const SECRET =
+    'password authentication failed for user "roam_poc_admin" at db.tthcypfhjipwtmumvsqs.supabase.co';
+
+  for (const stage of ["ping", "visibleRelations", "countCatalog"] as const) {
+    test(`keeps the raw driver message out of a ${stage} failure`, async () => {
+      const result = await readyz({
+        databaseUrlConfigured: () => true,
+        probe: probe({
+          [stage]: async () => {
+            throw new Error(SECRET);
+          },
+        } as Partial<ReadinessProbe>),
+      });
+      expect(result.status).toBe(503);
+      expect(result.raw).not.toContain(SECRET);
+      expect(result.raw).not.toContain("roam_poc_admin");
+      expect(result.raw).not.toContain("supabase.co");
+      // ...but an operator can still find it, in full, in the log.
+      const logged = result.logs.map(
+        (line) => JSON.parse(line) as { msg: string; message: string },
+      );
+      expect(logged.map((l) => l.msg)).toContain("readiness_check_failed");
+      expect(logged.map((l) => l.message)).toContain(SECRET);
     });
+  }
+
+  test("still returns the curated hint, which is safe to say out loud", async () => {
+    const result = await readyz({
+      databaseUrlConfigured: () => true,
+      probe: probe({
+        ping: async () => {
+          throw Object.assign(
+            new Error(`connect ENOTFOUND db.tthcypfhjipwtmumvsqs.supabase.co`),
+            { code: "ENOTFOUND" },
+          );
+        },
+      }),
+    });
+    expect(check(result.checks, "connection").detail).toContain("DNS lookup failed");
+    expect(result.raw).not.toContain("tthcypfhjipwtmumvsqs");
+  });
+
+  test("falls back to an opaque detail when the error is unrecognised", async () => {
+    const result = await readyz({
+      databaseUrlConfigured: () => true,
+      probe: probe({
+        visibleRelations: async () => {
+          throw new Error("SELECT table_name FROM information_schema.tables — boom");
+        },
+      }),
+    });
+    const schema = check(result.checks, "schema");
+    expect(schema.detail).toContain("readiness_check_failed");
+    expect(schema.detail).not.toContain("information_schema");
   });
 });

@@ -1,0 +1,142 @@
+# Standing monitor for the public storefront.
+#
+# The 2026-09-05 outage was found by a person opening the shop, not by a check.
+# This job is the check: it runs the same probe an engineer would run during an
+# incident, on a schedule, and files/updates a GitHub issue when the storefront
+# stops serving. See docs/RUNBOOK-storefront.md §5.
+#
+# Alerting deliberately uses GitHub issues rather than a third-party uptime
+# service: it needs no account, no secret beyond GITHUB_TOKEN, and lands where
+# the on-call already looks. Point a real pager at the issue label if you want
+# to be woken up.
+
+name: Storefront monitor
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub delays scheduled runs under load, so treat this
+    # as "within the hour" detection, not a second-by-second SLA.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "API origin to probe (defaults to the production URL)"
+        required: false
+        type: string
+
+# Only the alerting needs write access.
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: storefront-monitor
+  cancel-in-progress: false
+
+env:
+  # Repository variable `ROAM_API_URL` wins; the literal is the production
+  # Railway origin so the monitor works before anyone configures anything.
+  BASE_URL: ${{ inputs.base_url || vars.ROAM_API_URL || 'https://roam-api-production-ff71.up.railway.app' }}
+  ALERT_LABEL: storefront-outage
+
+jobs:
+  probe:
+    name: Probe the storefront
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Probe
+        id: probe
+        run: |
+          # `--out` rather than `>`: on a non-zero exit pnpm appends its own
+          # failure trailer to stdout, which would corrupt the JSON artifact.
+          set +e
+          pnpm --silent --filter @roam/api monitor:storefront -- \
+            --base-url "$BASE_URL" --out "$GITHUB_WORKSPACE/report.json"
+          code=$?
+          set -e
+          if [ ! -s report.json ]; then
+            echo "{\"ok\":false,\"checks\":[{\"name\":\"probe\",\"status\":\"fail\"}]}" > report.json
+          fi
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Storefront probe — \`$BASE_URL\`"
+            echo
+            echo '```json'
+            cat report.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update the alert issue
+        if: steps.probe.outputs.exit_code != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXIT_CODE: ${{ steps.probe.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          severity=$([ "$EXIT_CODE" = "1" ] && echo "FAILING" || echo "DEGRADED")
+          # jq is preinstalled on GitHub-hosted runners.
+          summary=$(jq -r '
+            [.checks[] | select(.status != "pass") | "\(.name)=\(.status)"]
+            | join(", ") | if . == "" then "unknown" else . end
+          ' report.json)
+          body=$(printf '%s\n\n%s\n\n```json\n%s\n```\n' \
+            "Automated probe of \`$BASE_URL\` reports **$severity**: $summary" \
+            "Triage: docs/RUNBOOK-storefront.md — start at \`/readyz\`. Run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)." \
+            "$(cat report.json)")
+
+          gh label create "$ALERT_LABEL" --color B60205 \
+            --description "Automated storefront availability alert" 2>/dev/null || true
+
+          existing=$(gh issue list --state open --label "$ALERT_LABEL" \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            # Keep one issue per outage so a 15-minute cron does not spam.
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --label "$ALERT_LABEL" \
+              --title "Storefront $severity: $summary" --body "$body"
+          fi
+
+      - name: Close the alert issue on recovery
+        if: steps.probe.outputs.exit_code == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for number in $(gh issue list --state open --label "$ALERT_LABEL" \
+            --json number --jq '.[].number'); do
+            gh issue close "$number" \
+              --comment "Storefront probe is green again ($BASE_URL). Closed automatically by the monitor."
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storefront-probe-report
+          path: report.json
+          if-no-files-found: ignore
+
+      - name: Fail the run when the storefront is not serving
+        if: steps.probe.outputs.exit_code == '1'
+        run: |
+          echo "storefront probe reported a hard failure — see the alert issue" >&2
+          exit 1

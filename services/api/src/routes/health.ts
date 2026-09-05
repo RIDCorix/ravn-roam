@@ -17,6 +17,7 @@ import { sql } from "drizzle-orm";
 import { env } from "../env.js";
 import { getDb } from "../db/client.js";
 import { describeError } from "../errors.js";
+import { countServableProducts } from "./storefront-catalog.js";
 
 /** Relations every storefront read path depends on. */
 export const STOREFRONT_RELATIONS = [
@@ -28,6 +29,15 @@ export const STOREFRONT_RELATIONS = [
 ] as const;
 
 export interface CatalogInventory {
+  /**
+   * Products `GET /storefront/products` could actually return, counted with
+   * that route's own predicate (see ./storefront-catalog.ts): live publication
+   * state, an enabled supplier mapping, an available + admin-enabled supplier
+   * plan, and at least one marketing destination. This is the number that
+   * decides whether the shop renders anything.
+   */
+  servable_products: number;
+  /** Raw publication-state tallies, for context when `servable_products` is 0. */
   published_products: number;
   draft_products: number;
   active_events: number;
@@ -54,7 +64,18 @@ export interface HealthRouterDeps {
   probe?: ReadinessProbe;
   /** Defaults to the real `DATABASE_URL` from env. */
   databaseUrlConfigured?: () => boolean;
+  /** Structured log sink; injectable so tests can assert on the record. */
+  log?: (line: string) => void;
 }
+
+/**
+ * `/readyz` is unauthenticated, so a failure detail may only ever be one of
+ * our own curated hints. A driver message can carry the host, the role, the
+ * database name or a fragment of the failing statement — that belongs in the
+ * log, not in a public response body.
+ */
+const OPAQUE_DETAIL =
+  "check failed — see this deployment's log for msg=readiness_check_failed";
 
 // `db.execute` hands back the driver's raw result, which is an array on
 // postgres-js but a `{ rows }` envelope on node-postgres. Accept both.
@@ -81,8 +102,12 @@ function drizzleProbe(): ReadinessProbe {
       return rows.map((r) => r.table_name);
     },
     async countCatalog() {
-      const rows = resultRows<CatalogInventory>(
-        await getDb().execute(sql`
+      const db = getDb();
+      // The number that matters comes from the storefront's own predicate,
+      // not from a publication_state tally that ignores the supplier chain.
+      const servable = await countServableProducts(db);
+      const rows = resultRows<Omit<CatalogInventory, "servable_products">>(
+        await db.execute(sql`
           SELECT
             (SELECT count(*) FROM roam_poc.product WHERE publication_state = 'published')::int AS published_products,
             (SELECT count(*) FROM roam_poc.product WHERE publication_state = 'draft')::int     AS draft_products,
@@ -91,6 +116,7 @@ function drizzleProbe(): ReadinessProbe {
       );
       const row = rows[0];
       return {
+        servable_products: servable,
         published_products: Number(row?.published_products ?? 0),
         draft_products: Number(row?.draft_products ?? 0),
         active_events: Number(row?.active_events ?? 0),
@@ -103,6 +129,7 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
   const router = new Hono();
   const databaseUrlConfigured =
     deps.databaseUrlConfigured ?? (() => Boolean(env.DATABASE_URL));
+  const log = deps.log ?? ((line: string) => console.error(line));
 
   router.get("/healthz", (c) => c.json({ ok: true, sha: env.GIT_SHA ?? null }));
 
@@ -119,6 +146,24 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
     };
     const skip = (...names: string[]) => {
       for (const name of names) checks.push({ name, status: "skip" });
+    };
+    // Record the failure in full, expose only what is safe to say out loud.
+    const failed = (name: string, err: unknown) => {
+      const described = describeError(err);
+      log(
+        JSON.stringify({
+          level: "error",
+          msg: "readiness_check_failed",
+          check: name,
+          ...described,
+          stack: err instanceof Error ? err.stack : undefined,
+        }),
+      );
+      checks.push({
+        name,
+        status: "fail",
+        detail: described.hint ?? OPAQUE_DETAIL,
+      });
     };
 
     if (!databaseUrlConfigured()) {
@@ -138,12 +183,7 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
       await probe.ping();
       checks.push({ name: "connection", status: "pass" });
     } catch (err) {
-      const described = describeError(err);
-      checks.push({
-        name: "connection",
-        status: "fail",
-        detail: described.hint ?? described.message,
-      });
+      failed("connection", err);
       skip("schema", "catalog");
       return finish();
     }
@@ -152,12 +192,7 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
     try {
       relations = await probe.visibleRelations();
     } catch (err) {
-      const described = describeError(err);
-      checks.push({
-        name: "schema",
-        status: "fail",
-        detail: described.hint ?? described.message,
-      });
+      failed("schema", err);
       skip("catalog");
       return finish();
     }
@@ -179,12 +214,7 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
     try {
       catalog = await probe.countCatalog();
     } catch (err) {
-      const described = describeError(err);
-      checks.push({
-        name: "catalog",
-        status: "fail",
-        detail: described.hint ?? described.message,
-      });
+      failed("catalog", err);
       return finish();
     }
     // An empty catalog is a content problem, not a reason to pull the
@@ -192,11 +222,14 @@ export function createHealthRouter(deps: HealthRouterDeps = {}): Hono {
     // must not roll back a deploy because ops has not published a SKU yet.
     // It is still surfaced so an external monitor can alert on it.
     checks.push(
-      catalog.published_products === 0
+      catalog.servable_products === 0
         ? {
             name: "catalog",
             status: "warn",
-            detail: "no published products — the shop will render empty",
+            detail:
+              "no servable products — the shop will render empty " +
+              `(${catalog.published_products} published / ${catalog.draft_products} draft ` +
+              "exist, so check supplier mappings, plan availability and marketing_destinations)",
           }
         : { name: "catalog", status: "pass" },
     );
