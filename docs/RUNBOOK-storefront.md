@@ -232,9 +232,15 @@ Monitoring is committed, not aspirational:
 `.github/workflows/storefront-monitor.yml` runs
 `pnpm --filter @roam/api monitor:storefront` every 15 minutes against the
 production origin and files a GitHub issue labelled `storefront-outage` when
-the storefront stops serving. A subsequent green run closes that issue, and
-repeat failures comment on the existing one rather than opening a new issue
-every quarter hour.
+the storefront stops serving. A subsequent green run closes that issue.
+
+Repeat non-green runs never open a second issue, and they only comment when
+the *state changes* — the alert body carries a hidden
+`<!-- storefront-monitor-state: ... -->` marker and the next run compares
+against it. This matters because a storefront can sit in one non-green state
+for days: after the 2026-09-05 rebuild the catalog was empty, which is a real
+`DEGRADED` worth an open issue but not worth 96 comments a day. You get one
+comment when it starts, one when it changes, one when it recovers.
 
 The probe checks, in order (`services/api/src/monitor/storefront-probe.ts`):
 
@@ -249,7 +255,12 @@ The probe checks, in order (`services/api/src/monitor/storefront-probe.ts`):
 
 Exit codes are the alerting contract: `0` serving, `1` hard failure (an
 endpoint is down or 5xx), `2` degraded (serving, but a warning needs a human —
-empty catalog, missing `GIT_SHA`), `3` no base URL configured.
+empty catalog, or a build that cannot name its commit), `3` no base URL
+configured.
+
+Note that an empty catalog holds the monitor at `2`, so the alert issue stays
+open until products are published. That is deliberate: an empty shop is a
+customer-facing problem even though every endpoint answers 200.
 
 Run it by hand during an incident — it needs nothing but network access:
 
