@@ -2,6 +2,7 @@
 // shop pages need to render before the user signs in.
 //
 //   GET /storefront/products?destinations=JP                  → all live products covering JP
+//   (`destinations` is required; a request without it is a 400, not an empty list)
 //   GET /storefront/products?destinations=JP,KR&days=7        → narrow to a duration
 //   GET /storefront/products?destinations=JP&include_drafts=1 → include unpublished (dev)
 
@@ -288,7 +289,6 @@ storefrontRouter.get("/events", async (c) => {
 });
 
 storefrontRouter.get("/products", async (c) => {
-  const db = getDb();
   const url = new URL(c.req.url);
   const destinationsRaw = url.searchParams.get("destinations") ?? "";
   const days = url.searchParams.get("days");
@@ -299,9 +299,26 @@ storefrontRouter.get("/products", async (c) => {
     .map((d) => d.trim().toUpperCase())
     .filter(Boolean);
 
+  // `destinations` is required. Answering a paramless probe with a
+  // 200 + empty list used to make a completely broken data layer look like
+  // an empty catalog — that is exactly how the 2026-09 outage was first
+  // misread. Every real caller passes destinations (see
+  // apps/web shop-region-client.tsx), so say what is actually wrong.
   if (destinations.length === 0) {
-    return c.json({ products: [] });
+    return c.json(
+      {
+        error: {
+          message:
+            "`destinations` is required — pass one or more ISO codes, e.g. ?destinations=JP",
+        },
+      },
+      400,
+    );
   }
+
+  // Acquired only once the request is known to be valid — otherwise a
+  // missing DATABASE_URL turns a 400 into a 500.
+  const db = getDb();
 
   const conditions = [
     // Any of the requested ISO codes appears in the product's
