@@ -26,6 +26,25 @@ Before a broad handoff, run:
 pnpm verify
 ```
 
+Checks by changed scope:
+
+- Shared TypeScript packages: `pnpm --filter <pkg> typecheck` and tests for
+  the touched package.
+- `services/api`: `pnpm verify:api`; add `pnpm build:api` when output or deploy
+  code changes.
+- `apps/web`: `pnpm verify:web` plus Playwright/browser verification for
+  visible UI (`pnpm --filter @roam/web e2e`, specs in `apps/web/e2e/`).
+- `apps/landing`: `pnpm verify:landing`, build when relevant, and browser
+  verification for visible UI.
+- Cross-package or release-risk changes: `pnpm typecheck`, `pnpm lint`, and
+  targeted builds/tests.
+- Before handoff of shippable work: `./scripts/oracle/run.sh` (install, verify,
+  build, smoke, visual gates; exit 0 means shippable). `--fast` runs verify
+  only; `--only <gate>` runs one gate.
+
+If a check cannot run (missing deps, sandbox, credentials, external service),
+report the command and the reason.
+
 To mirror the GitHub Actions checks locally without the Python service tests,
 run:
 
@@ -84,3 +103,21 @@ read the matching local docs under:
 ```text
 node_modules/.pnpm/next@*/node_modules/next/dist/docs/
 ```
+
+Use `find . -path '*/node_modules/next/dist/docs' -type d -print` if that path
+is missing. Task-specific guides:
+
+- App structure: `01-app/01-getting-started/02-project-structure.md`
+- Layouts and pages: `01-app/01-getting-started/03-layouts-and-pages.md`
+- Server/client components: `01-app/01-getting-started/05-server-and-client-components.md`
+- Fetching, caching, revalidation: `01-app/01-getting-started/06-fetching-data.md`,
+  `08-caching.md`, `09-revalidating.md`
+- Mutations and forms: `01-app/01-getting-started/07-mutating-data.md`,
+  `01-app/02-guides/forms.md`
+- Route handlers: `01-app/01-getting-started/15-route-handlers.md`
+- Proxy: `01-app/01-getting-started/16-proxy.md`
+- Environment variables: `01-app/02-guides/environment-variables.md`
+- Internationalization: `01-app/02-guides/internationalization.md`
+- Deployment: `01-app/02-guides/deploying-to-platforms.md`
+
+Installed docs and their deprecation notices beat memory.

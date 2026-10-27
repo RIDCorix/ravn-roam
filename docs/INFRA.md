@@ -11,6 +11,11 @@ other branch.
 
 Railway is deferred — see [§4](#4--railway-deferred).
 
+> **Superseded in part (2026-09-05):** the production API now runs on Railway
+> (project `roam-api`) with a Railway-managed Postgres (schema `roam_poc`),
+> after the shared Supabase project was deleted. §2 and §4 describe the earlier
+> setup; `docs/RUNBOOK-storefront.md` §3a has the current production database.
+
 References:
 
 - `node_modules/next/dist/docs/01-app/02-guides/deploying-to-platforms.md`
