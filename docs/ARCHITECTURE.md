@@ -66,3 +66,17 @@ structured request fields are the only mutation references.
 `zh-TW` is the default product locale. User-visible strings in `apps/web`
 should be present in both `apps/web/src/i18n/dictionaries/zh-TW.json` and
 `apps/web/src/i18n/dictionaries/en.json`.
+
+## API and catalog rules
+
+- `services/api` is Hono on Node 22 with ESM, TypeScript, Drizzle, Vitest, and
+  Fastmove supplier integration.
+- The API boots `/healthz` without optional credentials. Validate required env
+  vars at point of use, matching existing patterns.
+- Keep supplier protocol code separate from business logic; types and signing
+  code stay deterministic and testable.
+- Validate external input with `zod` or existing schema helpers.
+- Catalog rules shared by web/admin/API belong in `packages/catalog`.
+- Add or update focused tests for pricing, publication, substitution, supplier
+  parsing, signing, and sync behavior when touched.
+
